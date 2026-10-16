@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import os
 from pathlib import Path
+import struct
 import tempfile
 
 
@@ -25,6 +26,15 @@ VIEW_PROLOGUE = bytes.fromhex('4053565741544155415641574881ec000e00004c8bf1e895'
 COPY_WIDTH_OFFSETS = (0x1042B7, 0x10437B)
 COPY_WIDTH_GUARD = bytes.fromhex('8b82300f0000d1e88944243c')
 PROFILE_CONFIG = Path('/mnt/c/Users/brian/AppData/Roaming/UnrealVRMod/FarFarWest-Win64-Shipping/config.txt')
+# PDB-verified camera entry, existing pose-update call, and unused bytes inside
+# the disabled Slate installer. VR.m_runtime = 0x80; VRRuntime's render counter
+# is at 0x28c. g_frame_count (uint32) lives at RVA 0xa9f438.
+CAMERA_RVA, CAMERA_OFFSET = 0x14DF30, 0x14D330
+CAMERA_ENTRY = bytes.fromhex('488bc448895818')
+POSE_CALL_OFFSET = 0x14D6F8
+POSE_CALL = bytes.fromhex('e83349f7ff')
+STUB_RVA, STUB_OFFSET = 0x14ADC0, 0x14A1C0
+STUB_CAPACITY = 128
 
 
 def digest(data):
@@ -49,6 +59,42 @@ def patched(original, view_offset_fallback=False, full_width_openvr=False):
     return candidate
 
 
+def aligned_eyes(original):
+    candidate = bytearray(patched(original, True, True))
+    if original[CAMERA_OFFSET:CAMERA_OFFSET + len(CAMERA_ENTRY)] != CAMERA_ENTRY:
+        raise SystemExit('Camera entry does not match; nothing changed.')
+    if original[POSE_CALL_OFFSET:POSE_CALL_OFFSET + len(POSE_CALL)] != POSE_CALL:
+        raise SystemExit('Existing pose-update call does not match; nothing changed.')
+
+    def branch(opcode, source, target):
+        return bytes([opcode]) + struct.pack('<i', target - source - 5)
+
+    # Source-equivalent fallback: select the pending compositor frame's eye,
+    # then refresh/enqueue poses on BOTH alternating eye frames. The old
+    # fallback ran only for the left eye and never advanced g_frame_count.
+    stub = bytearray.fromhex('85d27800')  # Ignore negative (non-stereo) view indices.
+    stub += bytes.fromhex('4883ec68')  # Align RSP; reserve call shadow space.
+    stub += bytes.fromhex('48894c242048895424284c89442430f30f7f5c2440')
+    stub += branch(0xe8, STUB_RVA + len(stub), 0xB64C0)  # VR::get()
+    stub += bytes.fromhex('488b08488b81800000008b808c020000')
+    stub += b'\x89\x05' + struct.pack('<i', 0xA9F438 - (STUB_RVA + len(stub) + 6))
+    stub += bytes.fromhex('31d24531c0')  # update_hmd_state(false, 0)
+    stub += branch(0xe8, STUB_RVA + len(stub), 0xC2C30)
+    stub += bytes.fromhex('f30f6f5c24404c8b442430488b542428488b4c24204883c468')
+    replay_offset = len(stub)
+    stub[3] = replay_offset - 4
+    stub += CAMERA_ENTRY
+    stub += branch(0xe9, STUB_RVA + len(stub), CAMERA_RVA + len(CAMERA_ENTRY))
+    if len(stub) > STUB_CAPACITY or replay_offset - 4 > 127:
+        raise SystemExit('Camera trampoline exceeds its reserved space; nothing changed.')
+    candidate[STUB_OFFSET:STUB_OFFSET + len(stub)] = stub
+    candidate[CAMERA_OFFSET:CAMERA_OFFSET + len(CAMERA_ENTRY)] = (
+        branch(0xe9, CAMERA_RVA, STUB_RVA) + b'\x90\x90')
+    # The entry trampoline handles pose updates; remove the old left-only call.
+    candidate[POSE_CALL_OFFSET:POSE_CALL_OFFSET + len(POSE_CALL)] = b'\x90' * len(POSE_CALL)
+    return bytes(candidate)
+
+
 def replace(data):
     fd, name = tempfile.mkstemp(prefix='.uevr-slate-', suffix='.tmp', dir=TARGET.parent)
     try:
@@ -69,6 +115,8 @@ def main():
                         help='Also skip view extensions to use view-offset pose updates.')
     parser.add_argument('--full-width-openvr', action='store_true',
                         help='Also copy full eye images; requires Extreme Compatibility Mode.')
+    parser.add_argument('--align-fallback-eyes', action='store_true',
+                        help='Also synchronize fallback eye selection with compositor frame counts.')
     args = parser.parse_args()
     mode = args.mode
     current = TARGET.read_bytes()
@@ -76,16 +124,17 @@ def main():
     slate_only = patched(original)
     fallback = patched(original, True)
     full_width = patched(original, True, True)
-    if current not in (original, slate_only, fallback, full_width):
+    aligned = aligned_eyes(original)
+    if current not in (original, slate_only, fallback, full_width, aligned):
         raise SystemExit('Backend differs from the known original and patched versions; nothing changed.')
     if mode == 'apply':
-        if args.full_width_openvr or current == full_width:
+        if args.full_width_openvr or args.align_fallback_eyes or current in (full_width, aligned):
             flags = dict(line.split(b'=', 1) for line in PROFILE_CONFIG.read_bytes().splitlines() if b'=' in line)
             if flags.get(b'VR_ExtremeCompatibilityMode') != b'true':
                 raise SystemExit('Full-width copies require Extreme Compatibility Mode; nothing changed.')
             if flags.get(b'Frontend_RequestedRuntime') != b'openvr_api.dll':
                 raise SystemExit('Full-width patch is for the OpenVR profile; nothing changed.')
-            candidate = full_width
+            candidate = aligned if args.align_fallback_eyes or current == aligned else full_width
         else:
             candidate = fallback if args.view_offset_fallback or current == fallback else slate_only
         if current == candidate:
@@ -100,10 +149,12 @@ def main():
         assert TARGET.read_bytes() == candidate
         assert BACKUP.read_bytes() == original
         print('Slate hook installation disabled in the isolated UEVR backend.')
-        if candidate in (fallback, full_width):
+        if candidate in (fallback, full_width, aligned):
             print('View extensions bypassed; view-offset pose-update fallback enabled.')
-        if candidate == full_width:
+        if candidate in (full_width, aligned):
             print('OpenVR copies full-width images into both full-width eye textures.')
+        if candidate == aligned:
+            print('Camera eye selection follows compositor frames; poses update for both eyes.')
         print('Backend SHA256:', digest(candidate))
     else:
         if current != original:
