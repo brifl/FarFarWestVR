@@ -1,4 +1,4 @@
-"""Apply or restore the non-temporal rendering test through the game's Engine.ini."""
+"""Apply or restore a focused preset through the game's Engine.ini."""
 
 import argparse
 import os
@@ -10,15 +10,18 @@ TARGET = Path('/mnt/c/Users/brian/AppData/Local/FarFarWest/Saved/Config/Windows/
 FRAGMENT = Path(__file__).resolve().parents[1] / 'game_settings/temporal_baseline.ini'
 
 
-def apply(target=TARGET, restore=False):
-    backup = target.with_name(target.name + '.before-ffw-temporal.bak')
+def apply(target=TARGET, restore=False, preset='temporal'):
+    if preset not in ('temporal', 'menu-logging'):
+        raise ValueError('Unknown game settings preset')
+    fragment_path = FRAGMENT if preset == 'temporal' else FRAGMENT.with_name('menu_logging.ini')
+    backup = target.with_name(target.name + '.before-ffw-' + preset + '.bak')
     current = target.read_bytes() if target.exists() else b''
     if restore and not backup.exists():
-        raise SystemExit('No rendering-test backup exists; nothing changed.')
+        raise SystemExit('No preset backup exists; nothing changed.')
     original = backup.read_bytes() if backup.exists() else current
     if original.startswith((b'\xff\xfe', b'\xfe\xff')):
         raise SystemExit('Engine.ini uses UTF-16; nothing changed.')
-    fragment = FRAGMENT.read_bytes().replace(b'\r\n', b'\n').replace(b'\n', b'\r\n')
+    fragment = fragment_path.read_bytes().replace(b'\r\n', b'\n').replace(b'\n', b'\r\n')
     candidate = original + (b'\r\n' if original else b'') + fragment
     if current not in (original, candidate):
         raise SystemExit('Engine.ini changed since the backup; nothing changed.')
@@ -38,11 +41,12 @@ def apply(target=TARGET, restore=False):
             if os.path.exists(name):
                 os.unlink(name)
     assert target.read_bytes() == desired
-    print('Rendering test restored.' if restore else 'Non-temporal rendering test applied for the next launch.')
+    print(f'{preset} preset restored.' if restore else f'{preset} preset applied for the next launch.')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=('apply', 'restore'))
+    parser.add_argument('--preset', choices=('temporal', 'menu-logging'), default='temporal')
     args = parser.parse_args()
-    apply(restore=args.mode == 'restore')
+    apply(restore=args.mode == 'restore', preset=args.preset)
