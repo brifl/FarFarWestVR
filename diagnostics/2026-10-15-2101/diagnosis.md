@@ -1,5 +1,9 @@
 # Far Far West UEVR crash — October 15, 2026, 9:01 PM CDT
 
+Follow-up: the shadow-only change still crashed at 10:21 PM, while freezing
+`r.LightCulling.Quality`. See [the next diagnosis](../2026-10-15-2221/diagnosis.md)
+for the current test and rollback. The single-entry rollback below is historical.
+
 Most likely trigger: the imported profile's frozen `r.Shadow.Virtual.Enable=1`
 override invokes an incompatible console-variable interface in the installed
 UEVR/game combination. The trigger is well supported; the exact interface
