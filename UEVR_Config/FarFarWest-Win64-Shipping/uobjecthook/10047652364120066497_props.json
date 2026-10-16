@@ -1,0 +1,26 @@
+{
+    "hide": false,
+    "hide_legacy": false,
+    "path": [
+        "Acknowledged Pawn",
+        "Properties",
+        "Socket_Item",
+        "Properties",
+        "RelativeScale3D"
+    ],
+    "properties": [
+        {
+            "data": 4603039107336110080,
+            "name": "Z"
+        },
+        {
+            "data": 4603039107336110080,
+            "name": "Y"
+        },
+        {
+            "data": 4603039107336110080,
+            "name": "X"
+        }
+    ],
+    "type": "properties"
+}

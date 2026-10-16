@@ -1,0 +1,38 @@
+#######################################################################
+# lines starting with # are ignored.
+#
+# Each control uses the numbers as listed below. Buttons not assigned
+# are left at default values.
+#
+#	DISABLE_INPUT=0
+#	DPAD_UP=1
+#	DPAD_DOWN=2
+#	DPAD_LEFT=3
+#	DPAD_RIGHT=4
+#	START=5
+#	BACK=6
+#	L3=7
+#	R3=8
+#	LB=9
+#	RB=10
+#	A=11
+#	B=12
+#	X=13
+#	Y=14
+#	LSTICK_UP=15
+#	LSTICK_DOWN=16
+#	LSTICK_LEFT=17
+#	LSTICK_RIGHT=18
+#	RSTICK_UP=19
+#	RSTICK_DOWN=20
+#	RSTICK_LEFT=21
+#	RSTICK_RIGHT=22
+#	LT=23
+#	RT=24
+#
+#######################################################################
+R3=7
+L3=12
+
+
+

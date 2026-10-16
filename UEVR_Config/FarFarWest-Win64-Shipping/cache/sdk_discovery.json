@@ -1,0 +1,165 @@
+{
+  "entries": {
+    "frendertarget_vtable_indices": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "display_gamma_index": 6,
+        "render_target_texture_index": 2
+      }
+    },
+    "frhitexture_get_native_resource": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "vtable_index": 5
+      }
+    },
+    "fscene_offsets": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "frame_count_offset": 20544,
+        "get_frame_count_vtable_index": 159,
+        "increment_frame_count_vtable_index": 158,
+        "start_frame_vtable_index": 157
+      }
+    },
+    "fsceneview_constructor": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "rva": 65189248
+      }
+    },
+    "fsceneviewfamily_offsets": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "render_target_offset": 48,
+        "scene_interface_offset": 64,
+        "views_offset": 8
+      }
+    },
+    "ftexture_render_target_resource_vtable_offset": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "offset": 80
+      }
+    },
+    "ftexture_rhi_resource_offset": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "offset": 16
+      }
+    },
+    "ue57_prefer_slate_thread": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "prefer_slate_thread": true
+      }
+    },
+    "ue57_view_extension_discovery": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "begin_render_viewfamily_index": 4,
+        "frame_count_offset": 160,
+        "index_0_called": true,
+        "is_active_this_frame_index": 20,
+        "pre_render_viewfamily_renderthread_index": 6
+      }
+    },
+    "utexture_render_resource_offset": {
+      "module": {
+        "engine_version": "5.7",
+        "file_size": 167665733,
+        "image_size": 171507712,
+        "path": "C:\\Program Files (x86)\\Steam\\steamapps\\common\\FarFarWest\\FarFarWest\\Binaries\\Win64\\FarFarWest-Win64-Shipping.exe",
+        "time_date_stamp": 488937651,
+        "version_ls": 196608,
+        "version_ms": 327687,
+        "write_time": 134224381740952591
+      },
+      "payload": {
+        "offset": 304
+      }
+    }
+  },
+  "schema_version": 1
+}
