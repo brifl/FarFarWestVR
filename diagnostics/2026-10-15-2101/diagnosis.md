@@ -3,7 +3,8 @@
 Most likely trigger: the imported profile's frozen `r.Shadow.Virtual.Enable=1`
 override invokes an incompatible console-variable interface in the installed
 UEVR/game combination. The trigger is well supported; the exact interface
-incompatibility is an inference, and the proposed change has not been run.
+incompatibility is an inference. The repository now removes only this override;
+the game still needs to be tested with that change.
 
 Evidence from robot1-x, read over SSH into WSL:
 
@@ -41,17 +42,14 @@ Evidence from robot1-x, read over SSH into WSL:
   contains only `CrashReportClient.ini`; no game crash report was present under
   `Saved\Crashes`. The UEVR log and dump provide the exception evidence.
 
-One controlled next action: with the game and injector closed, remove only the
-frozen shadow override, then repeat the same launch/injection once. The script
-below is prepared but unapplied. It checks the original SHA256, backs up the
-installed file before changing it, preserves all other bytes, and refuses to
-overwrite subsequent edits during rollback.
+The targeted fix removes `Renderer_r.Shadow.Virtual.Enable=1` from the root
+`cvars_standard.txt`. Deploy it through the profile checkout's `git pull`, then
+repeat the same launch/injection once. No aiming, controller, plugin, rendering
+runtime, or other CVar changes are part of this test.
 
-```bash
-bash diagnostics/2026-10-15-2101/cvar-override-test.sh apply
-```
-
-Rollback, with the game and injector closed:
+Deployment creates the original-file backup below before pulling the change.
+The earlier `cvar-override-test.sh` remains available for a guarded rollback,
+with the game and injector closed:
 
 ```bash
 bash diagnostics/2026-10-15-2101/cvar-override-test.sh rollback
@@ -59,10 +57,11 @@ bash diagnostics/2026-10-15-2101/cvar-override-test.sh rollback
 
 Backup on robot1-x:
 `C:\Users\brian\AppData\Roaming\UnrealVRMod\FarFarWest-Win64-Shipping\cvars_standard.txt.pre-shadow-freeze-test-20261015-2101.bak`.
-The backup is created when `apply` runs. A local copy of the diagnosed original
-is included as `cvars_standard.txt.before`.
+The backup is created before deployment. A local copy of the diagnosed original
+is included as `cvars_standard.txt.before`. The rollback script restores the
+original file only if the current bytes match this single-entry change.
 
-No installed settings, plugins, runtime selection, or binaries were changed.
-No software was installed, cloned, or built. Preparation was checked with Bash
-syntax validation and a local sandbox exercise of apply and rollback; no game
-reproduction was run.
+The initial diagnosis did not change installed settings. This repository fix
+changes only the frozen shadow override. No software was installed, cloned, or
+built. The change and exact rollback were checked locally; no game reproduction
+was run. Runtime validation is pending the user's test.
