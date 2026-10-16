@@ -35,6 +35,11 @@ POSE_CALL_OFFSET = 0x14D6F8
 POSE_CALL = bytes.fromhex('e83349f7ff')
 STUB_RVA, STUB_OFFSET = 0x14ADC0, 0x14A1C0
 STUB_CAPACITY = 128
+# D3D12Component::on_frame's draw_2d_view lambda, RVA 0x10354f.
+# In Extreme Compatibility Mode the backbuffer contains one full-width view.
+# Keep its width instead of multiplying it by 0.5 for a double-wide texture.
+SCREEN_WIDTH_OFFSET = 0x10294F
+SCREEN_WIDTH_GUARD = bytes.fromhex('f30f5905cd257100')
 
 
 def digest(data):
@@ -95,6 +100,14 @@ def aligned_eyes(original):
     return bytes(candidate)
 
 
+def menu_screen(original):
+    candidate = bytearray(aligned_eyes(original))
+    if original[SCREEN_WIDTH_OFFSET:SCREEN_WIDTH_OFFSET + 8] != SCREEN_WIDTH_GUARD:
+        raise SystemExit('Screen-mode width instruction does not match; nothing changed.')
+    candidate[SCREEN_WIDTH_OFFSET:SCREEN_WIDTH_OFFSET + 8] = b'\x90' * 8
+    return bytes(candidate)
+
+
 def replace(data):
     fd, name = tempfile.mkstemp(prefix='.uevr-slate-', suffix='.tmp', dir=TARGET.parent)
     try:
@@ -117,6 +130,8 @@ def main():
                         help='Also copy full eye images; requires Extreme Compatibility Mode.')
     parser.add_argument('--align-fallback-eyes', action='store_true',
                         help='Also synchronize fallback eye selection with compositor frame counts.')
+    parser.add_argument('--full-width-menu-screen', action='store_true',
+                        help='Also copy the complete compatibility-mode view into the 2D screen.')
     args = parser.parse_args()
     mode = args.mode
     current = TARGET.read_bytes()
@@ -125,16 +140,21 @@ def main():
     fallback = patched(original, True)
     full_width = patched(original, True, True)
     aligned = aligned_eyes(original)
-    if current not in (original, slate_only, fallback, full_width, aligned):
+    screen = menu_screen(original)
+    if current not in (original, slate_only, fallback, full_width, aligned, screen):
         raise SystemExit('Backend differs from the known original and patched versions; nothing changed.')
     if mode == 'apply':
-        if args.full_width_openvr or args.align_fallback_eyes or current in (full_width, aligned):
+        if (args.full_width_openvr or args.align_fallback_eyes or args.full_width_menu_screen
+                or current in (full_width, aligned, screen)):
             flags = dict(line.split(b'=', 1) for line in PROFILE_CONFIG.read_bytes().splitlines() if b'=' in line)
             if flags.get(b'VR_ExtremeCompatibilityMode') != b'true':
                 raise SystemExit('Full-width copies require Extreme Compatibility Mode; nothing changed.')
             if flags.get(b'Frontend_RequestedRuntime') != b'openvr_api.dll':
                 raise SystemExit('Full-width patch is for the OpenVR profile; nothing changed.')
-            candidate = aligned if args.align_fallback_eyes or current == aligned else full_width
+            if args.full_width_menu_screen or current == screen:
+                candidate = screen
+            else:
+                candidate = aligned if args.align_fallback_eyes or current == aligned else full_width
         else:
             candidate = fallback if args.view_offset_fallback or current == fallback else slate_only
         if current == candidate:
@@ -149,12 +169,14 @@ def main():
         assert TARGET.read_bytes() == candidate
         assert BACKUP.read_bytes() == original
         print('Slate hook installation disabled in the isolated UEVR backend.')
-        if candidate in (fallback, full_width, aligned):
+        if candidate in (fallback, full_width, aligned, screen):
             print('View extensions bypassed; view-offset pose-update fallback enabled.')
-        if candidate in (full_width, aligned):
+        if candidate in (full_width, aligned, screen):
             print('OpenVR copies full-width images into both full-width eye textures.')
-        if candidate == aligned:
+        if candidate in (aligned, screen):
             print('Camera eye selection follows compositor frames; poses update for both eyes.')
+        if candidate == screen:
+            print('2D screen mode copies the complete compatibility-mode view.')
         print('Backend SHA256:', digest(candidate))
     else:
         if current != original:
