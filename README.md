@@ -1,0 +1,1 @@
+The files in this enlistment can be zipped into FarFarWest-Win64-Shipping.zip and imported into UEVR.
