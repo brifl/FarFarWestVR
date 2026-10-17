@@ -12,15 +12,23 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 - Quest X now activates F/X interaction prompts (confirmed in the saloon).
 - Left stick movement, grips/spells, Y/weapon switching, and triggers/aim-fire
   were reported working. The user now confirms that gun aim follows the right
-  controller. Shot/reticle alignment remains unvalidated.
+  controller. The user also confirms that shot grouping stays fixed when turning
+  the head with the controller held still. Reticle alignment remains unfinished.
 
 ## Continuation checkpoint
 
+- Pause-menu regression in the 23:51 run: UI distance/size remained 3m/1.8m,
+  but Engine.ini was absent and no LogViewport transitions were recorded. The
+  level fallback restored the title/lobby correctly but cannot detect pause.
+  The menu-logging preset now opts Core.Log and SectionsToSave into UE's section
+  persistence rules. Reapply before the next launch and verify B pause/Resume,
+  then persistence across a relaunch; this is the likely reason logging kept
+  disappearing, pending that test. No aiming or menu-size settings changed.
 - Controller aiming confirmed after `dbf1633`. The original reticle remains
   head-locked. The visible mouse pointer follows gun aim but does not coincide
-  with shot impacts; it must not be used as the accuracy reference. Next verify
-  that turning the head with the controller held still leaves shot impacts fixed.
-  Then reposition the original crosshair or replace it with a stereo reticle
+  with shot impacts; it must not be used as the accuracy reference. The user
+  confirmed head rotation does not change shot grouping. Next reposition the
+  original crosshair or replace it with a stereo reticle
   based on the actual firing ray/hit point, hiding only the old crosshair and
   preserving the rest of the HUD and working menu pointer.
 - Deferred graphics test requested by the user: try `Engine_r.DisableDistortion=1`
@@ -118,7 +126,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 | 1 | Restore safe world/player discovery for the updated engine | Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
-| 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim confirmed. Verify shot direction stays independent of head movement; align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
+| 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |

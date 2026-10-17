@@ -11,8 +11,8 @@ when returning to immersive play.
 This needs headset validation. Prepare it in WSL on robot1-x before launch:
 `python3 tools/prepare_menu_helper.py`.
 The tool links the game log into the profile's Lua data directory and enables
-focused menu logging. Engine.ini was absent after the last run; prepare again
-before another launch if it is absent.
+focused menu logging. The preset opts its logging section and save rules into
+Unreal's config persistence so they can survive relaunches; this needs validation.
 F8 remains a manual presentation fallback.
 
 Controller aiming is being tested with
