@@ -4,8 +4,11 @@ See [BACKLOG.md](BACKLOG.md) for the intended controls, working baseline, and ne
 
 Quest B sends Escape. The menu helper now follows the game's logged input-mode
 changes, including clicking Resume, instead of toggling presentation on B presses.
-This needs headset validation with the focused menu logging enabled:
-`python3 tools/apply_render_baseline.py apply --preset menu-logging`.
+This needs headset validation. Prepare it in WSL on robot1-x before launch:
+`python3 tools/prepare_menu_helper.py`.
+The tool links the game log into the profile's Lua data directory and enables
+focused menu logging. Engine.ini was absent after the last run; prepare again
+before another launch if it is absent.
 F8 remains a manual presentation fallback.
 
 The current rendering test is defined in

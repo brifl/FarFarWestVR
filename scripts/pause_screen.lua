@@ -2,8 +2,9 @@
 -- LogViewport is enabled by the menu-logging preset. No UObject/world lookup.
 local vr = uevr.params.vr
 local functions = uevr.params.functions
-local local_app_data = os.getenv("LOCALAPPDATA")
-local log_path = local_app_data and (local_app_data .. "\\FarFarWest\\Saved\\Logs\\FarFarWest.log")
+-- UEVR removes os.getenv and permits file access only within profile/data.
+-- tools/prepare_menu_helper.py creates a native Windows link to the game log.
+local log_path = "FarFarWest.log"
 local log_position = nil
 local partial_line = ""
 local capture_seen = false
@@ -43,7 +44,6 @@ local function observe_line(line)
 end
 
 local function poll_game_log()
-    if not log_path then return end
     local file = io.open(log_path, "rb")
     if not file then return end
     local size = file:seek("end")

@@ -15,6 +15,18 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Current pass — awaiting headset validation
 
+- Continuation checkpoint: the launch popup came from `os.getenv`, which UEVR
+  explicitly removes. Absolute `io.open` paths are also rejected. The corrected
+  helper reads the relative `FarFarWest.log` name in profile/data; a native
+  Windows file link connects it to the game log. Run
+  `python3 tools/prepare_menu_helper.py` on robot1-x before the next launch.
+  The failed-script run nevertheless confirmed the game's capture-mode logs
+  change between `CaptureDuringMouseDown` (menu) and `CapturePermanently` (play).
+  Restricted Lua 5.4 checks pass with `os.getenv=nil` and relative-only file
+  access; Windows can read the installed native log link. The old test harness
+  incorrectly supplied unrestricted APIs and missed the launch failure.
+  Next headset check is B -> click Resume without F8. Custom UEVR build remains
+  a last resort; no build is needed for this Lua correction.
 - Remove A's synthetic Enter binding, which can open chat. Keep its native action.
 - Keep the confirmed Quest X -> F/interact binding, including its grip-held mapping.
 - Preserve Quest B -> Escape, including while the left grip is held.
