@@ -21,13 +21,20 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   follows controller pitch: OverlayComponent applies pre-flattened game camera
   pitch while VR_DecoupledPitchUIAdjust is enabled. The menu helper now disables
   that adjustment in screen mode and restores it in immersive gameplay. Menu
-  recentering remains based on the HMD; verify opening pause while aiming up/down.
+  recentering remains based on the HMD. The user confirms the menu works great
+  after `07b58d9`; location markers remain unchanged, as this affects overlays.
 - Add right-controller ray pointing/clicking for game menus, replacing stick
   cursor movement. Keep the screen placement independent of the pointing ray.
   The UEVR framework panel already has controller pointing; the game menu does not.
 - Quest/location markers shift vertically opposite controller aim. These are
   baked into the game image and need head/view-relative projection, separately
   from the gun's firing direction and the menu overlay pitch adjustment.
+  The 00:18 run still reports Failed to find GUObjectArray and Failed to find
+  UGameViewportClient::Draw (CanvasObject has no string references). Existing
+  Lua object access and viewport callbacks cannot safely reach this path yet.
+  Target world-to-screen projection (ULocalPlayer/GetProjectionData or the HUD's
+  projection helper) with the HMD view while preserving the controller-driven
+  firing camera. Do not toggle unrelated overlay/aim settings as a marker test.
 - The 00:10 run contains working pause input-mode logs, but Engine.ini is still
   absent after exit despite the section-save opt-in. Logging persistence is not
   yet confirmed; prepare the logging preset again before the next test.
@@ -143,7 +150,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 | 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
 | 2 | Controller pointer in game menus | Right-controller ray moves the menu pointer and trigger clicks. Replace stick-driven cursor movement; keep menu placement independent of hand direction. |
 | 2 | Head-relative quest/location markers | Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
-| 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu pitch adjustment disabled in screen mode; awaiting headset validation. |
+| 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
 | 4 | Raise dialogue subtitles/text | Character dialogue is low in the field of view and hard to read; user reports this as nonblocking. |
