@@ -85,7 +85,38 @@ public sealed class FfwReticleReader : IDisposable {
     private static bool Relevant(string name) {
         string n = name.ToLowerInvariant();
         return n.Contains("crosshair") || n.Contains("reticle") || n.Contains("reticule")
-            || n.Contains("wbp_hud") || n.Contains("w_hud") || n.Contains("playerhud");
+            || n.Contains("wbp_hud") || n.Contains("w_hud") || n.Contains("playerhud")
+            || n == "ui_player_c";
+    }
+
+    private object DescribeWidgetClass(long klass) {
+        var result = new List<object>();
+        var seenClasses = new HashSet<long>();
+        for (int depth = 0; klass != 0 && depth < 8 && seenClasses.Add(klass); ++depth) {
+            byte[] prefix = Read(klass, 96);
+            if (prefix == null) break;
+            var fields = new List<object>();
+            var seenFields = new HashSet<long>();
+            // Observed UStruct layout; keep the raw field header to verify its
+            // type/offset interpretation before using any field in a fix.
+            long field = BitConverter.ToInt64(prefix, 80);
+            for (int i = 0; field != 0 && i < 256 && seenFields.Add(field); ++i) {
+                byte[] data = Read(field, 112);
+                if (data == null) break;
+                long vt = BitConverter.ToInt64(data, 0);
+                if (vt < moduleBase || vt >= moduleEnd) break;
+                string name = Name(BitConverter.ToUInt32(data, 40));
+                long type = BitConverter.ToInt64(data, 8);
+                byte[] typeData = Read(type, 8);
+                string typeName = typeData == null ? "" : Name(BitConverter.ToUInt32(typeData, 0));
+                fields.Add(new { address = Hex(field), name = name, type = typeName,
+                    header = BitConverter.ToString(data) });
+                field = BitConverter.ToInt64(data, 32);
+            }
+            result.Add(new { address = Hex(klass), name = ObjectName(prefix), fields = fields });
+            klass = BitConverter.ToInt64(prefix, 64);
+        }
+        return result;
     }
 
     public object Scan() {
@@ -103,6 +134,7 @@ public sealed class FfwReticleReader : IDisposable {
         if (chunkData == null) throw new Exception("Chunk pointers unreadable.");
         var matches = new List<object>();
         var classHeaders = new Dictionary<string, string>();
+        var widgetClasses = new HashSet<long>();
         for (int i = 0; i < count; ++i) {
             long chunk = BitConverter.ToInt64(chunkData, (i / 65536) * 8);
             byte[] item = Read(chunk + (i % 65536) * 24L, 24);
@@ -118,6 +150,7 @@ public sealed class FfwReticleReader : IDisposable {
             long klass = BitConverter.ToInt64(data, 16);
             string className = ClassName(klass);
             if (!Relevant(name) && !Relevant(className)) continue;
+            if (className == "Image" || className == "UI_Player_C") widgetClasses.Add(klass);
             if (matches.Count >= 128) throw new Exception("Too many HUD matches; narrow the filter.");
             long outer = BitConverter.ToInt64(data, 32);
             byte[] outerData = Read(outer, 40);
@@ -130,8 +163,11 @@ public sealed class FfwReticleReader : IDisposable {
                 outer = Hex(outer), outerName = outerData == null ? "" : ObjectName(outerData),
                 item = BitConverter.ToString(item) });
         }
+        var widgetProperties = new List<object>();
+        foreach (long klass in widgetClasses) widgetProperties.Add(DescribeWidgetClass(klass));
         return new { objectCount = count, bytesRead = bytesRead, readCalls = calls,
-            seconds = timer.Elapsed.TotalSeconds, matches = matches, classHeaders = classHeaders };
+            seconds = timer.Elapsed.TotalSeconds, matches = matches, classHeaders = classHeaders,
+            widgetProperties = widgetProperties };
     }
 }
 '@
