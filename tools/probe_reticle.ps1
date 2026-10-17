@@ -105,13 +105,19 @@ public sealed class FfwReticleReader : IDisposable {
                 if (data == null) break;
                 long vt = BitConverter.ToInt64(data, 0);
                 if (vt < moduleBase || vt >= moduleEnd) break;
-                string name = Name(BitConverter.ToUInt32(data, 40));
+                string name = Name(BitConverter.ToUInt32(data, 32));
                 long type = BitConverter.ToInt64(data, 8);
-                byte[] typeData = Read(type, 8);
-                string typeName = typeData == null ? "" : Name(BitConverter.ToUInt32(typeData, 0));
+                byte[] typeData = Read(type, 32);
+                string typeName = "";
+                if (typeData != null) {
+                    for (int n = 0; n < 32; n += 8) {
+                        string candidate = Name(BitConverter.ToUInt32(typeData, n));
+                        if (candidate.EndsWith("Property")) { typeName = candidate; break; }
+                    }
+                }
                 fields.Add(new { address = Hex(field), name = name, type = typeName,
                     header = BitConverter.ToString(data) });
-                field = BitConverter.ToInt64(data, 32);
+                field = BitConverter.ToInt64(data, 24);
             }
             result.Add(new { address = Hex(klass), name = ObjectName(prefix), fields = fields });
             klass = BitConverter.ToInt64(prefix, 64);
