@@ -14,22 +14,27 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   were reported working. The user now confirms that gun aim follows the right
   controller. The user also confirms that shot grouping stays fixed when turning
   the head with the controller held still. Reticle alignment remains unfinished.
+- The repeating upward-moving distortion is gone or clearly reduced with
+  `r.PostProcessing.DisableMaterials=1`. The October 17 01:17 startup log confirms
+  the engine applied it; the same run reached the saloon with aiming and menu
+  transitions working. Keep this workaround while checking gameplay effects.
 
 ## Continuation checkpoint
 
-- Current task: isolate a repeating upward-scrolling, transparent amoeba-like
-  distortion pattern (not random circles). User offered a live debug session.
-  The 01:06 run's Lua setter stopped with 'caught (...) exception' before any
-  readback. Thus neither distortion test established r.DisableDistortion=1.
-  The failed Lua helper is now inactive in experiments/distortion_test.lua.
-  Next one-category test: r.PostProcessing.DisableMaterials=1 through Engine.ini,
-  using `python3 tools/prepare_menu_helper.py --material-test` before launch.
-  Its material-probe preset includes existing menu logging and LogConfig=Verbose
-  so startup application can be checked without the failing native console API.
-  Both CVar names are present in the installed game executable. Have the user
-  leave the game open at the visible pattern; inspect LogConfig and any warnings
-  for this exact setting before interpreting the visual result. This test also
-  removes other custom post-process materials and is not yet a permanent fix.
+- Current result: the user reports the repeating upward-scrolling, transparent
+  amoeba-like distortion is "Gone or clearly reduced." The live game log records
+  `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]`, followed by
+  L_Lobby loading; UEVR confirms both helpers loaded and immersive aiming resumed.
+  This isolates a custom post-process material as the likely cause. The exact
+  material is not identified. The workaround also disables other custom
+  post-process materials, so assess damage/status and other gameplay effects
+  before treating it as permanent. No additional rendering tests are active.
+  Preserve the tested startup override with
+  `python3 tools/prepare_menu_helper.py --material-test` before each launch;
+  Engine.ini persistence remains unreliable. The material-probe preset includes
+  existing menu logging and LogConfig=Verbose. The failed native console setter
+  remains inactive in experiments/distortion_test.lua; its 01:06 run threw before
+  readback, so neither earlier attempt established r.DisableDistortion=1.
 - The initial distortion text entry was a no-op: the installed
   CVarManager loads only its predefined variables, and r.DisableDistortion is
   absent from both lists in CVarManager.hpp. The ignored entry was removed;
@@ -56,7 +61,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 - Source access restored October 17: the user repaired Epic/GitHub access, and
   SSH `git ls-remote` now succeeds for both EpicGames/UnrealEngine and
   praydog/UESDK from this workspace. The SDK source prerequisite is cleared.
-  Keep the installed heat-distortion test active pending the user's result;
+  Keep the confirmed custom post-process workaround active;
   source access restoration alone does not deploy a native/marker patch. Pinned SDK
   revision: 14478dfae61e8385e0e62116718925c4099b1d18. No native or gameplay patch
   has been applied during this probe; the isolated backend remains SHA256
@@ -104,7 +109,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   been verified active; text and native Lua setter routes both failed. The user
   found other reports of excessive heat
   distortion, especially on large screens, and a now-withdrawn removal mod.
-  Treat heat distortion as the first isolation target before the FXAA experiment.
+  The subsequent startup custom-material override reduced or removed the pattern;
+  do not activate the FXAA experiment on top of this result.
 - Main-menu regression after `313a7eb`: the 23:26 run loaded only credits/title,
   had no LogViewport transitions, and retained saved immersive mode. The aim
   bridge therefore activated on the title screen. The menu helper now also
@@ -115,9 +121,10 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   Menu access and controller aiming subsequently confirmed. Snap
   turning was observed by the user, but only from the title screen so far.
 - Controller-directed aiming is working; HUD/marker projection work is deferred
-  pending source access. The shimmer is visible in the desktop image too. The FXAA experiment
+  while easier fixes are addressed; source access is now restored. The shimmer
+  was visible in the desktop image too. The FXAA experiment
   was never deployed and is retained in `experiments/temporal_aa_test.lua`, outside
-  autorun scripts. Rendering settings remain at the accepted menu baseline.
+  autorun scripts. Only the custom post-process material startup override is active.
 - `scripts/controller_aim.lua` is a first-pass orientation bridge: read the
   right-controller aim quaternion and raw game camera yaw/pitch, then feed a
   closed-loop right-stick look signal after JoyToKey. Compensate actual camera
@@ -146,7 +153,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   21:40 run confirms successful load and matching game/menu transitions. Lua
   uses the relative `FarFarWest.log` link in profile/data because UEVR removes
   `os.getenv` and rejects absolute file paths. Run
-  `python3 tools/prepare_menu_helper.py` on robot1-x before the next launch.
+  `python3 tools/prepare_menu_helper.py --material-test` on robot1-x before the next launch.
 - The installed `UI_Distance` was 9.169m while the repo baseline is 3m, making
   all menus tiny. The helper now restores distance 3m and size 1.8m on entering
   screen mode.
@@ -192,8 +199,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Test r.PostProcessing.DisableMaterials=1 via startup INI against repeating upward-scrolling patterns. Check config logs before interpreting. Native Lua console API failed; FXAA experiment remains inactive. |
-| 1 | Restore safe world/player discovery for the updated engine | Source access verified October 17; deferred while the current heat-distortion test is evaluated. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
+| 0 | Retain the distortion workaround and assess remaining artifacts | Startup r.PostProcessing.DisableMaterials=1 verified; user reports the repeating pattern gone or clearly reduced. Check gameplay effects before narrowing to the offending material. Other ghosting is not separately assessed; FXAA remains inactive. |
+| 1 | Restore safe world/player discovery for the updated engine | Source access verified October 17; deferred while easier fixes are addressed. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |

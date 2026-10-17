@@ -8,11 +8,11 @@ Logged level/loading state keeps the title screen in menu mode even when UEVR
 saved immersive mode and verbose input-mode events are unavailable.
 It restores the readable menu distance and disables the cached menu overlay
 when returning to immersive play.
-This needs headset validation. Prepare it in WSL on robot1-x before launch:
-`python3 tools/prepare_menu_helper.py`.
+The menu behavior is confirmed. Prepare it in WSL on robot1-x before each launch:
+`python3 tools/prepare_menu_helper.py --material-test`.
 The tool links the game log into the profile's Lua data directory and enables
-focused menu logging. The preset opts its logging section and save rules into
-Unreal's config persistence so they can survive relaunches; this needs validation.
+focused menu logging and the tested distortion workaround. Engine.ini has been
+removed between runs, so repeat preparation before launching.
 F8 remains a manual presentation fallback.
 
 Controller aiming is being tested with
@@ -27,6 +27,9 @@ The isolated backend needs the guarded compatibility patch:
 `python3 tools/enable_controller_aim.py apply` (WSL on robot1-x).
 It enables correct UE5 camera vectors and controller aim poses for Lua.
 
-The shimmer is also visible on desktop and is deferred while aiming is addressed.
+The repeating upward-moving distortion is gone or clearly reduced with the
+startup override `r.PostProcessing.DisableMaterials=1`, confirmed in the live
+game log. This suppresses all custom post-process materials; the exact offending
+material remains unidentified. Check damage/status effects during further play.
 The prepared FXAA experiment is retained outside the autorun scripts in
 [experiments/temporal_aa_test.lua](experiments/temporal_aa_test.lua).
