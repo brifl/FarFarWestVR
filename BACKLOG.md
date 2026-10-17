@@ -15,6 +15,34 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Active task: controller-directed aiming, now prioritized by the user over
+  graphics. The shimmer is visible in the desktop image too. The FXAA experiment
+  was never deployed and is retained in `experiments/temporal_aa_test.lua`, outside
+  autorun scripts. Rendering settings remain at the accepted menu baseline.
+- `scripts/controller_aim.lua` is a first-pass orientation bridge: read the
+  right-controller aim quaternion and raw game camera yaw/pitch, then feed a
+  closed-loop right-stick look signal after JoyToKey. Compensate actual camera
+  yaw through UEVR's rotation offset so the aiming wrist does not turn the head
+  view. A raw-stick latch changes that world anchor by 45 degrees for snap turns.
+  Menus keep their existing input path. Native gun/hand position attachment and
+  reticle alignment remain unfinished; first validate that shot direction follows
+  the right wrist with the stick centered.
+- The native log reports IXRTrackingSystemVT/IXRCameraVT unimplemented for engine
+  5.8. Native manual control rotation still requires unsafe world/player lookup.
+  The bridge keeps those native options disabled. Its early camera callback also
+  needs a narrow Lua ABI fix: `lua::utility::is_ue5` otherwise returns false when
+  object discovery fails and interprets camera doubles as floats.
+- Backend preparation: `python3 tools/enable_controller_aim.py apply` on robot1-x.
+  It derives from the verified persistent-menu backend and changes four bytes:
+  raw `0x5e2f30..32` return true for UE5 Lua camera dispatch; raw `0x574f0` selects
+  the runtime aim pose in the plugin API's get_pose wrapper. No game objects are
+  accessed. A marker in profile/data gates callback registration. Expected hash
+  `3d2c8647dc10409a8d3d014c248f69f10f60895aede9c2d1fbee442d557c7527`.
+  The tool's restore mode returns the prior menu baseline and removes the marker;
+  restore this stage before using the older disable_slate_hook.py tool.
+  Lua math/input checks and temporary-file patch apply/restore guards pass;
+  native gamepad response, aim direction/sign and gun/reticle presentation need
+  headset validation. Look for `[FarFarWest aim]` in the profile log.
 - Continuation checkpoint: the Lua startup failure is fixed. The October 16
   21:40 run confirms successful load and matching game/menu transitions. Lua
   uses the relative `FarFarWest.log` link in profile/data because UEVR removes
@@ -30,7 +58,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   and re-enables it for menus. The baked-in game HUD is unaffected. The user
   accepted this menu baseline; avoid reopening menu troubleshooting without
   a new regression.
-- Custom UEVR build remains a last resort; this pass changes only the profile.
+- Custom UEVR build remains a last resort; the compatibility bridge uses guarded
+  edits to the existing isolated backend.
 - Remove A's synthetic Enter binding, which can open chat. Keep its native action.
 - Keep the confirmed Quest X -> F/interact binding, including its grip-held mapping.
 - Preserve Quest B -> Escape, including while the left grip is held.
@@ -64,11 +93,11 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Eliminate remaining ghosting and wavy, unstable imagery | First confirm it persists after the overlay fix. The earlier temporal-rendering overrides are not confirmed active; use one controlled rendering change if comfort remains a blocker. |
+| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Visible in desktop and headset; deferred by user until controller aiming works. FXAA experiment remains inactive. |
 | 1 | Restore safe world/player discovery for the updated engine | Address the earlier `UEngine::get_world` crash before enabling dependent features. |
-| 2 | Right-stick horizontal snap turn | Start with the existing 45-degree preference; one turn per deflection, rearm at center. Dead Island's Lua uses this latch and changes pawn/controller yaw. Reuse the approach after safe pawn/controller access is restored; stock snap remains disabled. |
+| 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
-| 2 | Right-controller gun aiming and accurate reticle | Gun/barrel direction, shot direction, and reticle must agree. Remove the current dependence on joystick mouse aim; restore engine-dependent aiming only after its crash is fixed. |
+| 2 | Right-controller gun aiming and accurate reticle | First validate orientation bridge with stick centered. Then align gun/barrel, shots and reticle, and remove remaining gameplay mouse emulation. Full object-dependent aiming still needs safe discovery. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
@@ -93,7 +122,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | Quest control | Intended behavior | Status |
 | --- | --- | --- |
 | Left stick | Move and strafe | Preserve working behavior |
-| Right stick left/right | Snap turn | Queued |
+| Right stick left/right | Snap turn | 45-degree bridge latch awaiting test |
 | Right stick up/down | No gameplay action initially | Queued; menu cursor must keep working |
 | A | Native primary action, without opening chat | Enter override removed; test native action |
 | B | Pause and resume with readable menu | Accepted baseline after cached-overlay fix |

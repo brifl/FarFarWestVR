@@ -13,6 +13,17 @@ focused menu logging. Engine.ini was absent after the last run; prepare again
 before another launch if it is absent.
 F8 remains a manual presentation fallback.
 
-The current rendering test is defined in
-[game_settings/temporal_baseline.ini](game_settings/temporal_baseline.ini) and
-applied to the game's Engine.ini by `tools/apply_render_baseline.py`.
+Controller aiming is being tested with
+[scripts/controller_aim.lua](scripts/controller_aim.lua). Right-controller
+orientation drives the game's look input while head direction remains independent.
+Horizontal right-stick deflection requests one 45-degree snap turn, rearmed at
+center. The existing menu controls are preserved. Gun position/hand attachment
+and reticle alignment are still queued.
+
+The isolated backend needs the guarded compatibility patch:
+`python3 tools/enable_controller_aim.py apply` (WSL on robot1-x).
+It enables correct UE5 camera vectors and controller aim poses for Lua.
+
+The shimmer is also visible on desktop and is deferred while aiming is addressed.
+The prepared FXAA experiment is retained outside the autorun scripts in
+[experiments/temporal_aa_test.lua](experiments/temporal_aa_test.lua).
