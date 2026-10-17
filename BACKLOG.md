@@ -11,10 +11,18 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   Screen textures survive resets; immersive play clears the cached menu layer.
 - Quest X now activates F/X interaction prompts (confirmed in the saloon).
 - Left stick movement, grips/spells, Y/weapon switching, and triggers/aim-fire
-  were reported working. Controller-directed weapon aiming is still missing.
+  were reported working. The user now confirms that gun aim follows the right
+  controller. Shot/reticle alignment remains unvalidated.
 
 ## Continuation checkpoint
 
+- Controller aiming confirmed after `dbf1633`. The original reticle remains
+  head-locked. The visible mouse pointer follows gun aim but does not coincide
+  with shot impacts; it must not be used as the accuracy reference. Next verify
+  that turning the head with the controller held still leaves shot impacts fixed.
+  Then reposition the original crosshair or replace it with a stereo reticle
+  based on the actual firing ray/hit point, hiding only the old crosshair and
+  preserving the rest of the HUD and working menu pointer.
 - Deferred graphics test requested by the user: try `Engine_r.DisableDistortion=1`
   after controller aiming works. The user found other reports of excessive heat
   distortion, especially on large screens, and a now-withdrawn removal mod.
@@ -26,7 +34,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   mode, and publishes an explicit gameplay gate for aiming and snap turns.
   Restricted Lua checks cover saved immersive mode on the title, lobby entry
   without verbose capture logs, pause/Resume, and the existing aim/snap math.
-  Menu access and controller aiming still need the next headset test. Snap
+  Menu access and controller aiming subsequently confirmed. Snap
   turning was observed by the user, but only from the title screen so far.
 - Active task: controller-directed aiming, now prioritized by the user over
   graphics. The shimmer is visible in the desktop image too. The FXAA experiment
@@ -110,7 +118,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 | 1 | Restore safe world/player discovery for the updated engine | Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
-| 2 | Right-controller gun aiming and accurate reticle | First validate orientation bridge with stick centered. Then align gun/barrel, shots and reticle, and remove remaining gameplay mouse emulation. Full object-dependent aiming still needs safe discovery. |
+| 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim confirmed. Verify shot direction stays independent of head movement; align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
