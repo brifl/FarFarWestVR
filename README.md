@@ -4,6 +4,8 @@ See [BACKLOG.md](BACKLOG.md) for the intended controls, working baseline, and ne
 
 Quest B sends Escape. The menu helper now follows the game's logged input-mode
 changes, including clicking Resume, instead of toggling presentation on B presses.
+It restores the readable menu distance and disables the cached menu overlay
+when returning to immersive play.
 This needs headset validation. Prepare it in WSL on robot1-x before launch:
 `python3 tools/prepare_menu_helper.py`.
 The tool links the game log into the profile's Lua data directory and enables

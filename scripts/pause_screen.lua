@@ -76,7 +76,14 @@ local function poll_game_log()
 end
 
 local function update_screen(screen)
+    -- With Slate capture disabled, the OpenVR UI texture retains its last
+    -- loading/menu frame. EnableGUI=false clears that overlay on the next
+    -- renderer update; the game's HUD is already part of the world image.
+    vr.set_mod_value("VR_EnableGUI", screen and "true" or "false")
     if screen then
+        -- Restore the readable baseline; the installed distance drifted to 9m.
+        vr.set_mod_value("UI_Distance", "3.000000")
+        vr.set_mod_value("UI_Size", "1.800000")
         if last_mode == false then
             saved_rotation = UEVR_Quaternionf.new()
             vr.get_rotation_offset(saved_rotation)
@@ -88,7 +95,7 @@ local function update_screen(screen)
     end
     last_mode = screen
     functions.log_info(screen and "[FarFarWest] Menu screen enabled."
-        or "[FarFarWest] Immersive view restored.")
+        or "[FarFarWest] Immersive view restored; menu overlay disabled.")
 end
 
 -- JoyToKey sends Escape on B's first poll but leaks native X on held polls.

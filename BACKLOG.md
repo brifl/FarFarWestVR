@@ -15,18 +15,21 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Current pass — awaiting headset validation
 
-- Continuation checkpoint: the launch popup came from `os.getenv`, which UEVR
-  explicitly removes. Absolute `io.open` paths are also rejected. The corrected
-  helper reads the relative `FarFarWest.log` name in profile/data; a native
-  Windows file link connects it to the game log. Run
+- Continuation checkpoint: the Lua startup failure is fixed. The October 16
+  21:40 run confirms successful load and matching game/menu transitions. Lua
+  uses the relative `FarFarWest.log` link in profile/data because UEVR removes
+  `os.getenv` and rejects absolute file paths. Run
   `python3 tools/prepare_menu_helper.py` on robot1-x before the next launch.
-  The failed-script run nevertheless confirmed the game's capture-mode logs
-  change between `CaptureDuringMouseDown` (menu) and `CapturePermanently` (play).
-  Restricted Lua 5.4 checks pass with `os.getenv=nil` and relative-only file
-  access; Windows can read the installed native log link. The old test harness
-  incorrectly supplied unrestricted APIs and missed the launch failure.
-  Next headset check is B -> click Resume without F8. Custom UEVR build remains
-  a last resort; no build is needed for this Lua correction.
+- The installed `UI_Distance` was 9.169m while the repo baseline is 3m, making
+  all menus tiny. The helper now restores distance 3m and size 1.8m on entering
+  screen mode.
+- The game reported loading hidden and input returned to gameplay, but UEVR
+  kept showing Loading/menu imagery. In OpenVR, without a captured Slate UI
+  target, the overlay texture retains its last screen frame. The helper now
+  sets `VR_EnableGUI=false` in immersive mode, which calls ClearOverlayTexture,
+  and re-enables it for menus. The baked-in game HUD is unaffected. Validate
+  that entering the saloon and resuming removes the stale layer.
+- Custom UEVR build remains a last resort; this pass changes only the profile.
 - Remove A's synthetic Enter binding, which can open chat. Keep its native action.
 - Keep the confirmed Quest X -> F/interact binding, including its grip-held mapping.
 - Preserve Quest B -> Escape, including while the left grip is held.
@@ -36,8 +39,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 - Follow `LogViewport` mouse-capture transitions instead, with cursor visibility
   as a fallback until capture mode is known. Menu input selects screen mode;
   gameplay input restores immersive view, including after clicking Resume.
-  Confirm this game emits those transitions with the focused `menu-logging`
-  Engine.ini preset. No unsafe world/player lookup is used.
+  The focused `menu-logging` preset and latest run confirm those transitions.
+  No unsafe world/player lookup is used.
 - Prevent held Quest B from also reaching the game as native X after JoyToKey
   has already sent Escape. Keep the synthetic Escape binding in both grip modes.
 - Allocate screen textures even when a renderer reset occurs in immersive mode;
