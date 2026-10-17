@@ -8,11 +8,14 @@ Logged level/loading state keeps the title screen in menu mode even when UEVR
 saved immersive mode and verbose input-mode events are unavailable.
 It restores the readable menu distance and disables the cached menu overlay
 when returning to immersive play.
-The menu behavior is confirmed. Prepare it in WSL on robot1-x before each launch:
+The menu behavior is confirmed. Install its logging and the distortion workaround
+in WSL on robot1-x:
 `python3 tools/prepare_menu_helper.py --material-test`.
 The tool links the game log into the profile's Lua data directory and enables
-focused menu logging and the tested distortion workaround. Engine.ini has been
-removed between runs, so repeat preparation before launching.
+focused menu logging and the tested distortion workaround. Settings now go in
+the game's `FarFarWest/Config/UserEngine.ini`; the generated Saved/Config copy
+was repeatedly deleted. Persistence through this source layer awaits a relaunch
+test. Reapply preparation after changing the repository's settings preset.
 F8 remains a manual presentation fallback.
 
 Controller aiming is being tested with

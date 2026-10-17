@@ -11,6 +11,9 @@ from apply_render_baseline import apply
 PROFILE = Path('/mnt/c/Users/brian/AppData/Roaming/UnrealVRMod/FarFarWest-Win64-Shipping')
 GAME_LOG = Path('/mnt/c/Users/brian/AppData/Local/FarFarWest/Saved/Logs/FarFarWest.log')
 LINK = PROFILE / 'data/FarFarWest.log'
+# This is a source layer in the game's config hierarchy. Saved/Config/Windows/
+# Engine.ini is generated output and this game deletes our additions to it.
+USER_CONFIG = Path('/mnt/c/Program Files (x86)/Steam/steamapps/common/FarFarWest/FarFarWest/Config/UserEngine.ini')
 
 
 def windows_path(path):
@@ -36,13 +39,15 @@ def prepare(preset='menu-logging'):
         )
     with LINK.open('rb') as stream:
         stream.read(1)
-    apply(preset=preset)
+    USER_CONFIG.parent.mkdir(exist_ok=True)
+    apply(target=USER_CONFIG, preset=preset)
+    print('Game configuration installed:', USER_CONFIG)
     print('Menu helper ready: profile/data/FarFarWest.log links to the game log.')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--material-test', action='store_true',
-                        help='Temporarily disable custom post-process materials and log INI CVar application.')
+                        help='Disable custom post-process materials and log INI CVar application.')
     args = parser.parse_args()
     prepare(preset='material-probe' if args.material_test else 'menu-logging')

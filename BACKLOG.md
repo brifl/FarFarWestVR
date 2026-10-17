@@ -21,6 +21,17 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Distortion recurrence: the October 17 17:02 launch has no DisableMaterials
+  log entry and Saved/Config/Windows/Engine.ini is absent. Move the same preset
+  to the per-game source layer at
+  `C:/Program Files (x86)/Steam/steamapps/common/FarFarWest/FarFarWest/Config/UserEngine.ini`
+  through prepare_menu_helper.py. This avoids depending on generated Engine.ini
+  surviving; verify application and UserEngine.ini survival across a restart.
+  No additional rendering settings or file attributes are changed.
+  Live reticle probe succeeded: UI_Player_C.F_UpdateCrosshair drives an Image
+  named Crosshair_Top; its live instance owns MID_M_CrosshairCross and
+  MID_M_CrosshairCross_Dot. Full read-only result is /tmp/ffw-reticle-probe.json.
+  Only 9.6 MB read in 0.61 seconds; no game writes. Reticle placement is unchanged.
 - Active task: align the reticle with actual controller-driven shots. The user
   accepted the distortion workaround ("Everything looked good"). Preserve it.
   Pinned and current UESDK sources both assume the old object-array layout;
