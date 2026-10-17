@@ -21,6 +21,30 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Latest restart (17:08 October 17) confirms
+  `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]` from the new
+  per-game UserEngine.ini; that source file remains present in the saloon.
+  Shutdown/relaunch persistence without running preparation again still needs
+  confirmation. The previous instructions to recreate generated Engine.ini on
+  each launch are superseded by this source-layer installation.
+- Reticle probe now identifies `UI_Player_C.Crosshair_Top` at property offset
+  0x480 and native Image/Widget fields: Slot 0x30, RenderTransform 0x90 (56 bytes),
+  RenderTransformPivot 0xc8, Visibility 0xdd, RenderOpacity 0xe0. Compact FField
+  links/names are at 0x18/0x20; property offset/element size are at 0x44/0x34.
+  The reader checks these without calling SDK functions or writing game memory.
+  Results: /tmp/ffw-reticle-properties.json (addresses are per-process).
+- A guarded source correction for the pinned private SDK is prepared outside
+  this public repo at `/home/brifl/.cache/ffw-native/ue58-sdk/`: original/,
+  patched/, per-file patches and layout-test.cpp. Modern Epic declarations and
+  live items agree: FUObjectArray begins with the chunked array; FUObjectItem has
+  refcount/flags/object/serial/cluster at 0/4/8/16/20 (24-byte stride).
+  The correction guards game timestamp/image size, validates its known array
+  and four UObject indices, and fixes garbage/unreachable flag reads. A Linux
+  header fixture passes field offsets, count, chunk-boundary indexing, bounds
+  and metadata preservation. No Windows backend has been built or deployed.
+  User approval to install C++ Build Tools + Windows SDK on robot1-x is pending.
+  A rebuild must also preserve all accepted rendering/pose compatibility fixes;
+  the old binary patch offsets cannot be applied to a newly compiled backend.
 - Distortion recurrence: the October 17 17:02 launch has no DisableMaterials
   log entry and Saved/Config/Windows/Engine.ini is absent. Move the same preset
   to the per-game source layer at
@@ -28,8 +52,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   through prepare_menu_helper.py. This avoids depending on generated Engine.ini
   surviving; verify application and UserEngine.ini survival across a restart.
   No additional rendering settings or file attributes are changed.
-  Live reticle probe succeeded: UI_Player_C.F_UpdateCrosshair drives an Image
-  named Crosshair_Top; its live instance owns MID_M_CrosshairCross and
+  Live reticle probe succeeded: UI_Player_C has F_UpdateCrosshair and an Image
+  named Crosshair_Top; the live Image owns MID_M_CrosshairCross and
   MID_M_CrosshairCross_Dot. Full read-only result is /tmp/ffw-reticle-probe.json.
   Only 9.6 MB read in 0.61 seconds; no game writes. Reticle placement is unchanged.
 - Active task: align the reticle with actual controller-driven shots. The user
