@@ -21,6 +21,19 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Active task: align the reticle with actual controller-driven shots. The user
+  accepted the distortion workaround ("Everything looked good"). Preserve it.
+  Pinned and current UESDK sources both assume the old object-array layout;
+  current SDK source does not resolve our mismatch. C++ build tools are absent
+  on robot1-x (vswhere finds no VC.Tools.x86.x64 installation).
+  First identify the live reticle widget with `tools/probe_reticle.ps1`, a bounded
+  read-only lookup guarded by the known executable timestamp/image size.
+  Its name-pool RVA 0xac9b900 comes from the game's logged FName::to_string
+  function (RVA 0x148d630), which uses pool+16 block pointers, index>>16 blocks,
+  2-byte entry offsets and header>>6 lengths. Both None and the first two object
+  names must validate. User has been asked to leave the saloon open; await that
+  live sample before choosing between a narrower widget fix and an SDK rebuild.
+  No new autorun script or backend change has been deployed for the reticle.
 - Current result: the user confirms no distortion on the repeat launch (01:25
   October 17), following the initial "Gone or clearly reduced" report.
   The repeat run applied the override and exited normally; Engine.ini was
