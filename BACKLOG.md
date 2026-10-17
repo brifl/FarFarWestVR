@@ -15,7 +15,8 @@ previous backend; restore that backend before using them.
 - Left stick movement, grips/spells, Y/weapon switching, and triggers/aim-fire
   were reported working. The user now confirms that gun aim follows the right
   controller. The user also confirms that shot grouping stays fixed when turning
-  the head with the controller held still. Reticle alignment remains unfinished.
+  the head with the controller held still. The projected reticle is confirmed
+  working at different ranges and with spells after `8a8e8b2`.
 - The repeating upward-moving distortion is absent on the repeat test with
   `r.PostProcessing.DisableMaterials=1`. The October 17 01:17 startup log confirms
   the engine applied it; the same run reached the saloon with aiming and menu
@@ -23,12 +24,20 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- Active task: align the existing Crosshair_Top image with controller-driven
+- Reticle alignment is confirmed by the user at different ranges and for
+  spells. The live 18:20 October 17 log verifies compact-array discovery,
+  widget/function metadata, 2560x1440 viewport calibration and active projection.
+  No reticle helper exception was logged. The existing RemapControls shift
+  warning and old UObjectHook JSON errors remain separate backlog items.
+  The menu helper now toggles FrameworkConfig_AlwaysShowCursor with its
+  presentation state to remove the redundant gameplay pointer while preserving
+  menu pointing. Transition/reset fixture checks pass; headset confirmation is next.
+- The existing Crosshair_Top image now follows controller-driven
   shots. `scripts/reticle.lua` traces the pre-stereo firing camera on the game
   thread and projects the target through the final eye camera. It calibrates
   the image's actual viewport geometry, preserves its material/spread, and
   restores translation/opacity in menus or on reset. Menu/input behavior and
-  quest markers are separate. A wall-shot test is still required.
+  quest markers are separate. Range/spell testing passed.
 - Native backend `ffw-ue58-sdk-v1` builds successfully with the installed Visual
   Studio 2026 tools on robot1-x. Persistent source/build checkout:
   `/mnt/c/src/uevr_far_west_build`, pinned UEVR 4ee5c6b and private UESDK
@@ -51,8 +60,8 @@ previous backend; restore that backend before using them.
 - Reticle math tests passed head pitch/yaw, eye parallax, offscreen/behind
   targets and scaled/rotated parent geometry. Lua mock checks passed old-backend
   gating, probe mode, projection, menu/reset restoration, stale camera hiding,
-  recycled-object avoidance and contained metadata/callback errors. These do
-  not replace a live SDK discovery and wall-shot test. Temporary test harness:
+  recycled-object avoidance and contained metadata/callback errors. These
+  supplement the successful live SDK discovery and wall-shot test. Test harness:
   `/tmp/ffw-test-reticle-helper.py` (Lupa at `/tmp/ffw-lua-test`). Installer
   fixtures also passed apply/restore/idempotence and failure/unknown-file guards.
 - Read-only live probe identifies UI_Player_C.Crosshair_Top at 0x480; Image/
@@ -60,10 +69,10 @@ previous backend; restore that backend before using them.
   RenderOpacity 0xe0. FField Next/Name are 0x18/0x20; property offset/element
   size are 0x44/0x34. Results: `/tmp/ffw-reticle-properties.json` and
   `/tmp/ffw-reticle-probe.json`; addresses are per-process, never reuse them.
-- Latest restart (17:08 October 17) confirms
+- Repeat restart (18:19 October 17) confirms
   `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]` from per-game
   `FarFarWest/Config/UserEngine.ini`; that file survives into the saloon.
-  Verify another launch without preparation. Generated Saved/Config Engine.ini
+  The override persisted without preparation. Generated Saved/Config Engine.ini
   was repeatedly deleted and is no longer used. The workaround removes all
   custom post-process materials; damage/status effects still need assessment.
   Reapply `python3 tools/prepare_menu_helper.py --material-test` only when the
@@ -204,7 +213,7 @@ previous backend; restore that backend before using them.
 | 1 | Restore safe world/player discovery for the updated engine | Source access verified October 17; deferred while easier fixes are addressed. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
-| 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
+| Done | Right-controller gun aiming and accurate reticle | Controller aim, head-independent shot grouping and projected crosshair confirmed, including different ranges and spells. |
 | 2 | Controller pointer in game menus | Right-controller ray moves the menu pointer and trigger clicks. Replace stick-driven cursor movement; keep menu placement independent of hand direction. |
 | 2 | Head-relative quest/location markers | Deferred with the SDK correction. Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |

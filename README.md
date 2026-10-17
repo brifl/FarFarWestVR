@@ -23,8 +23,9 @@ Controller aiming is being tested with
 orientation drives the game's look input while head direction remains independent.
 Horizontal right-stick deflection requests one 45-degree snap turn, rearmed at
 center. The existing menu controls are preserved. Gun position/hand attachment
-is still queued. The existing crosshair now has a guarded projection helper;
-its alignment with actual impacts awaits a wall-shot test.
+is still queued. The projected crosshair is confirmed aligned at different
+ranges and with spells. The menu helper hides UEVR's extra mouse cursor in
+immersive gameplay and restores it for menus.
 Aiming and snap turns require a loaded gameplay level; menus cannot activate them.
 
 The isolated backend now uses a source build with the modern UE5.8 object

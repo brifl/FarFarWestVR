@@ -104,6 +104,9 @@ local function poll_game_log()
 end
 
 local function update_screen(screen)
+    -- The game's projected crosshair handles gameplay aiming. Keep UEVR's
+    -- forced mouse cursor for menus; its own panel draws a cursor separately.
+    vr.set_mod_value("FrameworkConfig_AlwaysShowCursor", screen and "true" or "false")
     -- With Slate capture disabled, the OpenVR UI texture retains its last
     -- loading/menu frame. EnableGUI=false clears that overlay on the next
     -- renderer update; the game's HUD is already part of the world image.
@@ -178,6 +181,10 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
     _G.farfarwest_gameplay_ready = playable_map and not loading
         and desired_menu == false and not screen
     if screen ~= last_mode then update_screen(screen) end
+end)
+
+uevr.sdk.callbacks.on_script_reset(function()
+    vr.set_mod_value("FrameworkConfig_AlwaysShowCursor", "true")
 end)
 
 functions.log_info("[FarFarWest] Menu helper loaded; following level and input-mode logs.")
