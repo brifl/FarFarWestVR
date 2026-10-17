@@ -38,17 +38,11 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   `tools/probe_object_array.ps1` reproduces this read-only check, restricted to
   aligned candidates from UEVR's own log in writable game sections, capped at
   512 headers. Full bounded probe result: /tmp/ffw-object-array-probe.json.
-- UESDK source prerequisite is currently unavailable: both unauthenticated
-  GitHub reads and `git ls-remote git@github.com:praydog/UESDK.git HEAD` fail.
-  UEVR's COMPILING.md requires EpicGames GitHub organization access. The user
-  completed Epic/GitHub linking and invitation steps months ago but has not
-  verified access. Both local WSL and robot1-x SSH keys authenticate as brifl;
-  brifl cannot read either EpicGames/UnrealEngine or praydog/UESDK over SSH.
-  The user also confirms EpicGames/UnrealEngine returns 404 in a browser signed
-  in as brifl, confirming source access is missing beyond Git transport. Next
-  external step: verify Epic's GitHub connection targets brifl and complete the
-  EpicGames organization invitation. Official steps:
-  https://www.unrealengine.com/en-US/ue-on-github . Pinned SDK
+- Source access restored October 17: the user repaired Epic/GitHub access, and
+  SSH `git ls-remote` now succeeds for both EpicGames/UnrealEngine and
+  praydog/UESDK from this workspace. The SDK source prerequisite is cleared.
+  Keep the installed heat-distortion test active pending the user's result;
+  source access restoration alone does not deploy a native/marker patch. Pinned SDK
   revision: 14478dfae61e8385e0e62116718925c4099b1d18. No native or gameplay patch
   has been applied during this probe; the isolated backend remains SHA256
   3d2c8647dc10409a8d3d014c248f69f10f60895aede9c2d1fbee442d557c7527.
@@ -183,7 +177,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
 | 0 | Eliminate remaining ghosting and wavy, unstable imagery | `Engine_r.DisableDistortion=1` added for the next heat-distortion test. Check the same wavy area in desktop/headset. FXAA experiment remains inactive. |
-| 1 | Restore safe world/player discovery for the updated engine | Deferred while the user restores Epic/UESDK source access. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
+| 1 | Restore safe world/player discovery for the updated engine | Source access verified October 17; deferred while the current heat-distortion test is evaluated. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
