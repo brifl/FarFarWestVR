@@ -15,6 +15,10 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Deferred graphics test requested by the user: try `Engine_r.DisableDistortion=1`
+  after controller aiming works. The user found other reports of excessive heat
+  distortion, especially on large screens, and a now-withdrawn removal mod.
+  Treat heat distortion as the first isolation target before the FXAA experiment.
 - Main-menu regression after `313a7eb`: the 23:26 run loaded only credits/title,
   had no LogViewport transitions, and retained saved immersive mode. The aim
   bridge therefore activated on the title screen. The menu helper now also
@@ -102,7 +106,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Visible in desktop and headset; deferred by user until controller aiming works. FXAA experiment remains inactive. |
+| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Visible in desktop and headset; deferred until controller aiming works. First try the user's requested `Engine_r.DisableDistortion=1` heat-distortion test. FXAA experiment remains inactive. |
 | 1 | Restore safe world/player discovery for the updated engine | Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
