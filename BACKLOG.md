@@ -40,8 +40,11 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   completed Epic/GitHub linking and invitation steps months ago but has not
   verified access. Both local WSL and robot1-x SSH keys authenticate as brifl;
   brifl cannot read either EpicGames/UnrealEngine or praydog/UESDK over SSH.
-  Asked the user to open EpicGames/UnrealEngine in a browser signed in as brifl
-  to distinguish account/org access from Git transport credentials. Pinned SDK
+  The user also confirms EpicGames/UnrealEngine returns 404 in a browser signed
+  in as brifl, confirming source access is missing beyond Git transport. Next
+  external step: verify Epic's GitHub connection targets brifl and complete the
+  EpicGames organization invitation. Official steps:
+  https://www.unrealengine.com/en-US/ue-on-github . Pinned SDK
   revision: 14478dfae61e8385e0e62116718925c4099b1d18. No native or gameplay patch
   has been applied during this probe; the isolated backend remains SHA256
   3d2c8647dc10409a8d3d014c248f69f10f60895aede9c2d1fbee442d557c7527.
