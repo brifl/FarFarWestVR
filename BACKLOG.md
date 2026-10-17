@@ -17,7 +17,11 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
-- Active correction requested: remove mouse/aim pitch from location-marker
+- Current task: easier profile improvements while the user restores Epic source
+  access. Try the requested `Engine_r.DisableDistortion=1` in cvars_data.txt as
+  the next single-variable heat-distortion test; awaiting visual confirmation.
+  Controller aiming and menu behavior remain at their accepted baseline.
+- Deferred correction requested: remove mouse/aim pitch from location-marker
   projection; looking up must move a fixed-world marker down the screen (and
   vice versa), preserving its world elevation. Keep controller firing and the
   accepted menu placement. Reproject using the actual game camera's inverse
@@ -29,8 +33,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   remains 24 but its UObject pointer is at +8. Four consecutive item pointers
   lead to UObjects with indices 0/1/2/3 and vtables in the game image. This
   verifies the measured layout mismatch with the old SDK, whose object pointer
-  is expected at +0, and explains its rejection of these entries. The SDK
-  rejects the array. The chunked array is not necessarily the FUObjectArray base.
+  is expected at +0, and explains its rejection of these entries. The chunked
+  array is not necessarily the FUObjectArray base.
   `tools/probe_object_array.ps1` reproduces this read-only check, restricted to
   aligned candidates from UEVR's own log in writable game sections, capped at
   512 headers. Full bounded probe result: /tmp/ffw-object-array-probe.json.
@@ -87,8 +91,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   original crosshair or replace it with a stereo reticle
   based on the actual firing ray/hit point, hiding only the old crosshair and
   preserving the rest of the HUD and working menu pointer.
-- Deferred graphics test requested by the user: try `Engine_r.DisableDistortion=1`
-  after controller aiming works. The user found other reports of excessive heat
+- Heat-distortion test requested by the user: `Engine_r.DisableDistortion=1`
+  is now included in cvars_data.txt. The user found other reports of excessive heat
   distortion, especially on large screens, and a now-withdrawn removal mod.
   Treat heat distortion as the first isolation target before the FXAA experiment.
 - Main-menu regression after `313a7eb`: the 23:26 run loaded only credits/title,
@@ -100,8 +104,8 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   without verbose capture logs, pause/Resume, and the existing aim/snap math.
   Menu access and controller aiming subsequently confirmed. Snap
   turning was observed by the user, but only from the title screen so far.
-- Active task: controller-directed aiming, now prioritized by the user over
-  graphics. The shimmer is visible in the desktop image too. The FXAA experiment
+- Controller-directed aiming is working; HUD/marker projection work is deferred
+  pending source access. The shimmer is visible in the desktop image too. The FXAA experiment
   was never deployed and is retained in `experiments/temporal_aa_test.lua`, outside
   autorun scripts. Rendering settings remain at the accepted menu baseline.
 - `scripts/controller_aim.lua` is a first-pass orientation bridge: read the
@@ -178,13 +182,13 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Visible in desktop and headset; deferred until controller aiming works. First try the user's requested `Engine_r.DisableDistortion=1` heat-distortion test. FXAA experiment remains inactive. |
-| 1 | Restore safe world/player discovery for the updated engine | Address the earlier `UEngine::get_world` crash before enabling dependent features. |
+| 0 | Eliminate remaining ghosting and wavy, unstable imagery | `Engine_r.DisableDistortion=1` added for the next heat-distortion test. Check the same wavy area in desktop/headset. FXAA experiment remains inactive. |
+| 1 | Restore safe world/player discovery for the updated engine | Deferred while the user restores Epic/UESDK source access. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
 | 2 | Controller pointer in game menus | Right-controller ray moves the menu pointer and trigger clicks. Replace stick-driven cursor movement; keep menu placement independent of hand direction. |
-| 2 | Head-relative quest/location markers | Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
+| 2 | Head-relative quest/location markers | Deferred with the SDK correction. Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
