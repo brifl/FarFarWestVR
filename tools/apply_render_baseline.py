@@ -11,9 +11,14 @@ FRAGMENT = Path(__file__).resolve().parents[1] / 'game_settings/temporal_baselin
 
 
 def apply(target=TARGET, restore=False, preset='temporal'):
-    if preset not in ('temporal', 'menu-logging'):
+    filenames = {
+        'temporal': 'temporal_baseline.ini',
+        'menu-logging': 'menu_logging.ini',
+        'material-probe': 'postprocess_material_test.ini',
+    }
+    if preset not in filenames:
         raise ValueError('Unknown game settings preset')
-    fragment_path = FRAGMENT if preset == 'temporal' else FRAGMENT.with_name('menu_logging.ini')
+    fragment_path = FRAGMENT.with_name(filenames[preset])
     backup = target.with_name(target.name + '.before-ffw-' + preset + '.bak')
     current = target.read_bytes() if target.exists() else b''
     if restore and not backup.exists():
@@ -47,6 +52,6 @@ def apply(target=TARGET, restore=False, preset='temporal'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=('apply', 'restore'))
-    parser.add_argument('--preset', choices=('temporal', 'menu-logging'), default='temporal')
+    parser.add_argument('--preset', choices=('temporal', 'menu-logging', 'material-probe'), default='temporal')
     args = parser.parse_args()
     apply(restore=args.mode == 'restore', preset=args.preset)

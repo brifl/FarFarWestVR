@@ -1,3 +1,4 @@
+-- Inactive: native console API threw before readback in the 01:06 run.
 -- Single-variable heat/refraction test. cvars_data.txt only loads UEVR's
 -- predefined entries, which do not include r.DisableDistortion in this build.
 -- Console-manager access avoids the incompatible UObject/world discovery.

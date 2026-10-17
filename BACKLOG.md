@@ -17,15 +17,24 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
-- Current task: isolate the rising transparent circles with refractive edges
-  described by the user. The initial distortion test was a no-op: the installed
+- Current task: isolate a repeating upward-scrolling, transparent amoeba-like
+  distortion pattern (not random circles). User offered a live debug session.
+  The 01:06 run's Lua setter stopped with 'caught (...) exception' before any
+  readback. Thus neither distortion test established r.DisableDistortion=1.
+  The failed Lua helper is now inactive in experiments/distortion_test.lua.
+  Next one-category test: r.PostProcessing.DisableMaterials=1 through Engine.ini,
+  using `python3 tools/prepare_menu_helper.py --material-test` before launch.
+  Its material-probe preset includes existing menu logging and LogConfig=Verbose
+  so startup application can be checked without the failing native console API.
+  Both CVar names are present in the installed game executable. Have the user
+  leave the game open at the visible pattern; inspect LogConfig and any warnings
+  for this exact setting before interpreting the visual result. This test also
+  removes other custom post-process materials and is not yet a permanent fix.
+- The initial distortion text entry was a no-op: the installed
   CVarManager loads only its predefined variables, and r.DisableDistortion is
-  absent from both lists in CVarManager.hpp. Remove the ignored text entry and
-  use scripts/distortion_test.lua to set the variable through IConsoleManager,
-  with value validation and logged readback. Look for [FarFarWest distortion].
-  Keep this a single-variable test. If verified value 1 leaves the circles,
-  next isolate Niagara activation with fx.SuppressNiagaraSystems=1; that would
-  temporarily remove other Niagara effects too, so it is a diagnostic only.
+  absent from both lists in CVarManager.hpp. The ignored entry was removed;
+  the replacement IConsoleManager setter also failed. Diagnose its exact failing
+  call separately before reusing it (the saved script's pcall caught the error).
   Controller aiming and menu behavior remain at their accepted baseline.
 - Deferred correction requested: remove mouse/aim pitch from location-marker
   projection; looking up must move a fixed-world marker down the screen (and
@@ -91,9 +100,9 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   original crosshair or replace it with a stereo reticle
   based on the actual firing ray/hit point, hiding only the old crosshair and
   preserving the rest of the HUD and working menu pointer.
-- Heat-distortion test requested by the user: `r.DisableDistortion=1` now uses
-  a Lua console-variable setter with readback, replacing the ignored cvars_data
-  entry. The user found other reports of excessive heat
+- Heat-distortion test requested by the user: `r.DisableDistortion=1` has not
+  been verified active; text and native Lua setter routes both failed. The user
+  found other reports of excessive heat
   distortion, especially on large screens, and a now-withdrawn removal mod.
   Treat heat distortion as the first isolation target before the FXAA experiment.
 - Main-menu regression after `313a7eb`: the 23:26 run loaded only credits/title,
@@ -183,7 +192,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Verify r.DisableDistortion=1 via Lua console API, then check rising transparent circles. Prior text entry was ignored. FXAA experiment remains inactive. |
+| 0 | Eliminate remaining ghosting and wavy, unstable imagery | Test r.PostProcessing.DisableMaterials=1 via startup INI against repeating upward-scrolling patterns. Check config logs before interpreting. Native Lua console API failed; FXAA experiment remains inactive. |
 | 1 | Restore safe world/player discovery for the updated engine | Source access verified October 17; deferred while the current heat-distortion test is evaluated. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
