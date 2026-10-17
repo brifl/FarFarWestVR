@@ -24,6 +24,17 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- Active test: controller pointing in title/pause menus. The backend now feeds
+  the existing OpenVR menu-quad ray hit into absolute Windows mouse movement,
+  only in 2D screen mode, with controllers active and the game window focused.
+  Existing JoyToKey trigger clicks remain. Normal/shifted right-stick mouse
+  bindings are disabled (0xFF); native stick/snap input remains. Native patch:
+  `native_patches/menu_pointer.patch`, applied to the retained source checkout.
+  The incremental Windows build passed; installer migration/restore/failure
+  checks passed. Headset menu targeting/clicks and return to gameplay need a test.
+  No menu-plane placement or reticle code changed.
+- The user confirms the `9115d41` cursor fix works: no extra gameplay mouse
+  pointer, and the cursor returns for menus.
 - Reticle alignment is confirmed by the user at different ranges and for
   spells. The live 18:20 October 17 log verifies compact-array discovery,
   widget/function metadata, 2560x1440 viewport calibration and active projection.
@@ -31,7 +42,7 @@ previous backend; restore that backend before using them.
   warning and old UObjectHook JSON errors remain separate backlog items.
   The menu helper now toggles FrameworkConfig_AlwaysShowCursor with its
   presentation state to remove the redundant gameplay pointer while preserving
-  menu pointing. Transition/reset fixture checks pass; headset confirmation is next.
+  menu pointing. Transition/reset fixture checks and headset confirmation passed.
 - The existing Crosshair_Top image now follows controller-driven
   shots. `scripts/reticle.lua` traces the pre-stereo firing camera on the game
   thread and projects the target through the final eye camera. It calibrates
@@ -214,7 +225,7 @@ previous backend; restore that backend before using them.
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | Done | Right-controller gun aiming and accurate reticle | Controller aim, head-independent shot grouping and projected crosshair confirmed, including different ranges and spells. |
-| 2 | Controller pointer in game menus | Right-controller ray moves the menu pointer and trigger clicks. Replace stick-driven cursor movement; keep menu placement independent of hand direction. |
+| Test | Controller pointer in game menus | Native menu-quad ray now supplies absolute pointer movement; trigger clicks preserved and stick mouse bindings disabled. Verify targeting/clicks in title and B pause menus, plus return to gameplay. |
 | 2 | Head-relative quest/location markers | Deferred with the SDK correction. Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |

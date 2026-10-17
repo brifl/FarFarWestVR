@@ -28,6 +28,13 @@ ranges and with spells. The menu helper hides UEVR's extra mouse cursor in
 immersive gameplay and restores it for menus.
 Aiming and snap turns require a loaded gameplay level; menus cannot activate them.
 
+Menu pointing now uses the right controller's ray intersection with the existing
+screen. Move/rotate the controller to move the pointer and use the right trigger
+to click. JoyToKey's stick-to-mouse movement is disabled in both grip modes;
+gameplay snap turns keep their native stick input. This requires the latest
+isolated backend below and awaits headset testing. The game window must have
+focus. Menu placement, B pause/resume and gameplay aiming are preserved.
+
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this
 profile on robot1-x, deploy its verified DLL/PDB while the game is closed:

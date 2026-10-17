@@ -1,0 +1,69 @@
+--- a/src/mods/vr/OverlayComponent.cpp
++++ b/src/mods/vr/OverlayComponent.cpp
+@@ -1,3 +1,4 @@
++#include <cmath>
+ #include <glm/gtx/intersect.hpp>
+ #include <imgui_internal.h>
+ 
+@@ -91,6 +92,52 @@
+     m_last_mouse_move_time = now;
+ 
+     if (!m_framework_mouse_emulation->value()) {
++        return;
++    }
++
++    // Far Far West: reuse the rendered menu quad's right-controller hit.
++    // JoyToKey keeps handling trigger clicks; this supplies absolute movement.
++    auto vr = VR::get();
++    if (vr->get_runtime()->is_openvr() && vr->is_using_2d_screen()
++        && !g_framework->is_drawing_ui() && vr->is_using_controllers()) {
++        const auto hwnd = g_framework->get_window();
++        const auto uv = m_intersect_state.quad_intersection_point;
++        if (!m_intersect_state.intersecting || !std::isfinite(uv.x) || !std::isfinite(uv.y)
++            || uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f
++            || hwnd == nullptr || GetForegroundWindow() != hwnd) {
++            return;
++        }
++
++        RECT client{};
++        if (!GetClientRect(hwnd, &client) || client.right <= 1 || client.bottom <= 1) {
++            return;
++        }
++        POINT target{(LONG)std::lround(uv.x * (client.right - 1)),
++                     (LONG)std::lround(uv.y * (client.bottom - 1))};
++        if (!ClientToScreen(hwnd, &target)) {
++            return;
++        }
++        const auto width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
++        const auto height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
++        if (width <= 1 || height <= 1) {
++            return;
++        }
++        POINT current{};
++        if (!GetCursorPos(&current) || current.x != target.x || current.y != target.y) {
++            INPUT input{};
++            input.type = INPUT_MOUSE;
++            input.mi.dx = (LONG)std::lround((target.x - GetSystemMetrics(SM_XVIRTUALSCREEN)) * 65535.0 / (width - 1));
++            input.mi.dy = (LONG)std::lround((target.y - GetSystemMetrics(SM_YVIRTUALSCREEN)) * 65535.0 / (height - 1));
++            input.mi.dwFlags = MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_VIRTUALDESK;
++            if (SendInput(1, &input, sizeof(input)) != 1) {
++                return;
++            }
++        }
++        static bool logged = false;
++        if (!logged) {
++            spdlog::info("[FFW menu] Right-controller ray now moves the game-menu pointer.");
++            logged = true;
++        }
+         return;
+     }
+ 
+@@ -616,6 +663,8 @@
+ }
+ 
+ void OverlayComponent::update_overlay_openvr() {
++    // A missed/parallel ray or a hidden overlay must not reuse an older hit.
++    m_intersect_state.intersecting = false;
+     if (!VR::get()->get_runtime()->is_openvr()) {
+         return;
+     }
