@@ -1,0 +1,20 @@
+{
+  "purpose": "Read-only observations for a future guarded UESDK layout correction; not an applied patch",
+  "game_version": "0.2.0.20",
+  "engine_version": "5.8.1-915+++depot+CanyonEngine_Dev",
+  "executable_timestamp": 907750432,
+  "executable_image_size": 203960320,
+  "chunked_array_rva": "0x0ad3d980",
+  "chunked_array_offsets": {
+    "chunk_pointers": 0,
+    "element_count": 8,
+    "element_capacity": 12,
+    "chunk_count": 16,
+    "chunk_capacity": 20
+  },
+  "elements_per_chunk": 65536,
+  "item_stride": 24,
+  "item_object_pointer_offset": 8,
+  "validation": "Exact executable timestamp/image size matched; count 114756, capacity 2162688, 2/33 chunks; pointers at chunk+8/+32/+56/+80 resolve to UObjects with internal indices 0/1/2/3 and vtables inside the game image",
+  "remaining_validation": "Header surrounds, item metadata/flags, and UESDK reflection initialization; do not treat the chunked-array address as the complete FUObjectArray"
+}

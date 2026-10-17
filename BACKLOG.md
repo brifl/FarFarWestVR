@@ -17,6 +17,38 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Active correction requested: remove mouse/aim pitch from location-marker
+  projection; looking up must move a fixed-world marker down the screen (and
+  vice versa), preserving its world elevation. Keep controller firing and the
+  accepted menu placement. Reproject using the actual game camera's inverse
+  projection, camera-to-world rotation, then the inverse headset-view rotation
+  and headset projection; do not invert global headset tracking or gun input.
+- Read-only live probe found a concrete SDK mismatch. See
+  `tools/ue58_object_layout.json`: compact chunked-array header at game RVA
+  0xad3d980 has Objects/Num/Max/NumChunks/MaxChunks at 0/8/12/16/20; item stride
+  remains 24 but its UObject pointer is at +8. Four consecutive item pointers
+  lead to UObjects with indices 0/1/2/3 and vtables in the game image. This
+  verifies the measured layout mismatch with the old SDK, whose object pointer
+  is expected at +0, and explains its rejection of these entries. The SDK
+  rejects the array. The chunked array is not necessarily the FUObjectArray base.
+  `tools/probe_object_array.ps1` reproduces this read-only check, restricted to
+  aligned candidates from UEVR's own log in writable game sections, capped at
+  512 headers. Full bounded probe result: /tmp/ffw-object-array-probe.json.
+- UESDK source prerequisite is currently unavailable: both unauthenticated
+  GitHub reads and `git ls-remote git@github.com:praydog/UESDK.git HEAD` fail.
+  UEVR's COMPILING.md requires EpicGames GitHub organization access. The user
+  completed Epic/GitHub linking and invitation steps months ago but has not
+  verified access. Both local WSL and robot1-x SSH keys authenticate as brifl;
+  brifl cannot read either EpicGames/UnrealEngine or praydog/UESDK over SSH.
+  Asked the user to open EpicGames/UnrealEngine in a browser signed in as brifl
+  to distinguish account/org access from Git transport credentials. Pinned SDK
+  revision: 14478dfae61e8385e0e62116718925c4099b1d18. No native or gameplay patch
+  has been applied during this probe; the isolated backend remains SHA256
+  3d2c8647dc10409a8d3d014c248f69f10f60895aede9c2d1fbee442d557c7527.
+  Local analysis copy: /tmp/ffw-controller-backend.dll. PDB symbols:
+  /tmp/ffw-pdb-object-array-symbols.txt; FUObjectArray::get RVA 0x636ca0,
+  get_object RVA 0x9aee0. Do not simply shift item pointers: native flag reads
+  would then read unrelated item fields. Repair the layout coherently first.
 - User accepts pause/Resume after `0e18e34`. Menu spawn height nevertheless
   follows controller pitch: OverlayComponent applies pre-flattened game camera
   pitch while VR_DecoupledPitchUIAdjust is enabled. The menu helper now disables
