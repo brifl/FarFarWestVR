@@ -1,5 +1,7 @@
 # Read-only, bounded lookup of reticle/HUD objects in the supported game build.
 # No injection, function calls inside the game, or process-memory writes.
+# -Markers targets the identified UI_WorldIcon widgets/components instead.
+param([switch]$Markers)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 Add-Type -TypeDefinition @'
@@ -25,10 +27,12 @@ public sealed class FfwReticleReader : IDisposable {
     private readonly Dictionary<long, string> classes = new Dictionary<long, string>();
     private long bytesRead;
     private int calls;
+    private readonly bool markerMode;
     private const long PoolRva = 0xac9b900;
     private const long ArrayRva = 0xad3d980;
 
-    public FfwReticleReader(uint pid, long start, int size) {
+    public FfwReticleReader(uint pid, long start, int size, bool markers) {
+        markerMode = markers;
         moduleBase = start; moduleEnd = start + size;
         // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ. Never request VM_WRITE.
         handle = OpenProcess(0x410, false, pid);
@@ -119,10 +123,74 @@ public sealed class FfwReticleReader : IDisposable {
                     header = BitConverter.ToString(data) });
                 field = BitConverter.ToInt64(data, 24);
             }
-            result.Add(new { address = Hex(klass), name = ObjectName(prefix), fields = fields });
+            var functions = new List<object>();
+            if (markerMode) {
+                long fn = BitConverter.ToInt64(prefix,72);
+                var seenFunctions = new HashSet<long>();
+                for (int f=0; fn!=0 && f<512 && seenFunctions.Add(fn); ++f) {
+                    byte[] function = Read(fn,96);
+                    if (function == null) break;
+                    string fnName=ObjectName(function);
+                    functions.Add(new { name=fnName, size=BitConverter.ToInt32(function,88) });
+                    fn=BitConverter.ToInt64(function,40);
+                }
+            }
+            result.Add(new { address = Hex(klass), name = ObjectName(prefix), fields = fields, functions=functions });
             klass = BitConverter.ToInt64(prefix, 64);
         }
         return result;
+    }
+
+    // Read reflected marker data only; no ProcessEvent or memory writes.
+    private object DescribeMarkerState(long address, long klass, string objectName) {
+        var values = new List<object>();
+        var seen = new HashSet<long>();
+        for (int depth = 0; klass != 0 && depth < 6; ++depth) {
+            byte[] prefix = Read(klass, 96);
+            if (prefix == null) break;
+            long field = BitConverter.ToInt64(prefix, 80);
+            for (int i = 0; field != 0 && i < 256 && seen.Add(field); ++i) {
+                byte[] data = Read(field, 112);
+                if (data == null) break;
+                long vt = BitConverter.ToInt64(data, 0);
+                if (vt < moduleBase || vt >= moduleEnd) break;
+                string name = Name(BitConverter.ToUInt32(data, 32));
+                int offset = BitConverter.ToInt32(data, 68), size = BitConverter.ToInt32(data, 52);
+                if (offset >= 40 && offset < 32768 && size > 0 && size <= 256) {
+                    byte[] value = Read(address + offset, Math.Min(size, 128));
+                    string pointedName = "", pointedClass = "";
+                    var elements = new List<object>();
+                    if (value != null && value.Length >= 8) {
+                        long pointer = BitConverter.ToInt64(value, 0);
+                        byte[] pointed = Read(pointer, 40);
+                        if (pointed != null && BitConverter.ToInt64(pointed, 0) >= moduleBase
+                            && BitConverter.ToInt64(pointed, 0) < moduleEnd) {
+                            pointedName = ObjectName(pointed);
+                            pointedClass = ClassName(BitConverter.ToInt64(pointed, 16));
+                        }
+                        if (size == 16 && value.Length == 16) {
+                            int count = BitConverter.ToInt32(value, 8), capacity = BitConverter.ToInt32(value, 12);
+                            if (count > 0 && count <= 64 && capacity >= count && capacity <= 1024) {
+                                byte[] array = Read(pointer, count * 8);
+                                if (array != null) for (int n=0; n<count; ++n) {
+                                    long item = BitConverter.ToInt64(array, n*8);
+                                    byte[] obj = Read(item, 40);
+                                    if (obj != null && BitConverter.ToInt64(obj, 0) >= moduleBase
+                                        && BitConverter.ToInt64(obj, 0) < moduleEnd)
+                                        elements.Add(new { address=Hex(item), name=ObjectName(obj), className=ClassName(BitConverter.ToInt64(obj,16)) });
+                                }
+                            }
+                        }
+                    }
+                    values.Add(new { name=name, offset=offset, size=size,
+                        value=value == null ? "" : BitConverter.ToString(value),
+                        pointedName=pointedName, pointedClass=pointedClass, elements=elements });
+                }
+                field = BitConverter.ToInt64(data, 24);
+            }
+            klass = BitConverter.ToInt64(prefix, 64);
+        }
+        return new { address=Hex(address), name=objectName, values=values };
     }
 
     public object Scan() {
@@ -141,6 +209,7 @@ public sealed class FfwReticleReader : IDisposable {
         var matches = new List<object>();
         var classHeaders = new Dictionary<string, string>();
         var widgetClasses = new HashSet<long>();
+        var markerStates = new List<object>();
         for (int i = 0; i < count; ++i) {
             long chunk = BitConverter.ToInt64(chunkData, (i / 65536) * 8);
             byte[] item = Read(chunk + (i % 65536) * 24L, 24);
@@ -155,8 +224,17 @@ public sealed class FfwReticleReader : IDisposable {
                 throw new Exception("UObject/FName layout validation failed.");
             long klass = BitConverter.ToInt64(data, 16);
             string className = ClassName(klass);
-            if (!Relevant(name) && !Relevant(className)) continue;
-            if (className == "Image" || className == "UI_Player_C") widgetClasses.Add(klass);
+            bool liveWidget = markerMode && className == "UI_WorldIcon_C" && !name.StartsWith("Default__");
+            bool component = false;
+            if (markerMode && className == "WidgetComponent") {
+                byte[] widgetClass = Read(address + 1520, 8);
+                component = widgetClass != null && ClassName(BitConverter.ToInt64(widgetClass, 0)) == "UI_WorldIcon_C";
+            }
+            bool library = markerMode && className == "Class" && (name == "WidgetBlueprintLibrary" || name == "WidgetLayoutLibrary" || name == "Image");
+            if (library) widgetClasses.Add(address);
+            if (markerMode ? !(liveWidget || component || library) : (!Relevant(name) && !Relevant(className))) continue;
+            if (className == "Image" || className == "UI_Player_C" || liveWidget || component) widgetClasses.Add(klass);
+            if (liveWidget || component) markerStates.Add(DescribeMarkerState(address, klass, name));
             if (matches.Count >= 128) throw new Exception("Too many HUD matches; narrow the filter.");
             long outer = BitConverter.ToInt64(data, 32);
             byte[] outerData = Read(outer, 40);
@@ -173,7 +251,7 @@ public sealed class FfwReticleReader : IDisposable {
         foreach (long klass in widgetClasses) widgetProperties.Add(DescribeWidgetClass(klass));
         return new { objectCount = count, bytesRead = bytesRead, readCalls = calls,
             seconds = timer.Elapsed.TotalSeconds, matches = matches, classHeaders = classHeaders,
-            widgetProperties = widgetProperties };
+            widgetProperties = widgetProperties, markerStates = markerStates };
     }
 }
 '@
@@ -193,7 +271,7 @@ try {
 if ($timestamp -ne 907750432 -or $imageSize -ne 203960320 -or $module.ModuleMemorySize -ne $imageSize) {
     throw 'Executable differs from the verified 0.2.0.20 build; nothing changed.'
 }
-$reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize)
+$reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize, [bool]$Markers.IsPresent)
 try {
     $result = $reader.Scan()
     [ordered]@{processId=$game.Id; gameBase=('0x{0:x}' -f $module.BaseAddress.ToInt64());

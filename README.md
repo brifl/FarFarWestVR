@@ -55,3 +55,10 @@ game log. This suppresses all custom post-process materials; the exact offending
 material remains unidentified. Check damage/status effects during further play.
 The prepared FXAA experiment is retained outside the autorun scripts in
 [experiments/temporal_aa_test.lua](experiments/temporal_aa_test.lua).
+
+Location markers are being tested with
+[scripts/world_markers.lua](scripts/world_markers.lua). It displays copies of the
+saloon's `UI_WorldIcon` markers at their world positions projected through the
+headset camera. Looking up/right moves a fixed-world marker down/left; controller
+aiming cannot change its position. The originals are hidden only during immersive
+play and restored for menus or script reset. Other marker families are separate.

@@ -24,14 +24,39 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- Active test: controller pointing in title/pause menus. The backend now feeds
+- Active task: decouple location markers from controller aiming on BOTH axes.
+  Live saloon probe identifies four UI_WorldIcon_C instances owned by screen-space
+  WidgetComponents on BP_WorldIcon actors. Their world position comes from the
+  component, not the empty UI_PlayerLobby ping collection. The normal world-widget
+  screen layer uses LocalPlayer projection data, explaining camera/aim coupling.
+  New `scripts/world_markers.lua` creates matching viewport widgets and positions
+  them using the existing tested final-eye projection math. It copies brush/color,
+  size, pivot and layer order, hides only original widget opacity, and restores it
+  on menus/reset/error. Component/actor position and visibility are unchanged.
+  Actor/component visibility still gates the copies. Other marker families remain
+  separate; first validate the mission-start/vendor icons observed here.
+- Marker helper mock checks pass backend/layout guards, head pitch AND yaw inverse
+  projection, independence from gun direction, behind/offscreen/stale-camera hiding,
+  original style, game visibility, pause/reset/error restoration, stale-object
+  avoidance and sizing icons outside the gun camera. Harness:
+  `/tmp/ffw-test-world-markers.py`, with Lupa at `/tmp/ffw-lua-test`.
+  Live native function signatures were checked read-only before deployment;
+  e.g. Create=32, SetPositionInViewport=24, SetBrush=176, component location=24.
+  Headset validation is next; no additional native rebuild is needed.
+- `tools/probe_reticle.ps1 -Markers` now performs the narrowly targeted read-only
+  world-icon/component lookup, including reflected properties/function sizes.
+  Last result `/tmp/ffw-worldicon-probe.json`: about 10 MB / 0.54 seconds. Instance
+  addresses are per-process. Relevant fields: WidgetComponent Space=1512,
+  WidgetClass=1520, Pivot=1568, Widget=1800; UI_WorldIcon.Image_Icon=808.
+- Controller pointing in title/pause menus is confirmed after `001206f`. The backend now feeds
   the existing OpenVR menu-quad ray hit into absolute Windows mouse movement,
   only in 2D screen mode, with controllers active and the game window focused.
   Existing JoyToKey trigger clicks remain. Normal/shifted right-stick mouse
   bindings are disabled (0xFF); native stick/snap input remains. Native patch:
   `native_patches/menu_pointer.patch`, applied to the retained source checkout.
   The incremental Windows build passed; installer migration/restore/failure
-  checks passed. Headset menu targeting/clicks and return to gameplay need a test.
+  checks passed. The user confirms menu targeting/clicks and return to gameplay.
+  The live log also confirms the native menu-pointer path is active.
   No menu-plane placement or reticle code changed.
 - The user confirms the `9115d41` cursor fix works: no extra gameplay mouse
   pointer, and the cursor returns for menus.
@@ -88,9 +113,9 @@ previous backend; restore that backend before using them.
   custom post-process materials; damage/status effects still need assessment.
   Reapply `python3 tools/prepare_menu_helper.py --material-test` only when the
   preset changes. The failed native console-setter experiment remains inactive.
-- Head-relative quest markers remain deferred: remove controller pitch from
-  projection and make fixed-world markers move down when looking up. Preserve
-  controller firing and accepted menu placement. No marker patch is deployed.
+- Head-relative markers need both horizontal and vertical correction. Validate
+  the UI_WorldIcon helper first; other quest/ping families may need their own
+  world-target adapters. Preserve controller firing and accepted menu placement.
 - User accepts pause/Resume after `0e18e34`. Menu spawn height nevertheless
   follows controller pitch: OverlayComponent applies pre-flattened game camera
   pitch while VR_DecoupledPitchUIAdjust is enabled. The menu helper now disables
@@ -225,8 +250,8 @@ previous backend; restore that backend before using them.
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | Done | Right-controller gun aiming and accurate reticle | Controller aim, head-independent shot grouping and projected crosshair confirmed, including different ranges and spells. |
-| Test | Controller pointer in game menus | Native menu-quad ray now supplies absolute pointer movement; trigger clicks preserved and stick mouse bindings disabled. Verify targeting/clicks in title and B pause menus, plus return to gameplay. |
-| 2 | Head-relative quest/location markers | Deferred with the SDK correction. Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
+| Done | Controller pointer in game menus | Controller targeting/clicks and return to gameplay confirmed after 001206f. |
+| Test | Head-relative quest/location markers | UI_WorldIcon helper reprojects mission-start/vendor icons independently of aim on both axes. Verify world anchoring while moving hand and looking up/down/left/right. Other marker families remain separate. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
