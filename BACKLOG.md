@@ -6,14 +6,14 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 ## Working baseline
 
 - Stereo views align with symmetrical horizontal projection.
-- Screen mode provides a readable, stationary menu with working cursor/control.
-  The Escape menu looks correct and B opens it. The latest log has no missing
-  screen-texture errors after the reset-allocation patch.
+- Menus accepted after `9e94640`: readable, stationary, working cursor/control,
+  and B pause/resume. The user reports "Much better" and is ready to move on.
+  Screen textures survive resets; immersive play clears the cached menu layer.
 - Quest X now activates F/X interaction prompts (confirmed in the saloon).
 - Left stick movement, grips/spells, Y/weapon switching, and triggers/aim-fire
   were reported working. Controller-directed weapon aiming is still missing.
 
-## Current pass — awaiting headset validation
+## Continuation checkpoint
 
 - Continuation checkpoint: the Lua startup failure is fixed. The October 16
   21:40 run confirms successful load and matching game/menu transitions. Lua
@@ -27,8 +27,9 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   kept showing Loading/menu imagery. In OpenVR, without a captured Slate UI
   target, the overlay texture retains its last screen frame. The helper now
   sets `VR_EnableGUI=false` in immersive mode, which calls ClearOverlayTexture,
-  and re-enables it for menus. The baked-in game HUD is unaffected. Validate
-  that entering the saloon and resuming removes the stale layer.
+  and re-enables it for menus. The baked-in game HUD is unaffected. The user
+  accepted this menu baseline; avoid reopening menu troubleshooting without
+  a new regression.
 - Custom UEVR build remains a last resort; this pass changes only the profile.
 - Remove A's synthetic Enter binding, which can open chat. Keep its native action.
 - Keep the confirmed Quest X -> F/interact binding, including its grip-held mapping.
@@ -53,14 +54,17 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   suspects in the severe ghosting/wavy image; the fallback's eye timing is also
   unresolved. The latest log still shows active DLSS and method 4; Engine.ini
   was absent after that run. Do not assume the rendering overrides are active.
+  The latest October 16 test still reports anti-aliasing method 4 and motion
+  blur quality 0. Before changing rendering, confirm whether the reported
+  ghosting/waviness remains after removing the stale overlay. If it is stable,
+  proceed to safe player discovery and right-stick controls instead.
 - Disable UEVR's thumbrest D-pad shifting to avoid unintended alternate controls.
 
 ## Work queue
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Eliminate ghosting and wavy, unstable imagery | Comfort blocks further gameplay testing. Current test removes temporal upscaling/AA and blur; if instability persists, examine fallback eye/pose timing and reprojection next. |
-| 0 | Reliable pause/resume without another device | Validate input-mode detection with B to open, click Resume to close, and B to open/close again. Submenus must stay readable. No required keyboard step. |
+| 0 | Eliminate remaining ghosting and wavy, unstable imagery | First confirm it persists after the overlay fix. The earlier temporal-rendering overrides are not confirmed active; use one controlled rendering change if comfort remains a blocker. |
 | 1 | Restore safe world/player discovery for the updated engine | Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Start with the existing 45-degree preference; one turn per deflection, rearm at center. Dead Island's Lua uses this latch and changes pawn/controller yaw. Reuse the approach after safe pawn/controller access is restored; stock snap remains disabled. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
@@ -92,7 +96,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | Right stick left/right | Snap turn | Queued |
 | Right stick up/down | No gameplay action initially | Queued; menu cursor must keep working |
 | A | Native primary action, without opening chat | Enter override removed; test native action |
-| B | Pause and resume with readable menu | Game input-mode helper awaiting test; Resume click must work too |
+| B | Pause and resume with readable menu | Accepted baseline after cached-overlay fix |
 | X | Interact with F/X prompts | Confirmed working |
 | Y | Switch weapons | Preserve working behavior |
 | Left/right grip | Spells | Preserve working behavior |
