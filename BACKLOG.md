@@ -1,6 +1,6 @@
 # Far Far West VR controls and backlog
 
-Updated October 16, 2026. Changes stay in this profile repository; the isolated
+Updated October 17, 2026. Changes stay in this profile repository; the isolated
 UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Working baseline
@@ -17,6 +17,20 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- User accepts pause/Resume after `0e18e34`. Menu spawn height nevertheless
+  follows controller pitch: OverlayComponent applies pre-flattened game camera
+  pitch while VR_DecoupledPitchUIAdjust is enabled. The menu helper now disables
+  that adjustment in screen mode and restores it in immersive gameplay. Menu
+  recentering remains based on the HMD; verify opening pause while aiming up/down.
+- Add right-controller ray pointing/clicking for game menus, replacing stick
+  cursor movement. Keep the screen placement independent of the pointing ray.
+  The UEVR framework panel already has controller pointing; the game menu does not.
+- Quest/location markers shift vertically opposite controller aim. These are
+  baked into the game image and need head/view-relative projection, separately
+  from the gun's firing direction and the menu overlay pitch adjustment.
+- The 00:10 run contains working pause input-mode logs, but Engine.ini is still
+  absent after exit despite the section-save opt-in. Logging persistence is not
+  yet confirmed; prepare the logging preset again before the next test.
 - Pause-menu regression in the 23:51 run: UI distance/size remained 3m/1.8m,
   but Engine.ini was absent and no LogViewport transitions were recorded. The
   level fallback restored the title/lobby correctly but cannot detect pause.
@@ -127,7 +141,9 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | 2 | Right-controller gun aiming and accurate reticle | Controller-driven gun aim and head-independent shot grouping confirmed. Align or replace the head-locked crosshair using the firing ray/hit point. Preserve HUD/menu controls. Full object-dependent aiming still needs safe discovery. |
-| 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. |
+| 2 | Controller pointer in game menus | Right-controller ray moves the menu pointer and trigger clicks. Replace stick-driven cursor movement; keep menu placement independent of hand direction. |
+| 2 | Head-relative quest/location markers | Project markers using the headset view so aiming up/down does not move them inversely. Keep shot direction controller-driven. |
+| 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu pitch adjustment disabled in screen mode; awaiting headset validation. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
 | 4 | Raise dialogue subtitles/text | Character dialogue is low in the field of view and hard to read; user reports this as nonblocking. |

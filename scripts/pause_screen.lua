@@ -108,6 +108,10 @@ local function update_screen(screen)
     -- loading/menu frame. EnableGUI=false clears that overlay on the next
     -- renderer update; the game's HUD is already part of the world image.
     vr.set_mod_value("VR_EnableGUI", screen and "true" or "false")
+    -- The game camera pitch follows the aiming hand. Applying it to the menu
+    -- overlay raises/lowers the whole screen with the controller; use the
+    -- headset's recentered, level orientation instead. Keep gameplay unchanged.
+    vr.set_mod_value("VR_DecoupledPitchUIAdjust", screen and "false" or "true")
     if screen then
         -- Restore the readable baseline; the installed distance drifted to 9m.
         vr.set_mod_value("UI_Distance", "3.000000")
