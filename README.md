@@ -27,7 +27,7 @@ The isolated backend needs the guarded compatibility patch:
 `python3 tools/enable_controller_aim.py apply` (WSL on robot1-x).
 It enables correct UE5 camera vectors and controller aim poses for Lua.
 
-The repeating upward-moving distortion is gone or clearly reduced with the
+The repeating upward-moving distortion is absent on the repeat test with the
 startup override `r.PostProcessing.DisableMaterials=1`, confirmed in the live
 game log. This suppresses all custom post-process materials; the exact offending
 material remains unidentified. Check damage/status effects during further play.

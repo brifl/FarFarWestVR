@@ -14,15 +14,19 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
   were reported working. The user now confirms that gun aim follows the right
   controller. The user also confirms that shot grouping stays fixed when turning
   the head with the controller held still. Reticle alignment remains unfinished.
-- The repeating upward-moving distortion is gone or clearly reduced with
+- The repeating upward-moving distortion is absent on the repeat test with
   `r.PostProcessing.DisableMaterials=1`. The October 17 01:17 startup log confirms
   the engine applied it; the same run reached the saloon with aiming and menu
   transitions working. Keep this workaround while checking gameplay effects.
 
 ## Continuation checkpoint
 
-- Current result: the user reports the repeating upward-scrolling, transparent
-  amoeba-like distortion is "Gone or clearly reduced." The live game log records
+- Current result: the user confirms no distortion on the repeat launch (01:25
+  October 17), following the initial "Gone or clearly reduced" report.
+  The repeat run applied the override and exited normally; Engine.ini was
+  deleted on exit again. The preset has been reapplied on robot1-x for the next
+  launch. Gameplay damage/status effects have not yet been assessed.
+  The live game log records
   `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]`, followed by
   L_Lobby loading; UEVR confirms both helpers loaded and immersive aiming resumed.
   This isolates a custom post-process material as the likely cause. The exact
@@ -199,7 +203,7 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
-| 0 | Retain the distortion workaround and assess remaining artifacts | Startup r.PostProcessing.DisableMaterials=1 verified; user reports the repeating pattern gone or clearly reduced. Check gameplay effects before narrowing to the offending material. Other ghosting is not separately assessed; FXAA remains inactive. |
+| 0 | Retain the distortion workaround and assess remaining artifacts | Startup r.PostProcessing.DisableMaterials=1 verified; user confirms no distortion on the repeat launch. Check gameplay effects before narrowing to the offending material. Other ghosting is not separately assessed; FXAA remains inactive. |
 | 1 | Restore safe world/player discovery for the updated engine | Source access verified October 17; deferred while easier fixes are addressed. Address the earlier `UEngine::get_world` crash before enabling dependent features. |
 | 2 | Right-stick horizontal snap turn | Orientation bridge implements a 45-degree world-anchor latch; awaiting test. Stock snap remains disabled because it calls the unsafe world lookup. |
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
