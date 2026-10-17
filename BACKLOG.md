@@ -1,7 +1,9 @@
 # Far Far West VR controls and backlog
 
 Updated October 17, 2026. Changes stay in this profile repository; the isolated
-UEVR backend is patched with `tools/disable_slate_hook.py`.
+UEVR backend uses the guarded source build installed by
+`tools/deploy_native_backend.py`. Earlier binary patch tools apply only to the
+previous backend; restore that backend before using them.
 
 ## Working baseline
 
@@ -21,107 +23,54 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Active task: align the existing Crosshair_Top image with controller-driven
+  shots. `scripts/reticle.lua` traces the pre-stereo firing camera on the game
+  thread and projects the target through the final eye camera. It calibrates
+  the image's actual viewport geometry, preserves its material/spread, and
+  restores translation/opacity in menus or on reset. Menu/input behavior and
+  quest markers are separate. A wall-shot test is still required.
+- Native backend `ffw-ue58-sdk-v1` builds successfully with the installed Visual
+  Studio 2026 tools on robot1-x. Persistent source/build checkout:
+  `/mnt/c/src/uevr_far_west_build`, pinned UEVR 4ee5c6b and private UESDK
+  14478df. Do not reset it: source corrections are uncommitted there. Private
+  source/patch cache: `/home/brifl/.cache/ffw-native/`. Keep it out of this repo.
+  `prepare_sources.py` predates the final Lua projection/API wrapper changes;
+  use the retained checkout and final patches instead of rerunning it blindly.
+- Modern object layout is repaired coherently: FUObjectArray starts with its
+  compact chunked array; 24-byte FUObjectItems contain refcount/flags/object/
+  serial/cluster at 0/4/8/16/20, with unreachable/garbage bits 28/21. Discovery
+  checks the exact game timestamp/image size, known RVA, bounds and four object
+  indices before allowing SDK access. Native Windows and Linux layout fixtures
+  passed count/index/chunk-boundary/metadata tests.
+- The source build retains the accepted Slate/view-extension bypass, both-eye
+  fallback pose refresh, full-width screen copies/textures, aim-pose access
+  and UE5 double camera ABI. It adds active-eye projection selection (-1) and
+  a bounds-checked Lua matrix getter. Hash-guarded deployment preserves the
+  previous DLL/PDB in `.before-ue58-sdk.bak` files. Never apply old binary
+  patch offsets to this source build.
+- Reticle math tests passed head pitch/yaw, eye parallax, offscreen/behind
+  targets and scaled/rotated parent geometry. Lua mock checks passed old-backend
+  gating, probe mode, projection, menu/reset restoration, stale camera hiding,
+  recycled-object avoidance and contained metadata/callback errors. These do
+  not replace a live SDK discovery and wall-shot test. Temporary test harness:
+  `/tmp/ffw-test-reticle-helper.py` (Lupa at `/tmp/ffw-lua-test`). Installer
+  fixtures also passed apply/restore/idempotence and failure/unknown-file guards.
+- Read-only live probe identifies UI_Player_C.Crosshair_Top at 0x480; Image/
+  Widget Slot 0x30, RenderTransform 0x90, Pivot 0xc8, Visibility 0xdd and
+  RenderOpacity 0xe0. FField Next/Name are 0x18/0x20; property offset/element
+  size are 0x44/0x34. Results: `/tmp/ffw-reticle-properties.json` and
+  `/tmp/ffw-reticle-probe.json`; addresses are per-process, never reuse them.
 - Latest restart (17:08 October 17) confirms
-  `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]` from the new
-  per-game UserEngine.ini; that source file remains present in the saloon.
-  Shutdown/relaunch persistence without running preparation again still needs
-  confirmation. The previous instructions to recreate generated Engine.ini on
-  each launch are superseded by this source-layer installation.
-- Reticle probe now identifies `UI_Player_C.Crosshair_Top` at property offset
-  0x480 and native Image/Widget fields: Slot 0x30, RenderTransform 0x90 (56 bytes),
-  RenderTransformPivot 0xc8, Visibility 0xdd, RenderOpacity 0xe0. Compact FField
-  links/names are at 0x18/0x20; property offset/element size are at 0x44/0x34.
-  The reader checks these without calling SDK functions or writing game memory.
-  Results: /tmp/ffw-reticle-properties.json (addresses are per-process).
-- A guarded source correction for the pinned private SDK is prepared outside
-  this public repo at `/home/brifl/.cache/ffw-native/ue58-sdk/`: original/,
-  patched/, per-file patches and layout-test.cpp. Modern Epic declarations and
-  live items agree: FUObjectArray begins with the chunked array; FUObjectItem has
-  refcount/flags/object/serial/cluster at 0/4/8/16/20 (24-byte stride).
-  The correction guards game timestamp/image size, validates its known array
-  and four UObject indices, and fixes garbage/unreachable flag reads. A Linux
-  header fixture passes field offsets, count, chunk-boundary indexing, bounds
-  and metadata preservation. No Windows backend has been built or deployed.
-  User approval to install C++ Build Tools + Windows SDK on robot1-x is pending.
-  A rebuild must also preserve all accepted rendering/pose compatibility fixes;
-  the old binary patch offsets cannot be applied to a newly compiled backend.
-- Distortion recurrence: the October 17 17:02 launch has no DisableMaterials
-  log entry and Saved/Config/Windows/Engine.ini is absent. Move the same preset
-  to the per-game source layer at
-  `C:/Program Files (x86)/Steam/steamapps/common/FarFarWest/FarFarWest/Config/UserEngine.ini`
-  through prepare_menu_helper.py. This avoids depending on generated Engine.ini
-  surviving; verify application and UserEngine.ini survival across a restart.
-  No additional rendering settings or file attributes are changed.
-  Live reticle probe succeeded: UI_Player_C has F_UpdateCrosshair and an Image
-  named Crosshair_Top; the live Image owns MID_M_CrosshairCross and
-  MID_M_CrosshairCross_Dot. Full read-only result is /tmp/ffw-reticle-probe.json.
-  Only 9.6 MB read in 0.61 seconds; no game writes. Reticle placement is unchanged.
-- Active task: align the reticle with actual controller-driven shots. The user
-  accepted the distortion workaround ("Everything looked good"). Preserve it.
-  Pinned and current UESDK sources both assume the old object-array layout;
-  current SDK source does not resolve our mismatch. C++ build tools are absent
-  on robot1-x (vswhere finds no VC.Tools.x86.x64 installation).
-  First identify the live reticle widget with `tools/probe_reticle.ps1`, a bounded
-  read-only lookup guarded by the known executable timestamp/image size.
-  Its name-pool RVA 0xac9b900 comes from the game's logged FName::to_string
-  function (RVA 0x148d630), which uses pool+16 block pointers, index>>16 blocks,
-  2-byte entry offsets and header>>6 lengths. Both None and the first two object
-  names must validate. User has been asked to leave the saloon open; await that
-  live sample before choosing between a narrower widget fix and an SDK rebuild.
-  No new autorun script or backend change has been deployed for the reticle.
-- Current result: the user confirms no distortion on the repeat launch (01:25
-  October 17), following the initial "Gone or clearly reduced" report.
-  The repeat run applied the override and exited normally; Engine.ini was
-  deleted on exit again. The preset has been reapplied on robot1-x for the next
-  launch. Gameplay damage/status effects have not yet been assessed.
-  The live game log records
-  `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]`, followed by
-  L_Lobby loading; UEVR confirms both helpers loaded and immersive aiming resumed.
-  This isolates a custom post-process material as the likely cause. The exact
-  material is not identified. The workaround also disables other custom
-  post-process materials, so assess damage/status and other gameplay effects
-  before treating it as permanent. No additional rendering tests are active.
-  Preserve the tested startup override with
-  `python3 tools/prepare_menu_helper.py --material-test` before each launch;
-  Engine.ini persistence remains unreliable. The material-probe preset includes
-  existing menu logging and LogConfig=Verbose. The failed native console setter
-  remains inactive in experiments/distortion_test.lua; its 01:06 run threw before
-  readback, so neither earlier attempt established r.DisableDistortion=1.
-- The initial distortion text entry was a no-op: the installed
-  CVarManager loads only its predefined variables, and r.DisableDistortion is
-  absent from both lists in CVarManager.hpp. The ignored entry was removed;
-  the replacement IConsoleManager setter also failed. Diagnose its exact failing
-  call separately before reusing it (the saved script's pcall caught the error).
-  Controller aiming and menu behavior remain at their accepted baseline.
-- Deferred correction requested: remove mouse/aim pitch from location-marker
-  projection; looking up must move a fixed-world marker down the screen (and
-  vice versa), preserving its world elevation. Keep controller firing and the
-  accepted menu placement. Reproject using the actual game camera's inverse
-  projection, camera-to-world rotation, then the inverse headset-view rotation
-  and headset projection; do not invert global headset tracking or gun input.
-- Read-only live probe found a concrete SDK mismatch. See
-  `tools/ue58_object_layout.json`: compact chunked-array header at game RVA
-  0xad3d980 has Objects/Num/Max/NumChunks/MaxChunks at 0/8/12/16/20; item stride
-  remains 24 but its UObject pointer is at +8. Four consecutive item pointers
-  lead to UObjects with indices 0/1/2/3 and vtables in the game image. This
-  verifies the measured layout mismatch with the old SDK, whose object pointer
-  is expected at +0, and explains its rejection of these entries. The chunked
-  array is not necessarily the FUObjectArray base.
-  `tools/probe_object_array.ps1` reproduces this read-only check, restricted to
-  aligned candidates from UEVR's own log in writable game sections, capped at
-  512 headers. Full bounded probe result: /tmp/ffw-object-array-probe.json.
-- Source access restored October 17: the user repaired Epic/GitHub access, and
-  SSH `git ls-remote` now succeeds for both EpicGames/UnrealEngine and
-  praydog/UESDK from this workspace. The SDK source prerequisite is cleared.
-  Keep the confirmed custom post-process workaround active;
-  source access restoration alone does not deploy a native/marker patch. Pinned SDK
-  revision: 14478dfae61e8385e0e62116718925c4099b1d18. No native or gameplay patch
-  has been applied during this probe; the isolated backend remains SHA256
-  3d2c8647dc10409a8d3d014c248f69f10f60895aede9c2d1fbee442d557c7527.
-  Local analysis copy: /tmp/ffw-controller-backend.dll. PDB symbols:
-  /tmp/ffw-pdb-object-array-symbols.txt; FUObjectArray::get RVA 0x636ca0,
-  get_object RVA 0x9aee0. Do not simply shift item pointers: native flag reads
-  would then read unrelated item fields. Repair the layout coherently first.
+  `LogConfig: Set CVar [[r.PostProcessing.DisableMaterials:1]]` from per-game
+  `FarFarWest/Config/UserEngine.ini`; that file survives into the saloon.
+  Verify another launch without preparation. Generated Saved/Config Engine.ini
+  was repeatedly deleted and is no longer used. The workaround removes all
+  custom post-process materials; damage/status effects still need assessment.
+  Reapply `python3 tools/prepare_menu_helper.py --material-test` only when the
+  preset changes. The failed native console-setter experiment remains inactive.
+- Head-relative quest markers remain deferred: remove controller pitch from
+  projection and make fixed-world markers move down when looking up. Preserve
+  controller firing and accepted menu placement. No marker patch is deployed.
 - User accepts pause/Resume after `0e18e34`. Menu spawn height nevertheless
   follows controller pitch: OverlayComponent applies pre-flattened game camera
   pitch while VR_DecoupledPitchUIAdjust is enabled. The menu helper now disables

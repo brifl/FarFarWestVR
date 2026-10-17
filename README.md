@@ -14,8 +14,8 @@ in WSL on robot1-x:
 The tool links the game log into the profile's Lua data directory and enables
 focused menu logging and the tested distortion workaround. Settings now go in
 the game's `FarFarWest/Config/UserEngine.ini`; the generated Saved/Config copy
-was repeatedly deleted. Persistence through this source layer awaits a relaunch
-test. Reapply preparation after changing the repository's settings preset.
+was repeatedly deleted. The startup log confirms this source layer loads; check persistence on
+further launches. Reapply preparation after changing the repository's settings preset.
 F8 remains a manual presentation fallback.
 
 Controller aiming is being tested with
@@ -23,12 +23,23 @@ Controller aiming is being tested with
 orientation drives the game's look input while head direction remains independent.
 Horizontal right-stick deflection requests one 45-degree snap turn, rearmed at
 center. The existing menu controls are preserved. Gun position/hand attachment
-and reticle alignment are still queued.
+is still queued. The existing crosshair now has a guarded projection helper;
+its alignment with actual impacts awaits a wall-shot test.
 Aiming and snap turns require a loaded gameplay level; menus cannot activate them.
 
-The isolated backend needs the guarded compatibility patch:
-`python3 tools/enable_controller_aim.py apply` (WSL on robot1-x).
-It enables correct UE5 camera vectors and controller aim poses for Lua.
+The isolated backend now uses a source build with the modern UE5.8 object
+layout and the accepted rendering/aim compatibility fixes. After pulling this
+profile on robot1-x, deploy its verified DLL/PDB while the game is closed:
+`python3 tools/deploy_native_backend.py apply`.
+The build artifacts live in `C:/src/uevr_far_west_build/build/bin/uevr`.
+The installer preserves the prior pair; `restore` reinstates it. Older binary
+patch tools require that prior backend and cannot patch the source build.
+
+[scripts/reticle.lua](scripts/reticle.lua) validates the backend identity,
+widget layout and function metadata before moving the original crosshair to
+the firing-camera trace target. It restores the crosshair in menus and leaves
+quest markers alone. For a read-only geometry probe, put `probe` in the
+profile's `data/reticle_mode.txt`; remove the file to enable movement again.
 
 The repeating upward-moving distortion is absent on the repeat test with the
 startup override `r.PostProcessing.DisableMaterials=1`, confirmed in the live
