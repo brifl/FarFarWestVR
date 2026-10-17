@@ -4,6 +4,8 @@ See [BACKLOG.md](BACKLOG.md) for the intended controls, working baseline, and ne
 
 Quest B sends Escape. The menu helper now follows the game's logged input-mode
 changes, including clicking Resume, instead of toggling presentation on B presses.
+Logged level/loading state keeps the title screen in menu mode even when UEVR
+saved immersive mode and verbose input-mode events are unavailable.
 It restores the readable menu distance and disables the cached menu overlay
 when returning to immersive play.
 This needs headset validation. Prepare it in WSL on robot1-x before launch:
@@ -19,6 +21,7 @@ orientation drives the game's look input while head direction remains independen
 Horizontal right-stick deflection requests one 45-degree snap turn, rearmed at
 center. The existing menu controls are preserved. Gun position/hand attachment
 and reticle alignment are still queued.
+Aiming and snap turns require a loaded gameplay level; menus cannot activate them.
 
 The isolated backend needs the guarded compatibility patch:
 `python3 tools/enable_controller_aim.py apply` (WSL on robot1-x).

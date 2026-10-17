@@ -15,6 +15,15 @@ UEVR backend is patched with `tools/disable_slate_hook.py`.
 
 ## Continuation checkpoint
 
+- Main-menu regression after `313a7eb`: the 23:26 run loaded only credits/title,
+  had no LogViewport transitions, and retained saved immersive mode. The aim
+  bridge therefore activated on the title screen. The menu helper now also
+  follows LogLoad/loading-screen messages, forces startup levels into screen
+  mode, and publishes an explicit gameplay gate for aiming and snap turns.
+  Restricted Lua checks cover saved immersive mode on the title, lobby entry
+  without verbose capture logs, pause/Resume, and the existing aim/snap math.
+  Menu access and controller aiming still need the next headset test. Snap
+  turning was observed by the user, but only from the title screen so far.
 - Active task: controller-directed aiming, now prioritized by the user over
   graphics. The shimmer is visible in the desktop image too. The FXAA experiment
   was never deployed and is retained in `experiments/temporal_aa_test.lua`, outside

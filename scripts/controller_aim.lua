@@ -37,7 +37,8 @@ local function angles(q)
 end
 
 local function gameplay()
-    return not stopped and vr.is_runtime_ready() and vr.is_hmd_active()
+    return _G.farfarwest_gameplay_ready == true
+        and not stopped and vr.is_runtime_ready() and vr.is_hmd_active()
         and vr.is_using_controllers() and not functions.is_drawing_ui()
         and vr:get_mod_value("VR_2DScreenMode") == "false"
 end

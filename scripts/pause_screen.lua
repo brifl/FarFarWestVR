@@ -1,4 +1,4 @@
--- Follow the game's input mode, including Resume clicks and submenu navigation.
+-- Follow the game's level and input mode, including Resume and submenus.
 -- LogViewport is enabled by the menu-logging preset. No UObject/world lookup.
 local vr = uevr.params.vr
 local functions = uevr.params.functions
@@ -9,13 +9,38 @@ local log_position = nil
 local partial_line = ""
 local capture_seen = false
 local menu_state = nil
+local playable_map = false
+local loading = true
 local applied_state = nil
 local poll_time = 0
 local last_mode = nil
 local ready_time = 0
 local saved_rotation = nil
+-- Autorun scripts share Lua globals. Aiming must wait for a known game level,
+-- rather than trusting the immersive/screen mode saved by the previous run.
+_G.farfarwest_gameplay_ready = false
 
 local function observe_line(line)
+    local map = line:match("LogLoad: LoadMap: ([^?%s]+)")
+    if map then
+        playable_map = map:match("^/Game/Levels/") ~= nil
+            and map ~= "/Game/Levels/L_OpeningCredits"
+            and map ~= "/Game/Levels/L_Map_TitleScreen"
+        loading = true
+        capture_seen = false
+        menu_state = true
+        _G.farfarwest_gameplay_ready = false
+        functions.log_info("[FarFarWest] Loaded level: " .. map)
+        return
+    end
+    if line:find("LogLoadingScreen: Showing loading screen", 1, true) then
+        loading = true
+    elseif line:find("LogLoadingScreen: Hiding loading screen", 1, true) then
+        loading = false
+        -- Default LogLoad messages still distinguish the title from gameplay
+        -- when the optional verbose input-mode logging is absent.
+        if playable_map and not capture_seen then menu_state = false end
+    end
     if not line:find("LogViewport:", 1, true) then return end
     local capture = line:match("Viewport MouseCaptureMode Changed, .- %-> ([%w_:]+)")
     if capture then
@@ -54,6 +79,9 @@ local function poll_game_log()
         partial_line = ""
         capture_seen = false
         menu_state = nil
+        playable_map = false
+        loading = true
+        _G.farfarwest_gameplay_ready = false
         applied_state = nil
     elseif size - log_position > 65536 then
         log_position = size - 65536
@@ -116,6 +144,7 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
         poll_game_log()
     end
     if not vr.is_runtime_ready() then
+        _G.farfarwest_gameplay_ready = false
         last_mode = nil
         applied_state = nil
         ready_time = 0
@@ -123,6 +152,7 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
         return
     end
     if not vr.is_hmd_active() then
+        _G.farfarwest_gameplay_ready = false
         return
     end
 
@@ -134,12 +164,16 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
     -- A button press requests a game action; only its resulting input-mode
     -- transition changes presentation. F8 remains a manual fallback until the
     -- next observed transition. Missing logs never guess that a click is Resume.
-    if menu_state ~= nil and menu_state ~= applied_state and not functions.is_drawing_ui() then
-        vr.set_mod_value("VR_2DScreenMode", menu_state and "true" or "false")
-        applied_state = menu_state
+    local desired_menu = menu_state
+    if not playable_map or loading then desired_menu = true end
+    if desired_menu ~= nil and desired_menu ~= applied_state and not functions.is_drawing_ui() then
+        vr.set_mod_value("VR_2DScreenMode", desired_menu and "true" or "false")
+        applied_state = desired_menu
     end
     local screen = vr:get_mod_value("VR_2DScreenMode") == "true"
+    _G.farfarwest_gameplay_ready = playable_map and not loading
+        and desired_menu == false and not screen
     if screen ~= last_mode then update_screen(screen) end
 end)
 
-functions.log_info("[FarFarWest] Game input-mode menu helper loaded; waiting for LogViewport transitions.")
+functions.log_info("[FarFarWest] Menu helper loaded; following level and input-mode logs.")
