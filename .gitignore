@@ -3,3 +3,4 @@ crash.dmp
 /data/FarFarWest.log
 /data/controller_aim_backend.txt
 /data/reticle_mode.txt
+/data/world_markers_dev.lua

@@ -24,6 +24,19 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- 19:05 retry also stopped before icon replacement, now during component
+  inspection. The marker implementation is split into a factory module and a
+  stable callback loader, so further reads/fixes can be tested without repeated
+  launches. Optional profile/data/world_markers_dev.lua overrides the factory;
+  it is ignored by Git and polled at 0.5s. Reload validates callbacks, restores
+  the previous icons, then swaps handlers without registering more callbacks.
+  Invalid overrides leave the current helper intact. Remove the development
+  file after successful inspection; the next restart uses the committed module.
+  A temporary read-only factory at /tmp/ffw-marker-read-probe.lua checks each
+  relevant getter separately. It is queued for the next script reset/relaunch.
+  Canonical discovery now filters BP_WorldIcon actor owners before inspecting
+  widget fields and uses the established generic getter / direct short name.
+  Live-reload lifecycle/error checks pass alongside the marker fixture tests.
 - The d778bc1 marker test retained old behavior because the helper stopped at
   discovery before tracking/hiding any icon (18:58 log: API verified, then
   `caught (...) exception`). API.hpp reveals get_objects_matching implicitly
