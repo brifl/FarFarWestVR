@@ -122,8 +122,10 @@ local function inspect_component(component)
     stage="read marker widget class"
     if not source or source:get_class():get_short_name()~="UI_WorldIcon_C" then return end
     stage="read marker component visibility"
+    -- The typed bool getter throws on this backend; reflected reads work for
+    -- both the component's bVisible and the actor's bHidden bitfields.
     if source
-        and component:read_byte(1512)==1 and component:get_bool_property("bVisible")
+        and component:read_byte(1512)==1 and component:get_property("bVisible")
         and not entries[component:get_address()] then
         stage="validate world-icon widget"
         assert(entry_count<64,"Too many world icons")
@@ -212,8 +214,8 @@ callbacks.tick = function(_,delta)
                 local viewport=layout:GetViewportSize(proxy)
                 local ready=camera and elapsed-camera.time<=.2
                     and viewport and viewport.X>0 and viewport.Y>0
-                    and entry.component.object:get_bool_property("bVisible")
-                    and not entry.owner.object:get_bool_property("bHidden")
+                    and entry.component.object:get_property("bVisible")
+                    and not entry.owner.object:get_property("bHidden")
                 local visibility=entry.source.object:get_property("Visibility")
                 ready=ready and visibility~=1 and visibility~=2 -- Collapsed/Hidden.
                 local opacity=entry.source.object:get_float_property("RenderOpacity")

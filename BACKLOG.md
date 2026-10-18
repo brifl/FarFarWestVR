@@ -24,6 +24,15 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- 19:15 live probe isolates the failure: get_bool_property throws for bVisible
+  and bHidden, while get_property returns the correct booleans. All other marker
+  reads, including owner/location/size/opacity/pivot, succeed. The helper now uses
+  generic reads for those bitfields; the mock forbids the typed bool getter and
+  all 12 checks pass. Corrected implementation is live in the development override.
+  A temporary diagnostic logs active-state changes: at 19:16 runtime=false and
+  hmd=false, so no marker mutation has run yet. User asked to return to headset
+  and leave saloon visible. Observe tracking/projection logs, repair any next
+  failure through the live override, then remove the override after validation.
 - 19:05 retry also stopped before icon replacement, now during component
   inspection. The marker implementation is split into a factory module and a
   stable callback loader, so further reads/fixes can be tested without repeated
@@ -33,7 +42,7 @@ previous backend; restore that backend before using them.
   Invalid overrides leave the current helper intact. Remove the development
   file after successful inspection; the next restart uses the committed module.
   A temporary read-only factory at /tmp/ffw-marker-read-probe.lua checks each
-  relevant getter separately. It is queued for the next script reset/relaunch.
+  relevant getter separately. It ran after the user's script reset.
   Canonical discovery now filters BP_WorldIcon actor owners before inspecting
   widget fields and uses the established generic getter / direct short name.
   Live-reload lifecycle/error checks pass alongside the marker fixture tests.
