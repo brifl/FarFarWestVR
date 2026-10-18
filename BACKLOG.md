@@ -29,6 +29,27 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- Distance haze is USER-CONFIRMED "looks good now" with primary ambient fog
+  density zero. A 25-percent reduction (0.02 -> 0.015) had no visible effect;
+  the controlled zero-density comparison identified the desired clear-distance
+  appearance. scripts/fog.lua + libs/fog_density.lua preserve this tested setting
+  on ambient BP_BlendableAtmosphere actors as levels/weather components load.
+  They use reflected SetFogDensity, retain native values for script-reset cleanup,
+  and leave secondary fog, lighting, color/contrast and other effects unchanged.
+  Current temporary development override carries this factory through the stable
+  marker callbacks for live verification. Remove it before pulling the standalone
+  fog autorun, as with the dialogue helper; the in-memory instance stays active
+  until the next reset/launch. Local payload /tmp/ffw-fog-live.lua.
+  Live verification of the persistent factory logged ambient density 0.02 -> 0.
+  Next queued improvement is a slight saturation/vibrance increase.
+- Live view has one visible ExponentialHeightFog component on
+  BP_BlendableAtmosphere_Afternoon_Heat_C: FogDensity=0.02 (offset 592), secondary
+  density=0, volumetric enabled, extinction scale=1. SetFogDensity parameters=4
+  verified. Native readback confirmed both 0.015 and the accepted 0.0 test.
+  Do not use the IConsoleVariable interface:
+  get_float returned a bogus denormal for r.Fog and r.VolumetricFog, while the
+  engine log confirms the latter is 1. It also did not find r.FogDensity. This
+  path remains incompatible; reflected properties/UFunctions work correctly.
 - Conversation height is USER-CONFIRMED "perfect." UI_NpcTalk_C is the live
   dialogue panel; scripts/dialogue.lua + libs/dialogue_layout.lua raise its root
   render translation by one tenth of its cached local height, preserving the live
@@ -41,7 +62,7 @@ previous backend; restore that backend before using them.
   through a temporary override; remove that file before pulling the new standalone
   dialogue autorun script to avoid duplicate helpers after a future script reset.
   Deleting the override keeps the accepted in-memory helper alive until reset.
-  Next easiest queued item is the modest distance-fog reduction.
+  The accepted distance-fog change is recorded above.
 - October 18: vendor markers AND Start Mission are USER-CONFIRMED anchored
   correctly on both axes, independent of aim, with the correct mission label.
   Do not clone UI_Guide_C: its actual TextBlock is updated separately from the
@@ -321,7 +342,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Anchor Start Mission | User confirms correct label and anchoring on both axes. Live UI_Guide_C is preserved; only its visual child is reprojected, with actor/root unchanged. |
 | Done | Make the tested minimum world scale the default | Repo VR_WorldScale=0.010000 matches the saved working profile. Native slider minimum verified as 0.01. User reports ghosting gone and sharper imagery; preserve other runtime adjustments. |
 | Done | Raise conversation text | User confirms "perfect." Live UI_NpcTalk_C panel is raised by one tenth of its local viewport height; text/name/choices/input and headset coupling are preserved. |
-| 3 | Reduce distance fog/dust | Check which engine variables affect the actual distance haze; try a modest reduction rather than removing intended atmosphere. Preserve the existing heat-distortion workaround. |
+| Done | Reduce distance fog/dust | User accepted zero primary ambient fog density after 25-percent reduction was imperceptible. Apply the tested setting to BP_BlendableAtmosphere fog components; preserve secondary fog, other rendering settings and the heat-distortion workaround. |
 | 4 | Increase color saturation/vibrance slightly | Seek a supported adjustment that remains active with the custom post-process-material workaround; avoid clipping or oversaturated UI. |
 | 5 | Increase contrast slightly | Reduce the washed-out VR look while retaining shadow/highlight detail; tune separately from saturation. |
 | 6 | Use the themed menu cursor | Supplied top-left arrow assets: cursor_128px.png, cursor_256px.png, cursor_512px.png. Choose suitable size and top-left hotspot; preserve controller pointing/clicks and hidden gameplay cursor. Assets are user-authored and currently untracked; do not replace/regenerate them. |

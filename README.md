@@ -56,6 +56,12 @@ material remains unidentified. Check damage/status effects during further play.
 The prepared FXAA experiment is retained outside the autorun scripts in
 [experiments/temporal_aa_test.lua](experiments/temporal_aa_test.lua).
 
+The accepted clear-distance setting is applied by [scripts/fog.lua](scripts/fog.lua).
+It sets primary fog density to zero on the game's ambient weather components as
+they load, using the guarded UE5.8 backend. This matches the tested haze removal;
+a 25-percent reduction was imperceptible. Script reset restores captured native
+density values before the helper reloads. Other atmosphere layers keep their settings.
+
 Location markers are being tested with
 [scripts/world_markers.lua](scripts/world_markers.lua). It displays copies of the
 saloon's `UI_WorldIcon` markers at their world positions projected through the
