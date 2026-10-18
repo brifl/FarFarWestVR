@@ -29,6 +29,19 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- Conversation height is USER-CONFIRMED "perfect." UI_NpcTalk_C is the live
+  dialogue panel; scripts/dialogue.lua + libs/dialogue_layout.lua raise its root
+  render translation by one tenth of its cached local height, preserving the live
+  text, name, choices and controls. This run measured 108 local units, equivalent
+  to 144 pixels at the observed 1.333 DPI scale. Original translation is restored
+  on script reset/headset deactivation/error; stale objects are not written.
+  Native widget fields/geometry and SetRenderTranslation=16 parameters were read
+  live before applying the change. Lua syntax and headset acceptance passed.
+  During this session the stable marker loader carries both factories in memory
+  through a temporary override; remove that file before pulling the new standalone
+  dialogue autorun script to avoid duplicate helpers after a future script reset.
+  Deleting the override keeps the accepted in-memory helper alive until reset.
+  Next easiest queued item is the modest distance-fog reduction.
 - October 18: vendor markers AND Start Mission are USER-CONFIRMED anchored
   correctly on both axes, independent of aim, with the correct mission label.
   Do not clone UI_Guide_C: its actual TextBlock is updated separately from the
@@ -307,7 +320,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | --- | --- | --- |
 | Done | Anchor Start Mission | User confirms correct label and anchoring on both axes. Live UI_Guide_C is preserved; only its visual child is reprojected, with actor/root unchanged. |
 | Done | Make the tested minimum world scale the default | Repo VR_WorldScale=0.010000 matches the saved working profile. Native slider minimum verified as 0.01. User reports ghosting gone and sharper imagery; preserve other runtime adjustments. |
-| 2 | Raise conversation text | Move NPC dialogue higher in view; keep text readable with headset movement and preserve conversation input. This was previously reported low and nonblocking. |
+| Done | Raise conversation text | User confirms "perfect." Live UI_NpcTalk_C panel is raised by one tenth of its local viewport height; text/name/choices/input and headset coupling are preserved. |
 | 3 | Reduce distance fog/dust | Check which engine variables affect the actual distance haze; try a modest reduction rather than removing intended atmosphere. Preserve the existing heat-distortion workaround. |
 | 4 | Increase color saturation/vibrance slightly | Seek a supported adjustment that remains active with the custom post-process-material workaround; avoid clipping or oversaturated UI. |
 | 5 | Increase contrast slightly | Reduce the washed-out VR look while retaining shadow/highlight detail; tune separately from saturation. |
