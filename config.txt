@@ -105,4 +105,4 @@ VR_ToggleSlateGUIKey=-1
 VR_UncapFramerate=true
 VR_UseFMallocSceneViewExtensions=false
 VR_VerticalProjectionOverride=0
-VR_WorldScale=1.001000
+VR_WorldScale=0.010000

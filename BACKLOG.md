@@ -7,6 +7,11 @@ previous backend; restore that backend before using them.
 
 ## Working baseline
 
+- World scale default is 0.010000, matching the user's saved minimum-slider value.
+  Native VR.hpp confirms the supported slider range is 0.01 through 10.0. The user
+  reports the minimum removed ghosting and sharpened the image. Other runtime
+  graphics settings differ from the repo and are preserved; do not infer a
+  controlled comparison of world scale alone from that report.
 - Stereo views align with symmetrical horizontal projection.
 - Menus accepted after `9e94640`: readable, stationary, working cursor/control,
   and B pause/resume. The user reports "Much better" and is ready to move on.
@@ -294,14 +299,14 @@ previous backend; restore that backend before using them.
 
 ## Work queue
 
-Finish Start Mission first. Then take the new requests in the following initial
+Start Mission is confirmed fixed. Take the new requests in the following initial
 order, based on expected effort; adjust when inspection reveals a dependency.
 Use one focused visual change/test at a time and preserve working controls.
 
 | Order | Improvement | Acceptance condition / constraint |
 | --- | --- | --- |
 | Done | Anchor Start Mission | User confirms correct label and anchoring on both axes. Live UI_Guide_C is preserved; only its visual child is reprojected, with actor/root unchanged. |
-| 1 | Make the tested minimum world scale the default | User reports the minimum slider setting completely removed ghosting and improved sharpness. User recalled 0.0010; the installed profile actually saves VR_WorldScale=0.010000. Preserve that saved working value, verify the slider/value mapping, then update the repo default. No other rendering change in that test. |
+| Done | Make the tested minimum world scale the default | Repo VR_WorldScale=0.010000 matches the saved working profile. Native slider minimum verified as 0.01. User reports ghosting gone and sharper imagery; preserve other runtime adjustments. |
 | 2 | Raise conversation text | Move NPC dialogue higher in view; keep text readable with headset movement and preserve conversation input. This was previously reported low and nonblocking. |
 | 3 | Reduce distance fog/dust | Check which engine variables affect the actual distance haze; try a modest reduction rather than removing intended atmosphere. Preserve the existing heat-distortion workaround. |
 | 4 | Increase color saturation/vibrance slightly | Seek a supported adjustment that remains active with the custom post-process-material workaround; avoid clipping or oversaturated UI. |
