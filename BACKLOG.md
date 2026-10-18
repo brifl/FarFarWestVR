@@ -24,20 +24,25 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- October 18 continuation: vendor markers are USER-CONFIRMED anchored correctly
-  on both axes, independent of aim. Start Mission remains incorrect and is the
-  active task before the improvement queue below. It uses UI_Guide_C on
-  BP_LobbyGuide_C_2, not UI_WorldIcon_C. The prepared implementation adds that
-  family to the shared projection path; headset validation is still pending.
-  Its label matches the class default, so engine Create/Construct can initialize
-  a matching copy without unsupported Lua FText copying. Customized label values
-  are left untouched. Fourteen mocked lifecycle/projection checks passed before
-  the credit interruption; the temporary /tmp harness did not survive the break.
-  Remove the old vendor-plus-read-only-probe development override when pulling
-  this change with the game closed, so the next launch uses the canonical module.
-  Observe five tracked markers, then confirm the Start Mission label and anchoring.
-  Native read-only probe also covers UI_Guide_C now; verified fields are
-  InteractTextHolder=816, Image_Aura=824, Appear=832, InteractText=840.
+- October 18: vendor markers AND Start Mission are USER-CONFIRMED anchored
+  correctly on both axes, independent of aim, with the correct mission label.
+  Do not clone UI_Guide_C: its actual TextBlock is updated separately from the
+  InteractText field, and cloning showed the default "Interact" label. The helper
+  now preserves the live widget, projects its actor's real location through the
+  headset, and uses the engine's inverse screen projection to reposition only
+  the visual child component. The Billboard root and mission actor stay fixed.
+  The verified child offset is zero; guarded native parameter sizes are
+  DeprojectScreenPositionToWorld=64, K2_SetWorldLocation/RelativeLocation=296.
+  Pause/reset/error restores the original attachment offset and opacity.
+  Native read-only projection round trip recovered exactly (1280,720).
+  The current development override is the corrected full helper; remove it after
+  pulling the committed implementation so future launches use the repo version.
+- Marker checks now persist in tools/test_world_markers.py so credit interruptions
+  do not lose them. Seven cases cover vendor projection, live text preservation,
+  both head axes/aim independence, no accumulated warp, pause/reset, partial-move
+  error cleanup, root-component rejection, visibility/stale camera/deprojection
+  failure, and stale-object handling. Run with Python + lupa; this session used
+  PYTHONPATH=/tmp/ffw-lua-test (lupa 2.8). Headset acceptance also passed.
 - 19:15 live probe isolates the failure: get_bool_property throws for bVisible
   and bHidden, while get_property returns the correct booleans. All other marker
   reads, including owner/location/size/opacity/pivot, succeed. The helper now uses
@@ -77,7 +82,8 @@ previous backend; restore that backend before using them.
   New `scripts/world_markers.lua` creates matching viewport widgets and positions
   them using the existing tested final-eye projection math. It copies brush/color,
   size, pivot and layer order, hides only original widget opacity, and restores it
-  on menus/reset/error. Component/actor position and visibility are unchanged.
+  on menus/reset/error. Vendor components/actors are unchanged. The mission guide
+  instead preserves its live widget and adjusts its visual child as described above.
   Actor/component visibility still gates the copies. Other marker families remain
   separate; vendors are confirmed and the lobby-guide addition is next.
 - Marker helper mock checks pass backend/layout guards, head pitch AND yaw inverse
@@ -294,7 +300,7 @@ Use one focused visual change/test at a time and preserve working controls.
 
 | Order | Improvement | Acceptance condition / constraint |
 | --- | --- | --- |
-| Current | Anchor Start Mission | Reuse the confirmed vendor projection for UI_Guide_C; preserve its label/aura and game visibility. Verify hand independence and inverse response to both head axes. |
+| Done | Anchor Start Mission | User confirms correct label and anchoring on both axes. Live UI_Guide_C is preserved; only its visual child is reprojected, with actor/root unchanged. |
 | 1 | Make the tested minimum world scale the default | User reports the minimum slider setting completely removed ghosting and improved sharpness. User recalled 0.0010; the installed profile actually saves VR_WorldScale=0.010000. Preserve that saved working value, verify the slider/value mapping, then update the repo default. No other rendering change in that test. |
 | 2 | Raise conversation text | Move NPC dialogue higher in view; keep text readable with headset movement and preserve conversation input. This was previously reported low and nonblocking. |
 | 3 | Reduce distance fog/dust | Check which engine variables affect the actual distance haze; try a modest reduction rather than removing intended atmosphere. Preserve the existing heat-distortion workaround. |
@@ -316,7 +322,7 @@ current mission-marker fix.
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | Done | Right-controller gun aiming and accurate reticle | Controller aim, head-independent shot grouping and projected crosshair confirmed, including different ranges and spells. |
 | Done | Controller pointer in game menus | Controller targeting/clicks and return to gameplay confirmed after 001206f. |
-| Current | Head-relative quest/location markers | Vendor icons confirmed anchored correctly. Start Mission uses UI_Guide_C and is being added separately; quest/player marker families remain queued. |
+| Done | Saloon location markers | Vendors and Start Mission confirmed anchored correctly with the original mission label. Quest/player marker families remain queued. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |

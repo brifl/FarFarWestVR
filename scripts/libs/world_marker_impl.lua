@@ -1,6 +1,6 @@
 return function()
 -- Reproject the saloon's screen-space world markers through the rendered eye.
--- Keep the originals attached to their actors; use viewport copies while in VR.
+-- Vendor icons use viewport copies. Keep the live mission label in its component.
 local vr, functions, api = uevr.params.vr, uevr.params.functions, uevr.api
 local ok, tag = pcall(functions.get_tag)
 if not ok or tag ~= "ffw-ue58-sdk-v1" then return end
@@ -44,6 +44,10 @@ local function component_valid(entry)
 end
 local function restore(entry)
     if valid(entry.proxy) then entry.proxy.object:RemoveFromParent() end
+    if entry.moved and component_valid(entry) then
+        entry.component.object:K2_SetRelativeLocation(entry.relative,false,{},true)
+        entry.moved=false
+    end
     if entry.hidden and valid(entry.source) then
         entry.source.object:SetRenderOpacity(entry.opacity)
     end
@@ -117,6 +121,32 @@ local function prepare()
     info("WidgetComponent layout and viewport functions verified.")
 end
 
+local function bind_guide(component,source,kind)
+    stage="verify live lobby-guide projection"
+    local owner=component:GetOwner()
+    local parent=component:GetAttachParent()
+    local root=owner and owner:get_property("RootComponent")
+    -- Only reposition this visual child. Its separate actor remains the target.
+    assert(parent and root and root:get_address()==parent:get_address()
+        and root:get_address()~=component:get_address(),"Lobby guide must be a child of its actor root")
+    local relative=component:get_property("RelativeLocation")
+    assert(math.abs(relative.X)<.001 and math.abs(relative.Y)<.001
+        and math.abs(relative.Z)<.001,"Unexpected lobby-guide attachment offset")
+    local player=source:GetOwningPlayer()
+    assert(player,"Lobby-guide player unavailable")
+    checked(component_class,"K2_SetWorldLocation",296,296)
+    checked(component_class,"K2_SetRelativeLocation",296,296)
+    checked(owner:get_class(),"K2_GetActorLocation",24,24)
+    checked(player:get_class(),"DeprojectScreenPositionToWorld",64,64)
+    local opacity=source:get_float_property("RenderOpacity")
+    assert(finite(opacity),"Invalid lobby-guide opacity")
+    entries[component:get_address()]={component=track(component),source=track(source),
+        owner=track(owner),player=track(player),kind=kind,opacity=opacity,hidden=true,
+        relative={X=relative.X,Y=relative.Y,Z=relative.Z},moved=false}
+    entry_count=entry_count+1
+    info("Tracking live lobby guide; original text retained, actor unchanged.")
+end
+
 local function inspect_component(component)
     stage="read marker component owner"
     local outer=component:get_outer()
@@ -140,13 +170,8 @@ local function inspect_component(component)
         local p=source:get_class():find_property(kind.image)
         assert(p and p:get_offset()==kind.offset,"World-marker image layout mismatch")
         if kind.guide then
-            local text=source:get_class():find_property("InteractText")
-            assert(text and text:get_offset()==840,"Lobby-guide text layout mismatch")
-            -- Create runs the guide's Construct with its class-default label.
-            -- Leave customized variants untouched: Lua cannot safely copy FText.
-            local default=source:get_class():get_class_default_object()
-            if source:read_qword(840)~=default:read_qword(840)
-                or source:read_qword(848)~=default:read_qword(848) then return end
+            bind_guide(component,source,kind)
+            return
         end
         local size=source:GetDesiredSize()
         if not size or size.X<=0 or size.Y<=0 then
@@ -179,6 +204,28 @@ local function inspect_component(component)
             entry.style_time=0
             info("Tracking world icon at "..tostring(component:get_address()).." ("..source:get_class():get_short_name().."); native icon hidden.")
         end
+    end
+end
+
+local function place_guide(entry,pixel)
+    assert(valid(entry.player),"Lobby-guide player became invalid")
+    local origin,direction={},{}
+    if not entry.player.object:DeprojectScreenPositionToWorld(pixel.x,pixel.y,origin,direction) then
+        entry.source.object:SetRenderOpacity(0)
+        return
+    end
+    local p,d=origin.result,direction.result
+    assert(p and d and finite(p.X) and finite(p.Y) and finite(p.Z)
+        and finite(d.X) and finite(d.Y) and finite(d.Z),"Invalid lobby-guide projection ray")
+    -- The engine's screen-widget layer uses the game camera. Invert that same
+    -- projection to place this visual child at the headset-projected pixel.
+    -- Never use its warped component location as the real marker target.
+    entry.moved=true -- Cleanup owns a failed/partial move too.
+    entry.component.object:K2_SetWorldLocation({X=p.X+d.X*1000,Y=p.Y+d.Y*1000,Z=p.Z+d.Z*1000},false,{},true)
+    entry.source.object:SetRenderOpacity(entry.opacity)
+    if not entry.reported then
+        entry.reported=true
+        info("Live mission label now uses headset projection; no default-label copy.")
     end
 end
 
@@ -224,11 +271,12 @@ callbacks.tick = function(_,delta)
         discover()
         for address,entry in pairs(entries) do
             stage="validate tracked icon"
-            if not component_valid(entry) or not valid(entry.proxy) then
+            if not component_valid(entry) or (entry.proxy and not valid(entry.proxy)) then
                 restore(entry); entries[address]=nil; entry_count=entry_count-1
             else
-                local proxy=entry.proxy.object
-                local viewport=layout:GetViewportSize(proxy)
+                local proxy=entry.proxy and entry.proxy.object
+                local display=proxy or entry.source.object
+                local viewport=layout:GetViewportSize(display)
                 local ready=camera and elapsed-camera.time<=.2
                     and viewport and viewport.X>0 and viewport.Y>0
                     and entry.component.object:get_property("bVisible")
@@ -241,35 +289,41 @@ callbacks.tick = function(_,delta)
                     entry.opacity=opacity
                     entry.source.object:SetRenderOpacity(0)
                 end
-                if not ready then proxy:SetRenderOpacity(0)
+                if not ready then display:SetRenderOpacity(0)
                 else
-                    local point=entry.component.object:K2_GetComponentLocation()
+                    local point=entry.kind.guide and entry.owner.object:K2_GetActorLocation()
+                        or entry.component.object:K2_GetComponentLocation()
                     local pixel=geometry.project({x=point.X,y=point.Y,z=point.Z},camera.position,
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
                     if pixel and pixel.inside then
-                        if elapsed>=entry.style_time then
-                            local source_icon=entry.source.object:get_property(entry.kind.image)
-                            assert(source_icon,"Original world-icon image is missing")
-                            stage="copy icon appearance"
-                            entry.icon:SetBrush(source_icon:get_property("Brush"))
-                            entry.icon:SetColorAndOpacity(source_icon:get_property("ColorAndOpacity"))
-                            entry.style_time=elapsed+.25
+                        if entry.kind.guide then
+                            stage="reproject live mission label"
+                            place_guide(entry,pixel)
+                        else
+                            if elapsed>=entry.style_time then
+                                local source_icon=entry.source.object:get_property(entry.kind.image)
+                                assert(source_icon,"Original world-icon image is missing")
+                                stage="copy icon appearance"
+                                entry.icon:SetBrush(source_icon:get_property("Brush"))
+                                entry.icon:SetColorAndOpacity(source_icon:get_property("ColorAndOpacity"))
+                                entry.style_time=elapsed+.25
+                            end
+                            stage="position viewport icon"
+                            proxy:SetPositionInViewport({X=pixel.x,Y=pixel.y},true)
+                            proxy:SetRenderOpacity(entry.opacity)
                         end
-                        stage="position viewport icon"
-                        proxy:SetPositionInViewport({X=pixel.x,Y=pixel.y},true)
-                        proxy:SetRenderOpacity(entry.opacity)
                         if not reported then
                             reported=true
                             info("World icons now use headset projection on both axes, independently of aiming.")
                         end
-                    else proxy:SetRenderOpacity(0) end
+                    else display:SetRenderOpacity(0) end
                 end
             end
         end
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendor icons and default lobby guides are replaced during immersive play.")
+info("Helper loaded; vendor copies and the live lobby guide use headset projection.")
 
 return callbacks
 end
