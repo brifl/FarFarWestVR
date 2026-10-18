@@ -62,6 +62,11 @@ they load, using the guarded UE5.8 backend. This matches the tested haze removal
 a 25-percent reduction was imperceptible. Script reset restores captured native
 density values before the helper reloads. Other atmosphere layers keep their settings.
 
+[scripts/contrast.lua](scripts/contrast.lua) applies the accepted ten-percent
+increase to the weather grading's master contrast. It preserves the native RGB
+balance and saturation, avoids compounding its own value, and restores the
+captured master value on script reset.
+
 Location markers are being tested with
 [scripts/world_markers.lua](scripts/world_markers.lua). It displays copies of the
 saloon's `UI_WorldIcon` markers at their world positions projected through the

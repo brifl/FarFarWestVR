@@ -29,6 +29,24 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- Contrast is USER-ACCEPTED at ten percent above the original (master W=1.10).
+  User requested an increase from the initial five-percent test, then confirmed
+  the more cartoon-like look and clearer detail. Native readbacks verified both
+  1.05 and 1.10. scripts/contrast.lua + libs/contrast.lua preserve the accepted
+  multiplier on active unbound BP_BlendableAtmosphere weather grading components.
+  The sampled `postprocess` component had ColorContrast=(1.2,1.2,1.2,1), override
+  enabled and blend weight=1; only W changes. RGB, saturation and flags stay native.
+  The helper caches the original W to prevent compounding across frames, leaves
+  different game-controlled W values alone, and restores its own value on reset.
+  Existing higher-priority LumenPP does not override contrast; do not change it.
+  The native IConsoleVariable path remains unusable; reflection works.
+- Current live payload /tmp/ffw-contrast-live.lua combines the marker and contrast
+  factories, plus the accepted fog factory if package.loaded['libs/fog_density']
+  is absent. The standalone fog autorun was deployed during this running game;
+  preserve this carried helper in further live overrides until a restart loads
+  all standalone scripts. Remove the temporary development file before pulling
+  the standalone contrast autorun; accepted helpers remain active in memory until
+  reset/launch. Next queued item is the supplied themed menu cursor.
 - Distance haze is USER-CONFIRMED "looks good now" with primary ambient fog
   density zero. A 25-percent reduction (0.02 -> 0.015) had no visible effect;
   the controlled zero-density comparison identified the desired clear-distance
@@ -42,7 +60,7 @@ previous backend; restore that backend before using them.
   until the next reset/launch. Local payload /tmp/ffw-fog-live.lua.
   Live verification of the persistent factory logged ambient density 0.02 -> 0.
   User skipped saturation/vibrance because clearing the haze already helped.
-  Next queued improvement is a slight contrast increase.
+  The accepted contrast increase is recorded above.
 - Live view has one visible ExponentialHeightFog component on
   BP_BlendableAtmosphere_Afternoon_Heat_C: FogDensity=0.02 (offset 592), secondary
   density=0, volumetric enabled, extinction scale=1. SetFogDensity parameters=4
@@ -345,7 +363,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Raise conversation text | User confirms "perfect." Live UI_NpcTalk_C panel is raised by one tenth of its local viewport height; text/name/choices/input and headset coupling are preserved. |
 | Done | Reduce distance fog/dust | User accepted zero primary ambient fog density after 25-percent reduction was imperceptible. Apply the tested setting to BP_BlendableAtmosphere fog components; preserve secondary fog, other rendering settings and the heat-distortion workaround. |
 | Skipped | Increase color saturation/vibrance slightly | User chose to skip this after the accepted haze change improved the image. |
-| 5 | Increase contrast slightly | Reduce the washed-out VR look while retaining shadow/highlight detail; saturation remains unchanged. |
+| Done | Increase contrast slightly | User accepted ten percent above original after comparing five percent. Preserve native RGB/color balance and saturation; user reports the desired cartoon look and clearer detail. |
 | 6 | Use the themed menu cursor | Supplied top-left arrow assets: cursor_128px.png, cursor_256px.png, cursor_512px.png. Choose suitable size and top-left hotspot; preserve controller pointing/clicks and hidden gameplay cursor. Assets are user-authored and currently untracked; do not replace/regenerate them. |
 | 7 | Correct the NPC “Press X” prompt | Prompt currently moves inversely to the aim reticle when targeting a character. Align it with the actual interaction target/reticle; preserve the already-working X interaction and vendor/mission markers. Live scan identified the separate UI_Interact_C WidgetInteract component on the lobby pawn as a candidate. |
 | 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
