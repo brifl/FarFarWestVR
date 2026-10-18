@@ -1,6 +1,6 @@
 return function()
--- Reproject the saloon's screen-space world markers through the rendered eye.
--- Vendor icons use viewport copies. Keep the live mission label in its component.
+-- Reproject screen-space world markers through the rendered eye.
+-- Preserve live labels, distances and interaction state in their original widgets.
 local vr, functions, api = uevr.params.vr, uevr.params.functions, uevr.api
 local ok, tag = pcall(functions.get_tag)
 if not ok or tag ~= "ffw-ue58-sdk-v1" then return end
@@ -15,9 +15,13 @@ local stage = "startup"
 local stopped, reported = false, false
 local kinds = {
     UI_WorldIcon_C={owner="^BP_WorldIcon_C_", image="Image_Icon", offset=808},
-    UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, guide=true},
+    UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, world_label=true},
     UI_Interact_C={owner="^BP_Player.*_C_", field="UI_Key",offset=816,screen=true},
+    UI_PingObjective_C={owner_class="^BP_ObjectivePing.*_C$",field="OwningActor",offset=912,
+        world_label=true,actor_field="OwningActor",target_field="Location",target_offset=872,label="objective marker"},
 }
+local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder",offset=816,
+    world_label=true,label="mission guide"}
 local screen_projection=require('libs/screen_widget_projection')
 local rejected={}
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
@@ -126,19 +130,25 @@ local function prepare()
     info("WidgetComponent layout and viewport functions verified.")
 end
 
-local function bind_guide(component,source,kind)
-    stage="verify live lobby-guide projection"
+local function bind_world_label(component,source,kind)
+    stage="verify live "..(kind.label or "lobby guide").." projection"
     local owner=component:GetOwner()
     local parent=component:GetAttachParent()
     local root=owner and owner:get_property("RootComponent")
     -- Only reposition this visual child. Its separate actor remains the target.
     assert(parent and root and root:get_address()==parent:get_address()
-        and root:get_address()~=component:get_address(),"Lobby guide must be a child of its actor root")
+        and root:get_address()~=component:get_address(),"World label must be a child of its actor root")
     local relative=component:get_property("RelativeLocation")
     assert(math.abs(relative.X)<.001 and math.abs(relative.Y)<.001
-        and math.abs(relative.Z)<.001,"Unexpected lobby-guide attachment offset")
+        and math.abs(relative.Z)<.001,"Unexpected world-label attachment offset")
+    if kind.actor_field then
+        local target=source:get_property(kind.actor_field)
+        assert(target and target:get_address()==owner:get_address(),"Objective widget/actor binding differs")
+        local field=source:get_class():find_property(kind.target_field)
+        assert(field and field:get_offset()==kind.target_offset,"Objective target layout differs")
+    end
     local player=source:GetOwningPlayer()
-    assert(player,"Lobby-guide player unavailable")
+    assert(player,"World-label player unavailable")
     checked(component_class,"K2_SetWorldLocation",296,296)
     checked(component_class,"K2_SetRelativeLocation",296,296)
     checked(owner:get_class(),"K2_GetActorLocation",24,24)
@@ -149,7 +159,7 @@ local function bind_guide(component,source,kind)
         owner=track(owner),player=track(player),kind=kind,opacity=opacity,hidden=true,
         relative={X=relative.X,Y=relative.Y,Z=relative.Z},moved=false}
     entry_count=entry_count+1
-    info("Tracking live lobby guide; original text retained, actor unchanged.")
+    info("Tracking live "..(kind.label or "lobby guide").."; original text retained, actor unchanged.")
 end
 
 local function bind_screen(component,source,kind)
@@ -182,14 +192,18 @@ local function inspect_component(component)
     local outer=component:get_outer()
     if not outer then return end
     local owner_name=outer:get_short_name()
-    if not owner_name:match("^BP_WorldIcon_C_") and not owner_name:match("^BP_LobbyGuide_C_")
-        and not owner_name:match("^BP_Player.*_C_") then return end
     stage="read marker widget property"
     local source=component:get_property("Widget")
     stage="read marker widget class"
     if not source then return end
-    local kind=kinds[source:get_class():get_short_name()]
-    if not kind or not owner_name:match(kind.owner) then return end
+    local widget_name=source:get_class():get_short_name()
+    local kind=kinds[widget_name]
+    if not kind then return end
+    local owner_class=outer:get_class():get_short_name()
+    if widget_name=="UI_Guide_C" and owner_class:match(mission_guide.owner_class) then kind=mission_guide end
+    if kind.owner_class then
+        if not owner_class:match(kind.owner_class) then return end
+    elseif not owner_name:match(kind.owner) then return end
     stage="read marker component visibility"
     -- The typed bool getter throws on this backend; reflected reads work for
     -- both the component's bVisible and the actor's bHidden bitfields.
@@ -204,8 +218,8 @@ local function inspect_component(component)
             bind_screen(component,source,kind)
             return
         end
-        if kind.guide then
-            bind_guide(component,source,kind)
+        if kind.world_label then
+            bind_world_label(component,source,kind)
             return
         end
         local size=source:GetDesiredSize()
@@ -259,8 +273,8 @@ local function place_screen(entry,point,pixel)
     end
 end
 
-local function place_guide(entry,pixel)
-    assert(valid(entry.player),"Lobby-guide player became invalid")
+local function place_world_label(entry,pixel)
+    assert(valid(entry.player),"World-label player became invalid")
     local origin,direction={},{}
     if not entry.player.object:DeprojectScreenPositionToWorld(pixel.x,pixel.y,origin,direction) then
         entry.source.object:SetRenderOpacity(0)
@@ -268,7 +282,7 @@ local function place_guide(entry,pixel)
     end
     local p,d=origin.result,direction.result
     assert(p and d and finite(p.X) and finite(p.Y) and finite(p.Z)
-        and finite(d.X) and finite(d.Y) and finite(d.Z),"Invalid lobby-guide projection ray")
+        and finite(d.X) and finite(d.Y) and finite(d.Z),"Invalid world-label projection ray")
     -- The engine's screen-widget layer uses the game camera. Invert that same
     -- projection to place this visual child at the headset-projected pixel.
     -- Never use its warped component location as the real marker target.
@@ -277,7 +291,7 @@ local function place_guide(entry,pixel)
     entry.source.object:SetRenderOpacity(entry.opacity)
     if not entry.reported then
         entry.reported=true
-        info("Live mission label now uses headset projection; no default-label copy.")
+        info("Live "..(entry.kind.label or "mission label").." now uses headset projection; no default-label copy.")
     end
 end
 
@@ -294,13 +308,16 @@ local function discover()
         scan_index=scan_index-1
         local name=object and object:get_short_name()
         if (name=="Widget" or name=="WidgetInteract") and object:is_a(component_class) then
-            if name=="Widget" then inspect_component(object)
-            elseif not rejected[object:get_address()] then
-                -- A new prompt adapter must not disable accepted vendor/mission fixes.
+            if not rejected[object:get_address()] then
+                -- A new adapter must not disable accepted marker families.
                 local success,err=pcall(inspect_component,object)
                 if not success then
-                    rejected[object:get_address()]=true
-                    functions.log_warn("[FarFarWest markers] Interaction prompt skipped: "..tostring(err))
+                    local address=object:get_address()
+                    if entries[address] then
+                        pcall(restore,entries[address]);entries[address]=nil;entry_count=entry_count-1
+                    end
+                    rejected[address]=true
+                    functions.log_warn("[FarFarWest markers] Marker skipped during "..stage..": "..tostring(err))
                 end
             end
         end
@@ -352,8 +369,10 @@ callbacks.tick = function(_,delta)
                 end
                 if not ready then display:SetRenderOpacity(0)
                 else
-                    local point=entry.kind.guide and entry.owner.object:K2_GetActorLocation()
-                        or entry.component.object:K2_GetComponentLocation()
+                    local point
+                    if entry.kind.target_field then point=entry.source.object:get_property(entry.kind.target_field)
+                    elseif entry.kind.world_label then point=entry.owner.object:K2_GetActorLocation()
+                    else point=entry.component.object:K2_GetComponentLocation() end
                     local pixel=geometry.project({x=point.X,y=point.Y,z=point.Z},camera.position,
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
                     if pixel and pixel.inside then
@@ -365,9 +384,9 @@ callbacks.tick = function(_,delta)
                                 rejected[address]=true
                                 functions.log_warn("[FarFarWest markers] Interaction prompt stopped safely: "..tostring(err))
                             end
-                        elseif entry.kind.guide then
+                        elseif entry.kind.world_label then
                             stage="reproject live mission label"
-                            place_guide(entry,pixel)
+                            place_world_label(entry,pixel)
                         else
                             if elapsed>=entry.style_time then
                                 local source_icon=entry.source.object:get_property(entry.kind.image)
@@ -392,7 +411,7 @@ callbacks.tick = function(_,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendors, the live lobby guide and interaction prompts use headset projection.")
+info("Helper loaded; vendors, lobby/mission guides, objectives and interaction prompts use headset projection.")
 
 return callbacks
 end

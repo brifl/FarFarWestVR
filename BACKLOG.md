@@ -29,8 +29,28 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- NPC interaction prompt correction is implemented, awaiting next-launch headset
-  confirmation. The live read-only probe identified UI_Interact_C on the local
+- Quest objective correction is active in the running mission, awaiting headset
+  confirmation. The bounded read-only scan found UI_PingObjective_C on nine
+  BP_ObjectivePing-derived actors, including main/TNT, arrival, extraction, NPC,
+  lighthouse, boss and side objectives. Guarded fields: OwningActor=912,
+  Location=872; sampled AttachComponent fields were null. Preserve these live
+  widgets and target fields. Reuse the accepted Start Mission component path:
+  project the widget's live Location through the eye, then inverse-project that
+  pixel through the game camera to move only the visual child. Actor/root, live
+  title/distance and target Location stay intact. This also works when the aiming
+  camera points away from the marker. Mission UI_Guide_C on BP_TextGuide-derived
+  actors uses that same path, with actor position as its true target. Resolve
+  actor class rather than generated ChildActor instance names. Binding errors are
+  contained to the affected component, restoring any partial changes.
+  All 15 marker/interaction checks pass, including backward aim, updated objective
+  targets, preserved title/distance, mismatched-actor rejection and generated guide
+  names. Live logs confirm nine objective bindings, a mission guide, and successful
+  projection without helper errors. No native rebuild or reset required. Current
+  data/world_markers_dev.lua carries the new factory; remove after pulling the
+  committed implementation, leaving the in-memory instance active until reset.
+  Probe JSON persists on robot1-x at C:/src/uevr_far_west_build/ffw-tests/quest-probe.json.
+- NPC interaction prompt correction is USER-CONFIRMED: "It worked." The user
+  then entered a mission. The live read-only probe identified UI_Interact_C on the local
   pawn's unattached screen-space WidgetInteract component (Space=1). UI_Key is at
   816; text/description/progress are live children and must not be cloned. Native
   ProjectWorldLocationToScreen parameters=48 verified. world_marker_impl now
@@ -44,8 +64,8 @@ previous backend; restore that backend before using them.
   All 11 marker/interaction checks pass, including both axes, changing world
   targets, 120 repeated updates with stale geometry, aim independence, visibility,
   failed native projection and partial-write cleanup. No native rebuild needed.
-  The game shut down before the live correction loaded. Remove the temporary
-  data/world_markers_dev.lua and use the committed modules on the next launch.
+  The initial game shut down before the live correction loaded; the subsequent
+  launch loaded the committed modules and the user confirmed success.
   A newly added Lua module is absent from the running loader's initial module
   cache; a live override would need to seed package.loaded or scripts reset.
   The read-only probe is retained on robot1-x at /tmp/ffw-interact-probe.json.
@@ -396,10 +416,11 @@ Use one focused visual change/test at a time and preserve working controls.
 | Skipped | Increase color saturation/vibrance slightly | User chose to skip this after the accepted haze change improved the image. |
 | Done | Increase contrast slightly | User accepted ten percent above original after comparing five percent. Preserve native RGB/color balance and saturation; user reports the desired cartoon look and clearer detail. |
 | Done | Use the themed menu cursor | User accepted its headset appearance: "It looks so good." assets/menu_cursor.png is the unchanged user-authored 128-pixel arrow; unused duplicate scales removed with permission. Native overlay displays it at 48 pixels high at 1440p with a top-left hotspot. Native checks passed; controller pointing/click logic and gameplay cursor policy are unchanged. |
-| Testing | Correct the NPC “Press X” prompt | Shared screen-widget translation corrects UI_Interact_C on the local pawn's WidgetInteract component, preserving live text/key/progress and native world location/X behavior. Eleven checks pass; next launch needs headset confirmation against controller/head movement. |
+| Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
+| Testing | Anchor quest objective markers | UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction. Preserve title/distance/target data and actor roots, including when aiming away. Fifteen checks pass; update is active in the user's mission awaiting headset confirmation. |
 | Next | Correct player pings | User reports the same aim/head coupling. Reuse the shared projection correction; identify the ping widget and its world target while visible. Preserve ping creation, visibility and existing vendor/mission/interaction behavior. |
 | 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
-| Later | Quest and other-player marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
+| Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
 
 Earlier items remain below; the new ordered queue takes precedence after the
 current mission-marker fix.

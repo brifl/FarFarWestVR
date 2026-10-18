@@ -28,7 +28,8 @@ local sizes={K2_GetComponentLocation=24,GetOwner=8,GetOwningPlayer=8,GetDesiredS
     GetLocalSize=96,LocalToViewport=128}
 local function class(name)
     return {get_short_name=function() return name end,find_property=function(_,n)
-        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=1800,Image_Icon=808,Image_Aura=824,UI_Key=816}
+        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=1800,Image_Icon=808,Image_Aura=824,
+            UI_Key=816,OwningActor=912,Location=872,InteractTextHolder=816}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
@@ -37,7 +38,7 @@ local component_class,widget_class,image_class=class('component'),class('widget'
 local root=object({},'Billboard')
 local actor=object({hidden=false},'owner')
 function actor:get_property(n) if n=='RootComponent' then return root end;assert(n=='bHidden');return self.hidden end
-function actor:get_class() return class('actor') end
+function actor:get_class() return class(state.owner_class or 'actor') end
 function actor:K2_GetActorLocation() return state.world end
 local player=object({},'player')
 function player:get_class() return class('player') end
@@ -74,6 +75,8 @@ function source:get_property(n)
     if n=='Visibility' then return self.visibility end
     if n=='RenderTransform' then return {Translation=self.translation,Scale={X=1.5,Y=.5},
         Angle=0,Shear={X=0,Y=0}} end
+    if n=='OwningActor' then return state.wrong_actor and root or actor end
+    if n=='Location' then return state.objective_location or state.world end
     assert(n==(state.family=='UI_Guide_C' and 'Image_Aura' or 'Image_Icon'));return self.icon
 end
 function source.icon:get_property(n) return {name=n} end
@@ -83,8 +86,10 @@ function component:get_short_name() return state.family=='UI_Interact_C' and 'Wi
 function component:get_class() return component_class end
 function component:is_a(c) return c==component_class end
 function component:get_outer() return {get_short_name=function()
+    if state.owner_name then return state.owner_name end
     if state.family=='UI_Interact_C' then return 'BP_Player_Lobby_C_1' end
-    return state.family=='UI_Guide_C' and 'BP_LobbyGuide_C_2' or 'BP_WorldIcon_C_1' end} end
+    return state.family=='UI_Guide_C' and 'BP_LobbyGuide_C_2' or 'BP_WorldIcon_C_1' end,
+    get_class=function() return actor:get_class() end} end
 function component:GetOwner() return actor end
 function component:GetAttachParent() return state.is_root and component or root end
 function component:get_property(n)
@@ -261,3 +266,43 @@ for _,message in ipairs(state.logs) do
 end
 assert(stopped)
 """, "state.family='UI_Interact_C';state.fail_translation=true")
+
+OBJECTIVE_SETUP = """
+state.family='UI_PingObjective_C'
+state.owner_class='BP_ObjectivePing_Main_C'
+state.owner_name='BP_ObjectivePing_Tnt_C_0'
+state.source.label='Deliver TNT';state.source.distance='125 m'
+"""
+
+run("objective retains title/distance and stays anchored even aiming backward", """
+frame();frame();healthy();assert(state.created==0 and state.moves>0)
+near(state.display.X,1000);near(state.display.Y,500)
+state.rotation={x=10,y=10,z=0};frame();healthy()
+local x,y=state.display.X,state.display.Y;assert(x<1000 and y>500)
+state.aim=170;state.source.label='Carry TNT';state.source.distance='124 m'
+for i=1,120 do frame() end;healthy();near(state.display.X,x);near(state.display.Y,y)
+assert(state.source.label=='Carry TNT' and state.source.distance=='124 m')
+assert(state.world.X==1000 and state.world.Y==0 and state.created==0)
+near(state.source.translation.X,3);near(state.source.translation.Y,4)
+feature.reset();assert(state.restored and state.source.opacity==.7)
+""", OBJECTIVE_SETUP)
+
+run("objective uses its live target field and restores only its visual child", """
+frame();frame();state.objective_location={X=1000,Y=200,Z=100};frame();healthy()
+near(state.display.X,1200);near(state.display.Y,450)
+assert(state.world.Y==0 and state.world.Z==0 and state.objective_location.Y==200)
+state.active=false;frame();assert(state.restored and not state.component.warp and state.source.opacity==.7)
+assert(state.objective_location.Y==200 and state.world.Y==0)
+""", OBJECTIVE_SETUP)
+
+run("objective rejects mismatched actor without stopping other adapters", """
+frame();frame();healthy();assert(state.moves==0 and state.created==0 and state.source.opacity==.7)
+assert(not state.component.warp)
+""", OBJECTIVE_SETUP + ";state.wrong_actor=true")
+
+run("mission text guide resolves actual actor class behind a generated instance name", """
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+state.aim=170;state.rotation={x=10,y=10,z=0};frame();healthy()
+assert(state.display.X<1000 and state.display.Y>500 and state.source.label=='Refuel the pump')
+feature.reset();assert(state.restored and state.source.opacity==.7)
+""", "state.family='UI_Guide_C';state.owner_class='BP_TextGuide_FuelObjective_A_C';state.owner_name='ChildActor_GEN_VARIABLE_BP_TextGuide_C_CAT_822';state.source.label='Refuel the pump'")
