@@ -1,6 +1,6 @@
 # Read-only, bounded lookup of reticle/HUD objects in the supported game build.
 # No injection, function calls inside the game, or process-memory writes.
-# -Markers targets the identified UI_WorldIcon widgets/components instead.
+# -Markers targets the identified vendor/world-icon and lobby-guide components.
 param([switch]$Markers)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
@@ -224,11 +224,12 @@ public sealed class FfwReticleReader : IDisposable {
                 throw new Exception("UObject/FName layout validation failed.");
             long klass = BitConverter.ToInt64(data, 16);
             string className = ClassName(klass);
-            bool liveWidget = markerMode && className == "UI_WorldIcon_C" && !name.StartsWith("Default__");
+            bool liveWidget = markerMode && (className == "UI_WorldIcon_C" || className == "UI_Guide_C") && !name.StartsWith("Default__");
             bool component = false;
             if (markerMode && className == "WidgetComponent") {
                 byte[] widgetClass = Read(address + 1520, 8);
-                component = widgetClass != null && ClassName(BitConverter.ToInt64(widgetClass, 0)) == "UI_WorldIcon_C";
+                string widgetName = widgetClass == null ? "" : ClassName(BitConverter.ToInt64(widgetClass, 0));
+                component = widgetName == "UI_WorldIcon_C" || widgetName == "UI_Guide_C";
             }
             bool library = markerMode && className == "Class" && (name == "WidgetBlueprintLibrary" || name == "WidgetLayoutLibrary" || name == "Image");
             if (library) widgetClasses.Add(address);

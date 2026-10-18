@@ -1,6 +1,6 @@
 # Far Far West VR controls and backlog
 
-Updated October 17, 2026. Changes stay in this profile repository; the isolated
+Updated October 18, 2026. Changes stay in this profile repository; the isolated
 UEVR backend uses the guarded source build installed by
 `tools/deploy_native_backend.py`. Earlier binary patch tools apply only to the
 previous backend; restore that backend before using them.
@@ -24,15 +24,28 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- October 18 continuation: vendor markers are USER-CONFIRMED anchored correctly
+  on both axes, independent of aim. Start Mission remains incorrect and is the
+  active task before the improvement queue below. It uses UI_Guide_C on
+  BP_LobbyGuide_C_2, not UI_WorldIcon_C. The prepared implementation adds that
+  family to the shared projection path; headset validation is still pending.
+  Its label matches the class default, so engine Create/Construct can initialize
+  a matching copy without unsupported Lua FText copying. Customized label values
+  are left untouched. Fourteen mocked lifecycle/projection checks passed before
+  the credit interruption; the temporary /tmp harness did not survive the break.
+  Remove the old vendor-plus-read-only-probe development override when pulling
+  this change with the game closed, so the next launch uses the canonical module.
+  Observe five tracked markers, then confirm the Start Mission label and anchoring.
+  Native read-only probe also covers UI_Guide_C now; verified fields are
+  InteractTextHolder=816, Image_Aura=824, Appear=832, InteractText=840.
 - 19:15 live probe isolates the failure: get_bool_property throws for bVisible
   and bHidden, while get_property returns the correct booleans. All other marker
   reads, including owner/location/size/opacity/pivot, succeed. The helper now uses
   generic reads for those bitfields; the mock forbids the typed bool getter and
   all 12 checks pass. Corrected implementation is live in the development override.
-  A temporary diagnostic logs active-state changes: at 19:16 runtime=false and
-  hmd=false, so no marker mutation has run yet. User asked to return to headset
-  and leave saloon visible. Observe tracking/projection logs, repair any next
-  failure through the live override, then remove the override after validation.
+  A temporary diagnostic logged runtime=false and hmd=false at 19:16; returning
+  to the headset made both true and activated projection. Keep generic bitfield
+  reads; no native rebuild is required for this failure.
 - 19:05 retry also stopped before icon replacement, now during component
   inspection. The marker implementation is split into a factory module and a
   stable callback loader, so further reads/fixes can be tested without repeated
@@ -55,7 +68,7 @@ previous backend; restore that backend before using them.
   get_first_object_matching in this profile until that activation path is fixed.
   The fixture now makes get_objects_matching throw and verifies chunked
   discovery succeeds without calling it. Failure logs now include the operation.
-  Both-axis projection still awaits a launch where icon tracking actually starts.
+  The subsequent reflected-bool fix reaches icon tracking (see above).
 - Active task: decouple location markers from controller aiming on BOTH axes.
   Live saloon probe identifies four UI_WorldIcon_C instances owned by screen-space
   WidgetComponents on BP_WorldIcon actors. Their world position comes from the
@@ -66,7 +79,7 @@ previous backend; restore that backend before using them.
   size, pivot and layer order, hides only original widget opacity, and restores it
   on menus/reset/error. Component/actor position and visibility are unchanged.
   Actor/component visibility still gates the copies. Other marker families remain
-  separate; first validate the mission-start/vendor icons observed here.
+  separate; vendors are confirmed and the lobby-guide addition is next.
 - Marker helper mock checks pass backend/layout guards, head pitch AND yaw inverse
   projection, independence from gun direction, behind/offscreen/stale-camera hiding,
   original style, game visibility, pause/reset/error restoration, stale-object
@@ -275,6 +288,26 @@ previous backend; restore that backend before using them.
 
 ## Work queue
 
+Finish Start Mission first. Then take the new requests in the following initial
+order, based on expected effort; adjust when inspection reveals a dependency.
+Use one focused visual change/test at a time and preserve working controls.
+
+| Order | Improvement | Acceptance condition / constraint |
+| --- | --- | --- |
+| Current | Anchor Start Mission | Reuse the confirmed vendor projection for UI_Guide_C; preserve its label/aura and game visibility. Verify hand independence and inverse response to both head axes. |
+| 1 | Make the tested minimum world scale the default | User reports the minimum slider setting completely removed ghosting and improved sharpness. User recalled 0.0010; the installed profile actually saves VR_WorldScale=0.010000. Preserve that saved working value, verify the slider/value mapping, then update the repo default. No other rendering change in that test. |
+| 2 | Raise conversation text | Move NPC dialogue higher in view; keep text readable with headset movement and preserve conversation input. This was previously reported low and nonblocking. |
+| 3 | Reduce distance fog/dust | Check which engine variables affect the actual distance haze; try a modest reduction rather than removing intended atmosphere. Preserve the existing heat-distortion workaround. |
+| 4 | Increase color saturation/vibrance slightly | Seek a supported adjustment that remains active with the custom post-process-material workaround; avoid clipping or oversaturated UI. |
+| 5 | Increase contrast slightly | Reduce the washed-out VR look while retaining shadow/highlight detail; tune separately from saturation. |
+| 6 | Use the themed menu cursor | Supplied top-left arrow assets: cursor_128px.png, cursor_256px.png, cursor_512px.png. Choose suitable size and top-left hotspot; preserve controller pointing/clicks and hidden gameplay cursor. Assets are user-authored and currently untracked; do not replace/regenerate them. |
+| 7 | Correct the NPC “Press X” prompt | Prompt currently moves inversely to the aim reticle when targeting a character. Align it with the actual interaction target/reticle; preserve the already-working X interaction and vendor/mission markers. Live scan identified the separate UI_Interact_C WidgetInteract component on the lobby pawn as a candidate. |
+| 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
+| Later | Quest and other-player marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
+
+Earlier items remain below; the new ordered queue takes precedence after the
+current mission-marker fix.
+
 | Priority | Change | Acceptance condition / constraint |
 | --- | --- | --- |
 | 0 | Retain the distortion workaround and assess remaining artifacts | Startup r.PostProcessing.DisableMaterials=1 verified; user confirms no distortion on the repeat launch. Check gameplay effects before narrowing to the offending material. Other ghosting is not separately assessed; FXAA remains inactive. |
@@ -283,11 +316,11 @@ previous backend; restore that backend before using them.
 | 2 | Separate menu cursor movement from gameplay look input | Keep the working menu controls; stop JoyToKey mouse movement and vertical camera/HUD movement during immersive gameplay. Right-stick up/down should initially do nothing in gameplay. |
 | Done | Right-controller gun aiming and accurate reticle | Controller aim, head-independent shot grouping and projected crosshair confirmed, including different ranges and spells. |
 | Done | Controller pointer in game menus | Controller targeting/clicks and return to gameplay confirmed after 001206f. |
-| Test | Head-relative quest/location markers | UI_WorldIcon helper reprojects mission-start/vendor icons independently of aim on both axes. Verify world anchoring while moving hand and looking up/down/left/right. Other marker families remain separate. |
+| Current | Head-relative quest/location markers | Vendor icons confirmed anchored correctly. Start Mission uses UI_Guide_C and is being added separately; quest/player marker families remain queued. |
 | 3 | Reticle and HUD presentation | Reduce the oversized reticle and keep HUD placement stable when looking around. Menu height decoupling confirmed after 07b58d9; marker projection remains separate. |
 | 3 | Simplify the input layers | Audit JoyToKey plus RemapControls, their overlapping native gamepad inputs, grip-shift behavior, and RemapControls' repeated invalid-shift warning. Preserve working actions. |
 | 4 | Choose stick-click actions | Left click currently produces a forward leap/dash; right click produces a multiplayer ping. Decide desired assignments before changing them. |
-| 4 | Raise dialogue subtitles/text | Character dialogue is low in the field of view and hard to read; user reports this as nonblocking. |
+| 4 | Raise dialogue subtitles/text | Promoted to the ordered queue above. |
 
 ## Dead Island reference inspected
 

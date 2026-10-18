@@ -1,5 +1,5 @@
 return function()
--- Reproject the saloon's screen-space world icons through the rendered eye.
+-- Reproject the saloon's screen-space world markers through the rendered eye.
 -- Keep the originals attached to their actors; use viewport copies while in VR.
 local vr, functions, api = uevr.params.vr, uevr.params.functions, uevr.api
 local ok, tag = pcall(functions.get_tag)
@@ -13,6 +13,10 @@ local entries, camera, entry_count = {}, nil, 0
 local elapsed, next_scan, scan_index = 0, 0, nil
 local stage = "startup"
 local stopped, reported = false, false
+local kinds = {
+    UI_WorldIcon_C={owner="^BP_WorldIcon_C_", image="Image_Icon", offset=808},
+    UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, guide=true},
+}
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
 local function active()
@@ -116,11 +120,15 @@ end
 local function inspect_component(component)
     stage="read marker component owner"
     local outer=component:get_outer()
-    if not outer or not outer:get_short_name():match("^BP_WorldIcon_C_") then return end
+    if not outer then return end
+    local owner_name=outer:get_short_name()
+    if not owner_name:match("^BP_WorldIcon_C_") and not owner_name:match("^BP_LobbyGuide_C_") then return end
     stage="read marker widget property"
     local source=component:get_property("Widget")
     stage="read marker widget class"
-    if not source or source:get_class():get_short_name()~="UI_WorldIcon_C" then return end
+    if not source then return end
+    local kind=kinds[source:get_class():get_short_name()]
+    if not kind or not owner_name:match(kind.owner) then return end
     stage="read marker component visibility"
     -- The typed bool getter throws on this backend; reflected reads work for
     -- both the component's bVisible and the actor's bHidden bitfields.
@@ -129,8 +137,17 @@ local function inspect_component(component)
         and not entries[component:get_address()] then
         stage="validate world-icon widget"
         assert(entry_count<64,"Too many world icons")
-        local p=source:get_class():find_property("Image_Icon")
-        assert(p and p:get_offset()==808,"World-icon layout mismatch")
+        local p=source:get_class():find_property(kind.image)
+        assert(p and p:get_offset()==kind.offset,"World-marker image layout mismatch")
+        if kind.guide then
+            local text=source:get_class():find_property("InteractText")
+            assert(text and text:get_offset()==840,"Lobby-guide text layout mismatch")
+            -- Create runs the guide's Construct with its class-default label.
+            -- Leave customized variants untouched: Lua cannot safely copy FText.
+            local default=source:get_class():get_class_default_object()
+            if source:read_qword(840)~=default:read_qword(840)
+                or source:read_qword(848)~=default:read_qword(848) then return end
+        end
         local size=source:GetDesiredSize()
         if not size or size.X<=0 or size.Y<=0 then
             source:ForceLayoutPrepass() -- Also size icons outside the gun camera's view.
@@ -141,14 +158,14 @@ local function inspect_component(component)
             assert(owner and owner:get_class():find_property("bHidden"),"World-icon owner unavailable")
             local opacity=source:get_float_property("RenderOpacity")
             assert(finite(opacity),"Invalid world-icon opacity")
-            local entry={component=track(component),source=track(source),owner=track(owner),opacity=opacity,hidden=false}
+            local entry={component=track(component),source=track(source),owner=track(owner),opacity=opacity,hidden=false,kind=kind}
             entries[component:get_address()]=entry -- Cleanup owns every subsequent mutation.
             entry_count=entry_count+1
             stage="create viewport icon"
             local proxy=factory:Create(source,source:get_class(),source:GetOwningPlayer())
             assert(proxy and proxy:is_a(widget_class),"Cannot create world-icon viewport copy")
             entry.proxy=track(proxy)
-            entry.icon=proxy:get_property("Image_Icon")
+            entry.icon=proxy:get_property(kind.image)
             assert(entry.icon,"World-icon image is missing")
             stage="attach viewport icon"
             proxy:SetRenderOpacity(0)
@@ -160,7 +177,7 @@ local function inspect_component(component)
             entry.hidden=true
             source:SetRenderOpacity(0)
             entry.style_time=0
-            info("Tracking world icon at "..tostring(component:get_address()).."; native icon hidden.")
+            info("Tracking world icon at "..tostring(component:get_address()).." ("..source:get_class():get_short_name().."); native icon hidden.")
         end
     end
 end
@@ -231,7 +248,7 @@ callbacks.tick = function(_,delta)
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
                     if pixel and pixel.inside then
                         if elapsed>=entry.style_time then
-                            local source_icon=entry.source.object:get_property("Image_Icon")
+                            local source_icon=entry.source.object:get_property(entry.kind.image)
                             assert(source_icon,"Original world-icon image is missing")
                             stage="copy icon appearance"
                             entry.icon:SetBrush(source_icon:get_property("Brush"))
@@ -252,7 +269,7 @@ callbacks.tick = function(_,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; only UI_WorldIcon screen components are replaced during immersive play.")
+info("Helper loaded; vendor icons and default lobby guides are replaced during immersive play.")
 
 return callbacks
 end
