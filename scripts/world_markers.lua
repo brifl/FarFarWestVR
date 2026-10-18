@@ -8,8 +8,9 @@ if not loaded then functions.log_warn("[FarFarWest markers] Projection helper un
 
 local matrix = UEVR_Matrix4x4f.new()
 local array, component_class, widget_class, factory, layout
-local entries, camera = {}, nil
-local elapsed, next_scan = 0, 0
+local entries, camera, entry_count = {}, nil, 0
+local elapsed, next_scan, scan_index = 0, 0, nil
+local stage = "startup"
 local stopped, reported = false, false
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
@@ -45,14 +46,14 @@ local function restore(entry)
 end
 local function reset()
     for _, entry in pairs(entries) do pcall(restore, entry) end
-    entries, camera, next_scan = {}, nil, 0
+    entries, camera, next_scan, scan_index, entry_count = {}, nil, 0, nil, 0
 end
 local function guarded(fn)
     if stopped then return end
     local success, err = pcall(fn)
     if not success then
         reset(); stopped=true
-        functions.log_warn("[FarFarWest markers] Stopped safely: "..tostring(err))
+        functions.log_warn("[FarFarWest markers] Stopped safely during "..stage..": "..tostring(err))
     end
 end
 
@@ -111,49 +112,63 @@ local function prepare()
     info("WidgetComponent layout and viewport functions verified.")
 end
 
+local function inspect_component(component)
+    stage="inspect world-icon component"
+    local source=component:get_uobject_property("Widget")
+    if source and source:get_class():get_fname():to_string()=="UI_WorldIcon_C"
+        and component:read_byte(1512)==1 and component:get_bool_property("bVisible")
+        and not entries[component:get_address()] then
+        stage="validate world-icon widget"
+        assert(entry_count<64,"Too many world icons")
+        local p=source:get_class():find_property("Image_Icon")
+        assert(p and p:get_offset()==808,"World-icon layout mismatch")
+        local size=source:GetDesiredSize()
+        if not size or size.X<=0 or size.Y<=0 then
+            source:ForceLayoutPrepass() -- Also size icons outside the gun camera's view.
+            size=source:GetDesiredSize()
+        end
+        if size and finite(size.X) and finite(size.Y) and size.X>0 and size.Y>0 then
+            local owner=component:GetOwner()
+            assert(owner and owner:get_class():find_property("bHidden"),"World-icon owner unavailable")
+            local opacity=source:get_float_property("RenderOpacity")
+            assert(finite(opacity),"Invalid world-icon opacity")
+            local entry={component=track(component),source=track(source),owner=track(owner),opacity=opacity,hidden=false}
+            entries[component:get_address()]=entry -- Cleanup owns every subsequent mutation.
+            entry_count=entry_count+1
+            stage="create viewport icon"
+            local proxy=factory:Create(source,source:get_class(),source:GetOwningPlayer())
+            assert(proxy and proxy:is_a(widget_class),"Cannot create world-icon viewport copy")
+            entry.proxy=track(proxy)
+            entry.icon=proxy:get_uobject_property("Image_Icon")
+            assert(entry.icon,"World-icon image is missing")
+            stage="attach viewport icon"
+            proxy:SetRenderOpacity(0)
+            proxy:AddToViewport(component:get_int_property("LayerZOrder"))
+            local pivot=component:get_property("Pivot")
+            proxy:SetAlignmentInViewport({X=pivot.X,Y=pivot.Y})
+            proxy:SetDesiredSizeInViewport({X=size.X,Y=size.Y})
+            proxy:SetVisibility(3) -- HitTestInvisible: markers never intercept input.
+            entry.hidden=true
+            source:SetRenderOpacity(0)
+            entry.style_time=0
+            info("Tracking world icon at "..tostring(component:get_address()).."; native icon hidden.")
+        end
+    end
+end
+
 local function discover()
     if elapsed<next_scan then return end
-    next_scan=elapsed+1
-    assert(array:get_object_count()<=250000,"Object count outside the verified budget")
-    local components=component_class:get_objects_matching(false)
-    assert(#components<=4096,"Widget-component enumeration exceeded its budget")
-    local count=0
-    for _,component in ipairs(components) do
-        local source=component:get_uobject_property("Widget")
-        if source and source:get_class():get_fname():to_string()=="UI_WorldIcon_C"
-            and component:get_property("Space")==1 and component:get_bool_property("bVisible")
-            and not entries[component:get_address()] then
-            count=count+1; assert(count<=64,"Too many world icons")
-            local p=source:get_class():find_property("Image_Icon")
-            assert(p and p:get_offset()==808,"World-icon layout mismatch")
-            local size=source:GetDesiredSize()
-            if not size or size.X<=0 or size.Y<=0 then
-                source:ForceLayoutPrepass() -- Also size icons outside the gun camera's view.
-                size=source:GetDesiredSize()
-            end
-            if size and finite(size.X) and finite(size.Y) and size.X>0 and size.Y>0 then
-                local owner=component:GetOwner()
-                assert(owner and owner:get_class():find_property("bHidden"),"World-icon owner unavailable")
-                local opacity=source:get_float_property("RenderOpacity")
-                assert(finite(opacity),"Invalid world-icon opacity")
-                local entry={component=track(component),source=track(source),owner=track(owner),opacity=opacity,hidden=false}
-                entries[component:get_address()]=entry -- Cleanup owns every subsequent mutation.
-                local proxy=factory:Create(source,source:get_class(),source:GetOwningPlayer())
-                assert(proxy and proxy:is_a(widget_class),"Cannot create world-icon viewport copy")
-                entry.proxy=track(proxy)
-                entry.icon=proxy:get_uobject_property("Image_Icon")
-                assert(entry.icon,"World-icon image is missing")
-                proxy:SetRenderOpacity(0)
-                proxy:AddToViewport(component:get_int_property("LayerZOrder"))
-                local pivot=component:get_property("Pivot")
-                proxy:SetAlignmentInViewport({X=pivot.X,Y=pivot.Y})
-                proxy:SetDesiredSizeInViewport({X=size.X,Y=size.Y})
-                proxy:SetVisibility(3) -- HitTestInvisible: markers never intercept input.
-                entry.hidden=true
-                source:SetRenderOpacity(0)
-                entry.style_time=0
-                info("Tracking world icon at "..tostring(component:get_address()).."; native icon hidden.")
-            end
+    stage="scan object array"
+    local count=array:get_object_count()
+    assert(count>0 and count<=250000,"Object count outside the verified budget")
+    if scan_index==nil or scan_index>=count then scan_index=count-1 end
+    -- get_objects_matching activates UObjectHook; use the proven reticle path.
+    for _=1,512 do
+        if scan_index<0 then scan_index=nil; next_scan=elapsed+1; return end
+        local object=array:get_object(scan_index)
+        scan_index=scan_index-1
+        if object and object:get_short_name()=="Widget" and object:is_a(component_class) then
+            inspect_component(object)
         end
     end
 end
@@ -161,6 +176,7 @@ end
 uevr.sdk.callbacks.on_post_calculate_stereo_view_offset(function(_,_,_,position,rotation,is_double)
     guarded(function()
         if not active() then return end
+        stage="read eye camera"
         assert(is_double,"Expected UE5 double camera values")
         vr.get_ue_projection_matrix(-1,matrix)
         local projection={}
@@ -177,11 +193,12 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_,delta)
     guarded(function()
         elapsed=elapsed+math.min(math.max(delta or 0,0),.1)
         if not active() then reset(); return end
-        if not array then prepare() end
+        if not array then stage="verify widget API"; prepare() end
         discover()
         for address,entry in pairs(entries) do
+            stage="validate tracked icon"
             if not component_valid(entry) or not valid(entry.proxy) then
-                restore(entry); entries[address]=nil
+                restore(entry); entries[address]=nil; entry_count=entry_count-1
             else
                 local proxy=entry.proxy.object
                 local viewport=layout:GetViewportSize(proxy)
@@ -206,10 +223,12 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_,delta)
                         if elapsed>=entry.style_time then
                             local source_icon=entry.source.object:get_uobject_property("Image_Icon")
                             assert(source_icon,"Original world-icon image is missing")
+                            stage="copy icon appearance"
                             entry.icon:SetBrush(source_icon:get_property("Brush"))
                             entry.icon:SetColorAndOpacity(source_icon:get_property("ColorAndOpacity"))
                             entry.style_time=elapsed+.25
                         end
+                        stage="position viewport icon"
                         proxy:SetPositionInViewport({X=pixel.x,Y=pixel.y},true)
                         proxy:SetRenderOpacity(entry.opacity)
                         if not reported then

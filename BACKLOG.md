@@ -24,6 +24,16 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- The d778bc1 marker test retained old behavior because the helper stopped at
+  discovery before tracking/hiding any icon (18:58 log: API verified, then
+  `caught (...) exception`). API.hpp reveals get_objects_matching implicitly
+  activates UObjectHook; that native path is still unsupported. Replace it with
+  the reticle's proven direct array scan, bounded to 512 slots/tick, filtering
+  the observed Widget components. Do not use get_objects_matching or
+  get_first_object_matching in this profile until that activation path is fixed.
+  The fixture now makes get_objects_matching throw and verifies chunked
+  discovery succeeds without calling it. Failure logs now include the operation.
+  Both-axis projection still awaits a launch where icon tracking actually starts.
 - Active task: decouple location markers from controller aiming on BOTH axes.
   Live saloon probe identifies four UI_WorldIcon_C instances owned by screen-space
   WidgetComponents on BP_WorldIcon actors. Their world position comes from the
