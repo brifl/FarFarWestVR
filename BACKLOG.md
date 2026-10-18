@@ -41,7 +41,8 @@ previous backend; restore that backend before using them.
   fog autorun, as with the dialogue helper; the in-memory instance stays active
   until the next reset/launch. Local payload /tmp/ffw-fog-live.lua.
   Live verification of the persistent factory logged ambient density 0.02 -> 0.
-  Next queued improvement is a slight saturation/vibrance increase.
+  User skipped saturation/vibrance because clearing the haze already helped.
+  Next queued improvement is a slight contrast increase.
 - Live view has one visible ExponentialHeightFog component on
   BP_BlendableAtmosphere_Afternoon_Heat_C: FogDensity=0.02 (offset 592), secondary
   density=0, volumetric enabled, extinction scale=1. SetFogDensity parameters=4
@@ -343,8 +344,8 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Make the tested minimum world scale the default | Repo VR_WorldScale=0.010000 matches the saved working profile. Native slider minimum verified as 0.01. User reports ghosting gone and sharper imagery; preserve other runtime adjustments. |
 | Done | Raise conversation text | User confirms "perfect." Live UI_NpcTalk_C panel is raised by one tenth of its local viewport height; text/name/choices/input and headset coupling are preserved. |
 | Done | Reduce distance fog/dust | User accepted zero primary ambient fog density after 25-percent reduction was imperceptible. Apply the tested setting to BP_BlendableAtmosphere fog components; preserve secondary fog, other rendering settings and the heat-distortion workaround. |
-| 4 | Increase color saturation/vibrance slightly | Seek a supported adjustment that remains active with the custom post-process-material workaround; avoid clipping or oversaturated UI. |
-| 5 | Increase contrast slightly | Reduce the washed-out VR look while retaining shadow/highlight detail; tune separately from saturation. |
+| Skipped | Increase color saturation/vibrance slightly | User chose to skip this after the accepted haze change improved the image. |
+| 5 | Increase contrast slightly | Reduce the washed-out VR look while retaining shadow/highlight detail; saturation remains unchanged. |
 | 6 | Use the themed menu cursor | Supplied top-left arrow assets: cursor_128px.png, cursor_256px.png, cursor_512px.png. Choose suitable size and top-left hotspot; preserve controller pointing/clicks and hidden gameplay cursor. Assets are user-authored and currently untracked; do not replace/regenerate them. |
 | 7 | Correct the NPC “Press X” prompt | Prompt currently moves inversely to the aim reticle when targeting a character. Align it with the actual interaction target/reticle; preserve the already-working X interaction and vendor/mission markers. Live scan identified the separate UI_Interact_C WidgetInteract component on the lobby pawn as a candidate. |
 | 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
