@@ -93,4 +93,4 @@ player pings queued next. NPC placement is confirmed working.
 Mission objective markers and text guides retain their live title/distance widgets
 and use the same visual-child correction as Start Mission. Objective target data
 and actor roots remain in place; controller aiming cannot move their headset
-projection. This addition is active for headset testing in the current mission.
+projection. The user confirms quest markers stay anchored with correct title and distance.

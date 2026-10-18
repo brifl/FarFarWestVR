@@ -29,8 +29,8 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- Quest objective correction is active in the running mission, awaiting headset
-  confirmation. The bounded read-only scan found UI_PingObjective_C on nine
+- Quest objective correction is USER-CONFIRMED: "Anchored; title and distance
+  correct." The bounded read-only scan found UI_PingObjective_C on nine
   BP_ObjectivePing-derived actors, including main/TNT, arrival, extraction, NPC,
   lighthouse, boss and side objectives. Guarded fields: OwningActor=912,
   Location=872; sampled AttachComponent fields were null. Preserve these live
@@ -45,9 +45,9 @@ previous backend; restore that backend before using them.
   All 15 marker/interaction checks pass, including backward aim, updated objective
   targets, preserved title/distance, mismatched-actor rejection and generated guide
   names. Live logs confirm nine objective bindings, a mission guide, and successful
-  projection without helper errors. No native rebuild or reset required. Current
-  data/world_markers_dev.lua carries the new factory; remove after pulling the
-  committed implementation, leaving the in-memory instance active until reset.
+  projection without helper errors. Commit 2023004 is synced to robot1-x and the
+  temporary data/world_markers_dev.lua was removed; the accepted correction stays
+  active in memory and future launches load the committed implementation.
   Probe JSON persists on robot1-x at C:/src/uevr_far_west_build/ffw-tests/quest-probe.json.
 - NPC interaction prompt correction is USER-CONFIRMED: "It worked." The user
   then entered a mission. The live read-only probe identified UI_Interact_C on the local
@@ -417,7 +417,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Increase contrast slightly | User accepted ten percent above original after comparing five percent. Preserve native RGB/color balance and saturation; user reports the desired cartoon look and clearer detail. |
 | Done | Use the themed menu cursor | User accepted its headset appearance: "It looks so good." assets/menu_cursor.png is the unchanged user-authored 128-pixel arrow; unused duplicate scales removed with permission. Native overlay displays it at 48 pixels high at 1440p with a top-left hotspot. Native checks passed; controller pointing/click logic and gameplay cursor policy are unchanged. |
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
-| Testing | Anchor quest objective markers | UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction. Preserve title/distance/target data and actor roots, including when aiming away. Fifteen checks pass; update is active in the user's mission awaiting headset confirmation. |
+| Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
 | Next | Correct player pings | User reports the same aim/head coupling. Reuse the shared projection correction; identify the ping widget and its world target while visible. Preserve ping creation, visibility and existing vendor/mission/interaction behavior. |
 | 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
