@@ -32,8 +32,15 @@ Menu pointing now uses the right controller's ray intersection with the existing
 screen. Move/rotate the controller to move the pointer and use the right trigger
 to click. JoyToKey's stick-to-mouse movement is disabled in both grip modes;
 gameplay snap turns keep their native stick input. This requires the latest
-isolated backend below and awaits headset testing. The game window must have
+isolated backend below and is confirmed working. The game window must have
 focus. Menu placement, B pause/resume and gameplay aiming are preserved.
+
+Game menus use the supplied themed arrow in [assets/menu_cursor.png](assets/menu_cursor.png).
+Its top-left tip is the click hotspot; it displays at 48 pixels high in a 1440p
+view and scales with the viewport. The UEVR panel retains its standard cursor,
+and immersive gameplay keeps the menu cursor hidden. The isolated backend loads
+the PNG into its existing font texture; a missing image falls back to the standard
+cursor. Changes to the image load on the next game launch.
 
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this
@@ -42,6 +49,9 @@ profile on robot1-x, deploy its verified DLL/PDB while the game is closed:
 The build artifacts live in `C:/src/uevr_far_west_build/build/bin/uevr`.
 The installer preserves the prior pair; `restore` reinstates it. Older binary
 patch tools require that prior backend and cannot patch the source build.
+The cursor source change is in [native_patches/menu_cursor.patch](native_patches/menu_cursor.patch);
+[its native smoke test](native_patches/tests/menu_cursor.cpp) checks PNG decoding,
+atlas rebuilds, alpha/color preservation, the hotspot and missing-image fallback.
 
 [scripts/reticle.lua](scripts/reticle.lua) validates the backend identity,
 widget layout and function metadata before moving the original crosshair to

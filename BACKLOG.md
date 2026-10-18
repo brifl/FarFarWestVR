@@ -29,6 +29,17 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- The themed menu cursor is implemented, awaiting headset acceptance. User's
+  128-pixel PNG is retained unchanged as assets/menu_cursor.png; the duplicate
+  256/512 sizes were removed with permission. Display height is viewport-scaled
+  (48 pixels at 1440p, bounded 32-64); click hotspot is the top-left tip. The native
+  Framework patch uses the existing RGBA font atlas, with a transparent gutter,
+  and replaces only the game-menu cursor. Controller ray/click input, gameplay
+  hiding and the UEVR panel cursor retain their working behavior. Missing image
+  falls back to the standard cursor. Native build and PNG/alpha/color/atlas
+  rebuild/hotspot/fallback smoke checks passed. Installer migration, repeat/restore,
+  hash guards and failed-copy recovery passed. Public patch and smoke source are
+  in native_patches; deployment hashes are in tools/deploy_native_backend.py.
 - Contrast is USER-ACCEPTED at ten percent above the original (master W=1.10).
   User requested an increase from the initial five-percent test, then confirmed
   the more cartoon-like look and clearer detail. Native readbacks verified both
@@ -40,13 +51,10 @@ previous backend; restore that backend before using them.
   different game-controlled W values alone, and restores its own value on reset.
   Existing higher-priority LumenPP does not override contrast; do not change it.
   The native IConsoleVariable path remains unusable; reflection works.
-- Current live payload /tmp/ffw-contrast-live.lua combines the marker and contrast
-  factories, plus the accepted fog factory if package.loaded['libs/fog_density']
-  is absent. The standalone fog autorun was deployed during this running game;
-  preserve this carried helper in further live overrides until a restart loads
-  all standalone scripts. Remove the temporary development file before pulling
-  the standalone contrast autorun; accepted helpers remain active in memory until
-  reset/launch. Next queued item is the supplied themed menu cursor.
+- The accepted helpers are committed as standalone autorun scripts. The game was
+  closed after the contrast test and data/world_markers_dev.lua was removed;
+  the old live payloads described below are historical, not active overrides.
+  The next launch uses the committed dialogue/fog/contrast helpers normally.
 - Distance haze is USER-CONFIRMED "looks good now" with primary ambient fog
   density zero. A 25-percent reduction (0.02 -> 0.015) had no visible effect;
   the controlled zero-density comparison identified the desired clear-distance
@@ -364,7 +372,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Reduce distance fog/dust | User accepted zero primary ambient fog density after 25-percent reduction was imperceptible. Apply the tested setting to BP_BlendableAtmosphere fog components; preserve secondary fog, other rendering settings and the heat-distortion workaround. |
 | Skipped | Increase color saturation/vibrance slightly | User chose to skip this after the accepted haze change improved the image. |
 | Done | Increase contrast slightly | User accepted ten percent above original after comparing five percent. Preserve native RGB/color balance and saturation; user reports the desired cartoon look and clearer detail. |
-| 6 | Use the themed menu cursor | Supplied top-left arrow assets: cursor_128px.png, cursor_256px.png, cursor_512px.png. Choose suitable size and top-left hotspot; preserve controller pointing/clicks and hidden gameplay cursor. Assets are user-authored and currently untracked; do not replace/regenerate them. |
+| Testing | Use the themed menu cursor | assets/menu_cursor.png is the unchanged user-authored 128-pixel arrow; unused duplicate scales removed with permission. Native overlay displays it at 48 pixels high at 1440p with a top-left hotspot. Build/smoke checks passed; verify appearance in the headset, clicks and hidden gameplay cursor. |
 | 7 | Correct the NPC “Press X” prompt | Prompt currently moves inversely to the aim reticle when targeting a character. Align it with the actual interaction target/reticle; preserve the already-working X interaction and vendor/mission markers. Live scan identified the separate UI_Interact_C WidgetInteract component on the lobby pawn as a candidate. |
 | 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | Later | Quest and other-player marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |

@@ -14,8 +14,10 @@ BUILD = Path('/mnt/c/src/uevr_far_west_build/build/bin/uevr')
 BASELINE_SHA = '3d2c8647dc10409a8d3d014c248f69f10f60895aede9c2d1fbee442d557c7527'
 PREVIOUS_BUILD_SHA = '91a287bc456dd84c6f497030b65bb83af6977efc4f1ed8249b1d09c9905795d8'
 PREVIOUS_PDB_SHA = 'f5a06b25d9613843449bddf14846b9f8474040eee48ea6b9614e1050219c5b2b'
-BUILD_SHA = '6aa7868a2dd745f5d6a8a34865d3866d5d95ffac924bed09e75d6eb3486f3691'
-PDB_SHA = 'efa1bad0f7d0a3c494c7abed53e712b7615b5c6e94858bc5cbac16a72e4006fd'
+MENU_POINTER_BUILD_SHA = '6aa7868a2dd745f5d6a8a34865d3866d5d95ffac924bed09e75d6eb3486f3691'
+MENU_POINTER_PDB_SHA = 'efa1bad0f7d0a3c494c7abed53e712b7615b5c6e94858bc5cbac16a72e4006fd'
+BUILD_SHA = '98cb830717c2b0e942b456271dfee30987b25e90ad75164c5cd4119879804249'
+PDB_SHA = '18d13de0b607d46f6c5a9cc5fcab44de24cd23b11a6a93bd680c67b2e9fb05cb'
 POWERSHELL = '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
 
 
@@ -54,15 +56,17 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
     old_pdb = runtime/'UEVRBackend.pdb.before-ue58-sdk.bak'
     previous_dll = runtime/'UEVRBackend.dll.before-menu-pointer.bak'
     previous_pdb = runtime/'UEVRBackend.pdb.before-menu-pointer.bak'
+    pointer_dll = runtime/'UEVRBackend.dll.before-themed-cursor.bak'
+    pointer_pdb = runtime/'UEVRBackend.pdb.before-themed-cursor.bak'
     current = digest(dll)
-    if current not in (BASELINE_SHA, PREVIOUS_BUILD_SHA, BUILD_SHA):
+    if current not in (BASELINE_SHA, PREVIOUS_BUILD_SHA, MENU_POINTER_BUILD_SHA, BUILD_SHA):
         raise SystemExit('Runtime differs from the verified baseline/build; nothing changed.')
     if old_dll.exists() and digest(old_dll) != BASELINE_SHA:
         raise SystemExit('Native backend backup differs from the baseline; nothing changed.')
     if restore:
         if not old_dll.is_file() or not old_pdb.is_file():
             raise SystemExit('Native backend backups are missing; nothing changed.')
-        if digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, PDB_SHA):
+        if digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, PDB_SHA):
             raise SystemExit('Runtime symbols changed; nothing changed.')
         if current != BASELINE_SHA:
             atomic_copy(old_dll, dll)
@@ -78,15 +82,20 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
         raise SystemExit('Custom build identity is absent; nothing changed.')
     if current != BASELINE_SHA and (not old_dll.exists() or not old_pdb.exists()):
         raise SystemExit('The installed build has no complete baseline backup; nothing changed.')
-    expected_symbols = {PREVIOUS_BUILD_SHA: PREVIOUS_PDB_SHA, BUILD_SHA: PDB_SHA}
+    expected_symbols = {PREVIOUS_BUILD_SHA: PREVIOUS_PDB_SHA,
+                        MENU_POINTER_BUILD_SHA: MENU_POINTER_PDB_SHA, BUILD_SHA: PDB_SHA}
     if current in expected_symbols and digest(pdb) != expected_symbols[current]:
         raise SystemExit('Runtime symbols do not match the installed build; nothing changed.')
-    if old_pdb.exists() and digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, PDB_SHA):
+    if old_pdb.exists() and digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, PDB_SHA):
         raise SystemExit('Runtime symbols differ from the baseline/build; nothing changed.')
     if previous_dll.exists() and digest(previous_dll) != PREVIOUS_BUILD_SHA:
         raise SystemExit('Previous source-build backup changed; nothing changed.')
     if previous_pdb.exists() and digest(previous_pdb) != PREVIOUS_PDB_SHA:
         raise SystemExit('Previous source-build symbols changed; nothing changed.')
+    if pointer_dll.exists() and digest(pointer_dll) != MENU_POINTER_BUILD_SHA:
+        raise SystemExit('Controller-pointer backend backup changed; nothing changed.')
+    if pointer_pdb.exists() and digest(pointer_pdb) != MENU_POINTER_PDB_SHA:
+        raise SystemExit('Controller-pointer symbols backup changed; nothing changed.')
     if not old_dll.exists():
         shutil.copyfile(dll, old_dll)
     if not old_pdb.exists():
@@ -96,7 +105,13 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
             shutil.copyfile(dll, previous_dll)
         if not previous_pdb.exists():
             shutil.copyfile(pdb, previous_pdb)
-    rollback_pdb = previous_pdb if current == PREVIOUS_BUILD_SHA else old_pdb
+    if current == MENU_POINTER_BUILD_SHA:
+        if not pointer_dll.exists():
+            shutil.copyfile(dll, pointer_dll)
+        if not pointer_pdb.exists():
+            shutil.copyfile(pdb, pointer_pdb)
+    rollback_pdb = (pointer_pdb if current == MENU_POINTER_BUILD_SHA else
+                    previous_pdb if current == PREVIOUS_BUILD_SHA else old_pdb)
     try:
         if digest(pdb) != PDB_SHA:
             atomic_copy(source_pdb, pdb)
@@ -107,7 +122,7 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
             atomic_copy(rollback_pdb, pdb)
         raise
     assert digest(dll) == BUILD_SHA and digest(pdb) == PDB_SHA
-    print('UE5.8 SDK backend deployed with controller menu pointing; compatibility ports retained.')
+    print('UE5.8 SDK backend deployed with themed menu cursor; compatibility ports retained.')
     print('Backend SHA256:', BUILD_SHA)
 
 

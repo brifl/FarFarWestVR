@@ -1,0 +1,126 @@
+--- a/src/Framework.cpp
++++ b/src/Framework.cpp
+@@ -11,6 +11,7 @@
+ #include "uevr-imgui/imgui_impl_dx11.h"
+ #include "uevr-imgui/imgui_impl_dx12.h"
+ #include "uevr-imgui/imgui_impl_win32.h"
++#include "uevr-imgui/ffw_menu_cursor.hpp"
+ 
+ #include "utility/Module.hpp"
+ #include "utility/Patch.hpp"
+@@ -36,6 +37,8 @@
+ using namespace std::literals;
+ 
+ std::unique_ptr<Framework> g_framework{};
++
++namespace { FfwMenuCursor g_ffw_menu_cursor{}; }
+ 
+ UEVRSharedMemory::UEVRSharedMemory() {
+     spdlog::info("Shared memory constructor!");
+@@ -1107,7 +1110,11 @@
+         }
+     }
+ 
++    const auto cursor_loaded = g_ffw_menu_cursor.reserve(fonts, get_persistent_dir() / "assets" / "menu_cursor.png");
+     fonts->Build();
++    g_ffw_menu_cursor.fill(fonts);
++    spdlog::info(cursor_loaded ? "[FFW cursor] Themed menu arrow loaded (top-left hotspot)."
++                              : "[FFW cursor] Image unavailable; using the standard cursor.");
+     m_wants_device_object_cleanup = true;
+ }
+ 
+@@ -1134,6 +1141,11 @@
+     }
+ 
+     ImGui::GetIO().MouseDrawCursor = m_draw_ui || FrameworkConfig::get()->is_always_show_cursor();
++    // Only replace the game-menu cursor. Keep UEVR's panel and gameplay policy.
++    if (!m_draw_ui && FrameworkConfig::get()->is_always_show_cursor()
++        && VR::get()->is_using_2d_screen() && g_ffw_menu_cursor.draw()) {
++        ImGui::GetIO().MouseDrawCursor = false;
++    }
+     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange; // causes bugs with the cursor
+ 
+     if (!m_draw_ui) {
+--- /dev/null
++++ b/src/uevr-imgui/ffw_menu_cursor.hpp
+@@ -0,0 +1,80 @@
++#pragma once
++
++#include <algorithm>
++#include <cstring>
++#include <filesystem>
++#include <vector>
++#include <wincodec.h>
++#include <wrl/client.h>
++#include <imgui.h>
++
++#pragma comment(lib, "windowscodecs.lib")
++#pragma comment(lib, "ole32.lib")
++
++// Share the existing font texture: no extra D3D descriptors or GPU lifetime.
++struct FfwMenuCursor {
++    int rect{-1};
++    UINT width{}, height{};
++    std::vector<BYTE> rgba{};
++    ImVec2 uv_min{}, uv_max{};
++
++    bool reserve(ImFontAtlas* atlas, const std::filesystem::path& path) {
++        rect = -1;
++        rgba.clear();
++        const auto initialized = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
++        if (FAILED(initialized) && initialized != RPC_E_CHANGED_MODE) return false;
++        struct Apartment {
++            bool owns;
++            ~Apartment() { if (owns) CoUninitialize(); }
++        } apartment{SUCCEEDED(initialized)};
++
++        Microsoft::WRL::ComPtr<IWICImagingFactory> factory;
++        Microsoft::WRL::ComPtr<IWICBitmapDecoder> decoder;
++        Microsoft::WRL::ComPtr<IWICBitmapFrameDecode> frame;
++        Microsoft::WRL::ComPtr<IWICFormatConverter> converter;
++        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
++                IID_PPV_ARGS(factory.GetAddressOf())))
++            || FAILED(factory->CreateDecoderFromFilename(path.c_str(), nullptr, GENERIC_READ,
++                WICDecodeMetadataCacheOnLoad, &decoder))
++            || FAILED(decoder->GetFrame(0, &frame))
++            || FAILED(frame->GetSize(&width, &height))
++            || width == 0 || height == 0 || width > 512 || height > 512
++            || FAILED(factory->CreateFormatConverter(&converter))
++            || FAILED(converter->Initialize(frame.Get(), GUID_WICPixelFormat32bppRGBA,
++                WICBitmapDitherTypeNone, nullptr, 0, WICBitmapPaletteTypeCustom))) return false;
++
++        rgba.resize(width * height * 4);
++        if (FAILED(converter->CopyPixels(nullptr, width * 4, (UINT)rgba.size(), rgba.data()))) return false;
++        // Transparent gutter prevents neighboring font texels bleeding into the arrow.
++        rect = atlas->AddCustomRectRegular(width + 2, height + 2);
++        return rect >= 0;
++    }
++
++    void fill(ImFontAtlas* atlas) {
++        if (rect < 0) return;
++        unsigned char* pixels{};
++        int pitch{}, atlas_height{};
++        atlas->GetTexDataAsRGBA32(&pixels, &pitch, &atlas_height);
++        const auto* packed = atlas->GetCustomRectByIndex(rect);
++        for (UINT y = 0; y < height + 2; ++y) {
++            auto* row = pixels + ((packed->Y + y) * pitch + packed->X) * 4;
++            std::memset(row, 0, (width + 2) * 4);
++            if (y > 0 && y <= height) std::memcpy(row + 4, rgba.data() + (y - 1) * width * 4, width * 4);
++        }
++        uv_min = ImVec2(float(packed->X + 1) / pitch, float(packed->Y + 1) / atlas_height);
++        uv_max = ImVec2(float(packed->X + 1 + width) / pitch, float(packed->Y + 1 + height) / atlas_height);
++        atlas->TexPixelsUseColors = true;
++        rgba.clear();
++    }
++
++    bool draw() const {
++        auto& io = ImGui::GetIO();
++        if (rect < 0 || !io.Fonts->TexID || !ImGui::IsMousePosValid()) return false;
++        const auto pos = ImGui::GetMousePos();
++        const float size = std::clamp(io.DisplaySize.y / 30.0f, 32.0f, 64.0f);
++        // The authored arrow tip and click hotspot are both the top-left corner.
++        ImGui::GetForegroundDrawList()->AddImage(io.Fonts->TexID, pos,
++            ImVec2(pos.x + size * width / height, pos.y + size), uv_min, uv_max);
++        return true;
++    }
++};
