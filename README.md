@@ -83,3 +83,9 @@ saloon's `UI_WorldIcon` markers at their world positions projected through the
 headset camera. Looking up/right moves a fixed-world marker down/left; controller
 aiming cannot change its position. The originals are hidden only during immersive
 play and restored for menus or script reset. Other marker families are separate.
+
+NPC interaction prompts use the same headset projection while keeping the
+game's live text, key icon and hold-progress display. Only the prompt's visual
+translation changes; its world target and X interaction remain native. The
+shared screen-widget correction also supports further marker adapters, with
+player pings queued next. NPC placement currently awaits headset confirmation.

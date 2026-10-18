@@ -8,7 +8,7 @@ local loaded, geometry = pcall(require, "libs/reticle_projection")
 if not loaded then functions.log_warn("[FarFarWest markers] Projection helper unavailable."); return end
 
 local matrix = UEVR_Matrix4x4f.new()
-local array, component_class, widget_class, factory, layout
+local array, component_class, widget_class, factory, layout, slate
 local entries, camera, entry_count = {}, nil, 0
 local elapsed, next_scan, scan_index = 0, 0, nil
 local stage = "startup"
@@ -16,7 +16,10 @@ local stopped, reported = false, false
 local kinds = {
     UI_WorldIcon_C={owner="^BP_WorldIcon_C_", image="Image_Icon", offset=808},
     UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, guide=true},
+    UI_Interact_C={owner="^BP_Player.*_C_", field="UI_Key",offset=816,screen=true},
 }
+local screen_projection=require('libs/screen_widget_projection')
+local rejected={}
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
 local function active()
@@ -44,6 +47,7 @@ local function component_valid(entry)
 end
 local function restore(entry)
     if valid(entry.proxy) then entry.proxy.object:RemoveFromParent() end
+    if entry.screen and valid(entry.source) then screen_projection.restore(entry.screen) end
     if entry.moved and component_valid(entry) then
         entry.component.object:K2_SetRelativeLocation(entry.relative,false,{},true)
         entry.moved=false
@@ -56,6 +60,7 @@ end
 local function reset()
     for _, entry in pairs(entries) do pcall(restore, entry) end
     entries, camera, next_scan, scan_index, entry_count = {}, nil, 0, nil, 0
+    rejected={}
 end
 local function guarded(fn)
     if stopped then return end
@@ -147,12 +152,38 @@ local function bind_guide(component,source,kind)
     info("Tracking live lobby guide; original text retained, actor unchanged.")
 end
 
+local function bind_screen(component,source,kind)
+    stage="verify live interaction prompt"
+    local player=source:GetOwningPlayer()
+    checked(widget_class,"GetOwningPlayerPawn",8,8)
+    local owner=component:GetOwner()
+    local pawn=source:GetOwningPlayerPawn()
+    assert(player and owner and pawn and pawn:get_address()==owner:get_address(),"Prompt must belong to the local player")
+    checked(player:get_class(),"ProjectWorldLocationToScreen",48,48)
+    checked(widget_class,"SetRenderTranslation",16,16)
+    checked(widget_class,"GetCachedGeometry",32,256)
+    if not slate then
+        local class
+        slate,class=default_object("/Script/UMG.SlateBlueprintLibrary")
+        checked(class,"GetLocalSize",32,512)
+        checked(class,"LocalToViewport",64,512)
+    end
+    local opacity=source:get_float_property("RenderOpacity")
+    assert(finite(opacity),"Invalid prompt opacity")
+    entries[component:get_address()]={component=track(component),source=track(source),
+        owner=track(owner),player=track(player),kind=kind,opacity=opacity,hidden=true,
+        screen=screen_projection.bind(source,slate)}
+    entry_count=entry_count+1
+    info("Tracking live interaction prompt; text, progress and world target retained.")
+end
+
 local function inspect_component(component)
     stage="read marker component owner"
     local outer=component:get_outer()
     if not outer then return end
     local owner_name=outer:get_short_name()
-    if not owner_name:match("^BP_WorldIcon_C_") and not owner_name:match("^BP_LobbyGuide_C_") then return end
+    if not owner_name:match("^BP_WorldIcon_C_") and not owner_name:match("^BP_LobbyGuide_C_")
+        and not owner_name:match("^BP_Player.*_C_") then return end
     stage="read marker widget property"
     local source=component:get_property("Widget")
     stage="read marker widget class"
@@ -167,8 +198,12 @@ local function inspect_component(component)
         and not entries[component:get_address()] then
         stage="validate world-icon widget"
         assert(entry_count<64,"Too many world icons")
-        local p=source:get_class():find_property(kind.image)
+        local p=source:get_class():find_property(kind.field or kind.image)
         assert(p and p:get_offset()==kind.offset,"World-marker image layout mismatch")
+        if kind.screen then
+            bind_screen(component,source,kind)
+            return
+        end
         if kind.guide then
             bind_guide(component,source,kind)
             return
@@ -207,6 +242,23 @@ local function inspect_component(component)
     end
 end
 
+local function place_screen(entry,point,pixel)
+    assert(valid(entry.player),"Prompt player became invalid")
+    local screen={}
+    if not entry.player.object:ProjectWorldLocationToScreen(point,screen,false)
+        or not screen.result or not screen_projection.place(entry.screen,screen.result,pixel) then
+        entry.source.object:SetRenderOpacity(0)
+        entry.hidden=true
+        return
+    end
+    entry.source.object:SetRenderOpacity(entry.opacity)
+    entry.hidden=true
+    if not entry.reported then
+        entry.reported=true
+        info("Live interaction prompt now follows headset-projected aim; no text copy or target movement.")
+    end
+end
+
 local function place_guide(entry,pixel)
     assert(valid(entry.player),"Lobby-guide player became invalid")
     local origin,direction={},{}
@@ -240,8 +292,17 @@ local function discover()
         if scan_index<0 then scan_index=nil; next_scan=elapsed+1; return end
         local object=array:get_object(scan_index)
         scan_index=scan_index-1
-        if object and object:get_short_name()=="Widget" and object:is_a(component_class) then
-            inspect_component(object)
+        local name=object and object:get_short_name()
+        if (name=="Widget" or name=="WidgetInteract") and object:is_a(component_class) then
+            if name=="Widget" then inspect_component(object)
+            elseif not rejected[object:get_address()] then
+                -- A new prompt adapter must not disable accepted vendor/mission fixes.
+                local success,err=pcall(inspect_component,object)
+                if not success then
+                    rejected[object:get_address()]=true
+                    functions.log_warn("[FarFarWest markers] Interaction prompt skipped: "..tostring(err))
+                end
+            end
         end
     end
 end
@@ -296,7 +357,15 @@ callbacks.tick = function(_,delta)
                     local pixel=geometry.project({x=point.X,y=point.Y,z=point.Z},camera.position,
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
                     if pixel and pixel.inside then
-                        if entry.kind.guide then
+                        if entry.screen then
+                            stage="reproject live interaction prompt"
+                            local success,err=pcall(place_screen,entry,point,pixel)
+                            if not success then
+                                pcall(restore,entry); entries[address]=nil; entry_count=entry_count-1
+                                rejected[address]=true
+                                functions.log_warn("[FarFarWest markers] Interaction prompt stopped safely: "..tostring(err))
+                            end
+                        elseif entry.kind.guide then
                             stage="reproject live mission label"
                             place_guide(entry,pixel)
                         else
@@ -323,7 +392,7 @@ callbacks.tick = function(_,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendor copies and the live lobby guide use headset projection.")
+info("Helper loaded; vendors, the live lobby guide and interaction prompts use headset projection.")
 
 return callbacks
 end

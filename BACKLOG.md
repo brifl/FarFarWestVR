@@ -29,6 +29,29 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- NPC interaction prompt correction is implemented, awaiting next-launch headset
+  confirmation. The live read-only probe identified UI_Interact_C on the local
+  pawn's unattached screen-space WidgetInteract component (Space=1). UI_Key is at
+  816; text/description/progress are live children and must not be cloned. Native
+  ProjectWorldLocationToScreen parameters=48 verified. world_marker_impl now
+  tracks this family and applies only root render translation, retaining the
+  game's world location, label, key icon, progress and visibility. The new shared
+  libs/screen_widget_projection.lua converts the difference between native and
+  final-eye projection through the widget's inherited pixel basis. Its position
+  comes from fresh native projection, preventing feedback from stale/previously
+  corrected cached geometry. Original translation/opacity restore on reset/menu;
+  failed prompt writes restore locally without disabling vendor/mission fixes.
+  All 11 marker/interaction checks pass, including both axes, changing world
+  targets, 120 repeated updates with stale geometry, aim independence, visibility,
+  failed native projection and partial-write cleanup. No native rebuild needed.
+  The game shut down before the live correction loaded. Remove the temporary
+  data/world_markers_dev.lua and use the committed modules on the next launch.
+  A newly added Lua module is absent from the running loader's initial module
+  cache; a live override would need to seed package.loaded or scripts reset.
+  The read-only probe is retained on robot1-x at /tmp/ffw-interact-probe.json.
+  User reports player pings have the same problem; that adapter is next after
+  confirming NPC prompts. Reuse the shared correction, identify only its actual
+  widget/world target when a ping is visible, and preserve accepted marker families.
 - The themed menu cursor appearance is USER-ACCEPTED: "It looks so good." User's
   128-pixel PNG is retained unchanged as assets/menu_cursor.png; the duplicate
   256/512 sizes were removed with permission. Display height is viewport-scaled
@@ -373,7 +396,8 @@ Use one focused visual change/test at a time and preserve working controls.
 | Skipped | Increase color saturation/vibrance slightly | User chose to skip this after the accepted haze change improved the image. |
 | Done | Increase contrast slightly | User accepted ten percent above original after comparing five percent. Preserve native RGB/color balance and saturation; user reports the desired cartoon look and clearer detail. |
 | Done | Use the themed menu cursor | User accepted its headset appearance: "It looks so good." assets/menu_cursor.png is the unchanged user-authored 128-pixel arrow; unused duplicate scales removed with permission. Native overlay displays it at 48 pixels high at 1440p with a top-left hotspot. Native checks passed; controller pointing/click logic and gameplay cursor policy are unchanged. |
-| 7 | Correct the NPC “Press X” prompt | Prompt currently moves inversely to the aim reticle when targeting a character. Align it with the actual interaction target/reticle; preserve the already-working X interaction and vendor/mission markers. Live scan identified the separate UI_Interact_C WidgetInteract component on the lobby pawn as a candidate. |
+| Testing | Correct the NPC “Press X” prompt | Shared screen-widget translation corrects UI_Interact_C on the local pawn's WidgetInteract component, preserving live text/key/progress and native world location/X behavior. Eleven checks pass; next launch needs headset confirmation against controller/head movement. |
+| Next | Correct player pings | User reports the same aim/head coupling. Reuse the shared projection correction; identify the ping widget and its world target while visible. Preserve ping creation, visibility and existing vendor/mission/interaction behavior. |
 | 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | Later | Quest and other-player marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
 

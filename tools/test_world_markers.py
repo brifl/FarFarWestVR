@@ -23,10 +23,12 @@ local sizes={K2_GetComponentLocation=24,GetOwner=8,GetOwningPlayer=8,GetDesiredS
     SetDesiredSizeInViewport=16,SetPositionInViewport=24,SetRenderOpacity=4,SetVisibility=1,
     SetBrush=176,SetColorAndOpacity=16,Create=32,GetViewportSize=24,
     K2_SetWorldLocation=296,K2_SetRelativeLocation=296,K2_GetActorLocation=24,
-    DeprojectScreenPositionToWorld=64}
+    DeprojectScreenPositionToWorld=64,ProjectWorldLocationToScreen=48,
+    GetOwningPlayerPawn=8,SetRenderTranslation=16,GetCachedGeometry=80,
+    GetLocalSize=96,LocalToViewport=128}
 local function class(name)
     return {get_short_name=function() return name end,find_property=function(_,n)
-        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=1800,Image_Icon=808,Image_Aura=824}
+        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=1800,Image_Icon=808,Image_Aura=824,UI_Key=816}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
@@ -46,21 +48,42 @@ function player:DeprojectScreenPositionToWorld(x,y,origin,direction)
     origin.result={X=0,Y=0,Z=0};direction.result={X=c-s*right,Y=s+c*right,Z=up}
     return true
 end
-local source=object({opacity=.7,visibility=0,icon={},label='Start Mission'},'source')
+function player:ProjectWorldLocationToScreen(point,pixel,relative)
+    assert(not relative)
+    if state.project_fails then return false end
+    local a=math.rad(state.aim);local c,s=math.cos(a),math.sin(a)
+    local depth=point.X*c+point.Y*s
+    if depth<=0 then return false end
+    pixel.result={X=(1+(-point.X*s+point.Y*c)/depth)*1000,Y=(1-point.Z/depth)*500}
+    state.native_pixel=pixel.result
+    return true
+end
+local source=object({opacity=.7,visibility=0,icon={},label='Start Mission',translation={X=3,Y=4}},'source')
 function source:get_class() return class(state.family) end
 function source:GetOwningPlayer() return player end
+function source:GetOwningPlayerPawn() return actor end
 function source:GetDesiredSize() return {X=64,Y=32} end
+function source:GetCachedGeometry() return self end
+function source:SetRenderTranslation(p)
+    self.translation={X=p.X,Y=p.Y}
+    if state.fail_translation and (p.X~=3 or p.Y~=4) then error('partial translation failure') end
+end
 function source:get_float_property(n) assert(n=='RenderOpacity');return self.opacity end
 function source:SetRenderOpacity(n) self.opacity=n end
 function source:get_property(n)
     if n=='Visibility' then return self.visibility end
+    if n=='RenderTransform' then return {Translation=self.translation,Scale={X=1.5,Y=.5},
+        Angle=0,Shear={X=0,Y=0}} end
     assert(n==(state.family=='UI_Guide_C' and 'Image_Aura' or 'Image_Icon'));return self.icon
 end
 function source.icon:get_property(n) return {name=n} end
 local component=object({visible=true,relative={X=0,Y=0,Z=0}},'Widget')
+local component_name=component.get_short_name
+function component:get_short_name() return state.family=='UI_Interact_C' and 'WidgetInteract' or component_name(self) end
 function component:get_class() return component_class end
 function component:is_a(c) return c==component_class end
 function component:get_outer() return {get_short_name=function()
+    if state.family=='UI_Interact_C' then return 'BP_Player_Lobby_C_1' end
     return state.family=='UI_Guide_C' and 'BP_LobbyGuide_C_2' or 'BP_WorldIcon_C_1' end} end
 function component:GetOwner() return actor end
 function component:GetAttachParent() return state.is_root and component or root end
@@ -101,9 +124,15 @@ local factory={Create=function(_,context,c,owning_player)
     state.proxy=proxy;return proxy
 end}
 local layout={GetViewportSize=function() return {X=2000,Y=1000} end}
+local slate={GetLocalSize=function() return state.no_geometry and {X=0,Y=0} or {X=64,Y=32} end}
+function slate:LocalToViewport(widget,cached,point,pixel,viewport)
+    assert(widget==source and cached==source)
+    -- Deliberately stale position; only the inherited basis may be used.
+    pixel.result={X=123+point.X*3,Y=456+point.Y}
+end
 local classes={['Class /Script/UMG.WidgetComponent']=component_class,
     ['Class /Script/UMG.UserWidget']=widget_class,['Class /Script/UMG.Image']=image_class}
-for name,value in pairs({WidgetBlueprintLibrary=factory,WidgetLayoutLibrary=layout}) do
+for name,value in pairs({WidgetBlueprintLibrary=factory,WidgetLayoutLibrary=layout,SlateBlueprintLibrary=slate}) do
     local c=class(name);c.get_class_default_object=function() return value end
     classes['Class /Script/UMG.'..name]=c
 end
@@ -185,3 +214,50 @@ frame();frame();local moves=state.moves
 for i,o in pairs(state.objects) do if o==state.component then state.objects[i]=nil end end
 frame();healthy();assert(state.moves==moves and not state.restored and state.source.opacity==.7)
 """, "state.family='UI_Guide_C'")
+
+run("live prompt corrects both axes, keeps text and never moves the target", """
+frame();frame();healthy();assert(state.created==0 and state.moves==0)
+near(state.source.translation.X,3);near(state.source.translation.Y,4)
+state.rotation={x=10,y=10,z=0};frame();healthy()
+local function display()
+    return state.native_pixel.X+2*(state.source.translation.X-3),
+        state.native_pixel.Y+2*(state.source.translation.Y-4)
+end
+local x,y=display();assert(x<1000 and y>500)
+state.source.label='Hold X to talk';state.aim=60
+for i=1,120 do frame() end;healthy()
+local moved_x,moved_y=display();near(moved_x,x);near(moved_y,y)
+assert(state.source.label=='Hold X to talk' and state.world.X==1000 and state.world.Y==0)
+assert(state.created==0 and state.moves==0)
+feature.reset();near(state.source.translation.X,3);near(state.source.translation.Y,4)
+assert(state.source.opacity==.7)
+""", "state.family='UI_Interact_C'")
+
+run("prompt follows updated world target and restores for menus", """
+frame();frame();state.world={X=1000,Y=200,Z=100};frame();healthy()
+near(state.native_pixel.X+2*(state.source.translation.X-3),1200)
+near(state.native_pixel.Y+2*(state.source.translation.Y-4),450)
+state.active=false;frame();near(state.source.translation.X,3);near(state.source.translation.Y,4)
+assert(state.source.opacity==.7 and state.moves==0)
+""", "state.family='UI_Interact_C'")
+
+run("prompt respects visibility, missing geometry, projection failure and stale camera", """
+frame();frame();state.component.visible=false;frame();assert(state.source.opacity==0)
+state.component.visible=true;state.no_geometry=true;frame();assert(state.source.opacity==0)
+state.no_geometry=false;state.project_fails=true;frame();assert(state.source.opacity==0)
+state.project_fails=false;frame();assert(state.source.opacity==.7)
+for i=1,20 do frame(false) end;assert(state.source.opacity==0)
+frame();healthy();assert(state.source.opacity==.7)
+""", "state.family='UI_Interact_C'")
+
+run("partial prompt write is restored and isolated from other marker adapters", """
+state.rotation={x=10,y=10,z=0};frame()
+near(state.source.translation.X,3);near(state.source.translation.Y,4)
+assert(state.source.opacity==.7 and state.moves==0 and state.created==0)
+local stopped=false
+for _,message in ipairs(state.logs) do
+    assert(not message:find('Stopped safely during',1,true))
+    stopped=stopped or message:find('Interaction prompt stopped safely',1,true)~=nil
+end
+assert(stopped)
+""", "state.family='UI_Interact_C';state.fail_translation=true")
