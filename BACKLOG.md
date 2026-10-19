@@ -29,6 +29,22 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- PRIORITY: first successful extraction left the user looking at the island/train
+  station after boarding and departure, with the same view on the desktop. No
+  fatal error or new map/loading transition was logged. October 18 ~21:13:24
+  PlayerArray index warnings also occurred at mission start, so they are not
+  sufficient evidence of the cause. Read-only live state: controller StateName
+  Inactive, Pawn/AcknowledgedPawn null; GameState hasFinishedMainObjective=true,
+  amountPlayersSaved=1, hasFinishedMission=false. departCinematic points to
+  LS_Tain_MissionExtract's AnimationPlayer, Status=0, OnFinished unbound.
+  Those states may be normal while awaiting results; do not force mission flags,
+  sequence events, rewards or travel. UEVR remained in immersive mode. Pending
+  controlled test: press F8 once to see whether a summary appears. No runtime
+  changes made. Bounded read-only snapshots are on robot1-x under
+  C:/src/uevr_far_west_build/ffw-tests/extraction-state-2.json and
+  extraction-departure.json. Reticle helper stopped safely at 21:13:31 with a
+  caught native exception after pawn removal; inspect its cached pawn lifetime
+  if this recurs, and reset scripts/relaunch before another gameplay test.
 - IN PROGRESS (loaded and live-verified): user requests editable saturation/contrast
   multipliers, lower boss-health/mission-info HUD panels, and faster stabilization
   after loading. data/tuning.ini + libs/tuning.lua + scripts/tuning.lua provide
@@ -45,8 +61,8 @@ previous backend; restore that backend before using them.
   screen-widget pixel basis for viewport-height offsets; dialogue_layout.lua is
   a compatibility alias. Confirmed loaded class metadata binds UI_Lifebar_Boss_C
   (ProgressBar_Boss=840), UI_Counter_C (Text_Title=816), UI_Timer_C
-  (TextBlock_Seconds=816). Boss/counter/timer instances are not currently visible,
-  so headset acceptance is pending when those panels appear. The running compass
+  (TextBlock_Seconds=816). User accepted compass and objective-info placement at
+  .10: "It looks good now." Boss-bar visual acceptance remains pending. The compass
   uses UI_Player_C.Image_Compass=1008 plus Overlay_Pings=944; both share
   MovingCanvas, which also contains other HUD, so only these two children move.
   tools/probe_reticle.ps1 now has a bounded read-only -Hud mode for those widgets
@@ -69,10 +85,10 @@ previous backend; restore that backend before using them.
   confirm saturation master 1 -> .95 and contrast master 1 -> 1.10, with no
   compounding. Both compass children applied .08 and dialogue applied -.10;
   the user requests the compass a little lower, so its setting is now .10.
-  Last scan still found only the
-  main HUD, with no live boss/counter/timer panel. Probe JSON persists at
+  Mission-info .08 was logged live at 20:54; its later .10 setting reloaded and
+  was user-confirmed. Probe JSON persists at
   C:/src/uevr_far_west_build/ffw-tests/hud-probe.json and hud-names.json. The
-  compass can be checked now; boss and objective info need later visual acceptance.
+  boss bar still needs later visual acceptance.
 - Quest objective correction is USER-CONFIRMED: "Anchored; title and distance
   correct." The bounded read-only scan found UI_PingObjective_C on nine
   BP_ObjectivePing-derived actors, including main/TNT, arrival, extraction, NPC,
