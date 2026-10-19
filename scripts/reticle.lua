@@ -19,6 +19,7 @@ local calibration, viewport_width, viewport_height, local_width, local_height
 local raw_camera, eye_camera, scan_index
 local elapsed, next_scan, next_mode = 0, 0, 0
 local enabled, written, stopped, reported = true, false, false, false
+local stage = "startup"
 
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
 local function vec(v) return {x=v.x, y=v.y, z=v.z} end
@@ -58,7 +59,7 @@ local function guarded(fn)
     if not ok then
         pcall(restore)
         stopped = true
-        functions.log_warn("[FarFarWest reticle] Stopped safely: "..tostring(err))
+        functions.log_warn("[FarFarWest reticle] Stopped safely during "..stage..": "..tostring(err))
     end
 end
 
@@ -166,6 +167,7 @@ end
 
 uevr.sdk.callbacks.on_early_calculate_stereo_view_offset(function(_, _, _, position, rotation, is_double)
     guarded(function()
+        stage = "read firing camera"
         if not active() then return end
         assert(is_double, "Expected UE5 double camera values")
         raw_camera = {position=vec(position), rotation=vec(rotation), time=elapsed}
@@ -174,6 +176,7 @@ end)
 
 uevr.sdk.callbacks.on_post_calculate_stereo_view_offset(function(_, _, _, position, rotation, is_double)
     guarded(function()
+        stage = "read eye camera and projection"
         if not active() then return end
         assert(is_double, "Expected UE5 double camera values")
         -- Source backend extension: -1 selects this frame's actual stereo eye.
@@ -189,6 +192,7 @@ end)
 
 uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
     guarded(function()
+        stage = "check gameplay state"
         elapsed = elapsed+math.min(math.max(delta or 0,0),0.1)
         if elapsed>=next_mode then
             local file = io.open("reticle_mode.txt", "rb")
@@ -198,9 +202,12 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
             next_mode = elapsed+0.5
         end
         if not active() then reset(); return end
+        stage = "prepare widget API"
         if not array then prepare_api() end
+        stage = "validate or discover crosshair"
         if image and not valid_image() then reset() end
         if not image then bind_image(); return end
+        stage = "read crosshair viewport"
         local viewport = layout:GetViewportSize(owner)
         if not viewport or viewport.X<=0 or viewport.Y<=0 then return end
         if viewport_width~=viewport.X or viewport_height~=viewport.Y then
@@ -208,6 +215,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
             viewport_width, viewport_height = viewport.X, viewport.Y
             return -- Allow cached geometry to reflect the restored translation.
         end
+        stage = "read crosshair geometry"
         local cached = image:GetCachedGeometry()
         local size = slate:GetLocalSize(cached)
         if not size or size.X<=0 or size.Y<=0 then return end
@@ -224,6 +232,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
         local endpoint = geometry.ray_end(raw_camera.position, raw_camera.rotation, 100000)
         assert(endpoint, "Invalid firing camera")
         local hit = {}
+        stage = "trace firing target using cached pawn"
         local blocked = system:LineTraceSingle(pawn, ue(raw_camera.position), ue(endpoint), 0,
             false, {pawn}, 0, hit, true, {R=0,G=0,B=0,A=0}, {R=0,G=0,B=0,A=0}, 0)
         local point = endpoint
@@ -232,6 +241,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
             local impact = hit.result.ImpactPoint
             point = {x=impact.X, y=impact.Y, z=impact.Z}
         end
+        stage = "project and position crosshair"
         local pixel = geometry.project(point, eye_camera.position, eye_camera.rotation,
             eye_camera.matrix, viewport_width, viewport_height)
         if not pixel or not pixel.inside then

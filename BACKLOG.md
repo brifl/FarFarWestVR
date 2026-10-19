@@ -38,9 +38,11 @@ previous backend; restore that backend before using them.
   amountPlayersSaved=1, hasFinishedMission=false. departCinematic points to
   LS_Tain_MissionExtract's AnimationPlayer, Status=0, OnFinished unbound.
   Those states may be normal while awaiting results; do not force mission flags,
-  sequence events, rewards or travel. UEVR remained in immersive mode. Pending
-  controlled test: press F8 once to see whether a summary appears. No runtime
-  changes made. Bounded read-only snapshots are on robot1-x under
+  sequence events, rewards or travel. UEVR remained in immersive mode. User's F8
+  test showed only a black screen with Version 0.2.0.20, not a summary; toggling
+  produced no new errors. Next controlled test: a clean restart and one repeat
+  extraction with the same settings. Reticle exception logs now identify the
+  operation that failed; no behavior changes. Bounded read-only snapshots are under
   C:/src/uevr_far_west_build/ffw-tests/extraction-state-2.json and
   extraction-departure.json. Reticle helper stopped safely at 21:13:31 with a
   caught native exception after pawn removal; inspect its cached pawn lifetime
