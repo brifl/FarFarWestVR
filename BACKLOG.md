@@ -29,6 +29,44 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- IN PROGRESS (ready for deployment): user requests editable saturation/contrast
+  multipliers, lower boss-health/mission-info HUD panels, and faster stabilization
+  after loading. data/tuning.ini + libs/tuning.lua + scripts/tuning.lua provide
+  bounded numeric INI reloads every second. Starting values: saturation=.95,
+  contrast=1.10, fog-density=0; HUD fractions dialogue=-.10, boss=.08, mission=.08,
+  compass=.08
+  (positive down). Malformed/unknown/out-of-range values retain previous settings.
+  Grading now supports saturation with neutral effective RGB when enabling an
+  inactive native override, restores original flags/vectors, avoids compounding,
+  and preserves different game-controlled grades. Fog scaling uses its captured
+  native density, not its own previous result. New libs/hud_layout.lua reuses the
+  screen-widget pixel basis for viewport-height offsets; dialogue_layout.lua is
+  a compatibility alias. Confirmed loaded class metadata binds UI_Lifebar_Boss_C
+  (ProgressBar_Boss=840), UI_Counter_C (Text_Title=816), UI_Timer_C
+  (TextBlock_Seconds=816). Boss/counter/timer instances are not currently visible,
+  so headset acceptance is pending when those panels appear. The running compass
+  uses UI_Player_C.Image_Compass=1008 plus Overlay_Pings=944; both share
+  MovingCanvas, which also contains other HUD, so only these two children move.
+  tools/probe_reticle.ps1 now has a bounded read-only -Hud mode for those widgets
+  and UI_Player_C references, plus metadata for loaded but inactive HUD classes.
+  Live weather ColorSaturation=(1.15,1.15,1.15,1), override=true; native contrast
+  RGB=1.2/master=1 with the old accepted helper currently setting W=1.10. LumenPP
+  has higher priority but overrides neither saturation nor contrast. New modules require
+  a normal relaunch/Reset scripts to enter UEVR's module cache; do not double-run
+  old/new grading factories live and compound the accepted contrast baseline.
+  Marker discovery now uses an initial/new-object scan burst capped at 2 ms
+  (8192 slots maximum), retains supported component candidates until their widget
+  appears, binds hidden widgets early, and prioritizes newly appended object slots.
+  All 19 marker checks and 7 tuning/graphics/HUD checks pass with lupa at
+  PYTHONPATH=/tmp/ffw-lua-test. Lua syntax passes. No native build needed.
+  Native ScriptState.cpp opens the os library and leaves os.clock available, so
+  the time budget is supported. README documents the editable values and installed
+  path. Remaining: commit/push/pull, request Reset scripts once, inspect logs and
+  verify actual saturation W=.95/contrast W=1.10 (no compounded old helper). A
+  temporary read-only data/world_markers_dev.lua probe is active in the user's
+  running mission; remove before the reset. Probe JSON persists at
+  C:/src/uevr_far_west_build/ffw-tests/hud-probe.json and hud-names.json. The
+  compass can be checked now; boss and objective info need later visual acceptance.
 - Quest objective correction is USER-CONFIRMED: "Anchored; title and distance
   correct." The bounded read-only scan found UI_PingObjective_C on nine
   BP_ObjectivePing-derived actors, including main/TNT, arrival, extraction, NPC,

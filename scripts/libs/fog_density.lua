@@ -1,17 +1,19 @@
 -- The tested ambient haze control. Keep other fog systems and scene settings.
 return function()
 local api,vr,functions=uevr.api,uevr.params.vr,uevr.params.functions
+local tuning=require('libs/tuning')
 local array,class,scan_index
 local entries,elapsed,next_scan={},0,0
 local stopped,reported=false,false
 local function finite(n) return type(n)=="number" and n==n and n>=0 and n<=10 end
+local function near(a,b) return b~=nil and math.abs(a-b)<.000001 end
 local function valid(entry)
     local object=array:get_object(entry.index)
     return object and object:get_address()==entry.address
         and object:get_short_name()=="ExponentialHeightFog"
 end
 local function restore(entry)
-    if entry.written and valid(entry) and entry.object:get_property("FogDensity")==0 then
+    if entry.written and valid(entry) and near(entry.object:get_property("FogDensity"),entry.applied) then
         entry.object:SetFogDensity(entry.original)
     end
 end
@@ -71,15 +73,18 @@ local function tick(_,delta)
             else
                 local current=entry.object:get_property("FogDensity")
                 assert(finite(current),"Invalid ambient fog density")
-                if current~=0 then
+                if not near(current,entry.applied) then entry.original=current end
+                local target=entry.original*tuning.get('graphics.fog_density_multiplier')
+                if not near(current,target) then
                     -- Remember a new native/weather value before suppressing it;
                     -- never multiply our own value again on subsequent frames.
-                    entry.original=current;entry.written=true
-                    entry.object:SetFogDensity(0)
-                    assert(entry.object:get_property("FogDensity")==0,"Fog density setter did not take effect")
-                    if not reported then
+                    entry.written=true;entry.applied=target
+                    entry.object:SetFogDensity(target)
+                    assert(near(entry.object:get_property("FogDensity"),target),"Fog density setter did not take effect")
+                    if not reported or entry.reported_target~=target then
                         reported=true
-                        functions.log_info(string.format("[FarFarWest fog] Ambient weather fog density %.6f -> 0; tested clear-distance setting active.",current))
+                        entry.reported_target=target
+                        functions.log_info(string.format("[FarFarWest fog] Ambient weather fog density %.6f -> %.6f.",entry.original,target))
                     end
                 end
             end

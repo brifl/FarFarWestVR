@@ -93,7 +93,9 @@ function component:get_outer() return {get_short_name=function()
 function component:GetOwner() return actor end
 function component:GetAttachParent() return state.is_root and component or root end
 function component:get_property(n)
-    if n=='Widget' then return source elseif n=='bVisible' then return self.visible
+    if n=='Widget' then return not state.no_widget and source or nil
+    elseif n=='WidgetClass' then return source:get_class()
+    elseif n=='bVisible' then return self.visible
     elseif n=='RelativeLocation' then return self.relative end
     assert(n=='Pivot');return {X=.5,Y=1}
 end
@@ -306,3 +308,29 @@ state.aim=170;state.rotation={x=10,y=10,z=0};frame();healthy()
 assert(state.display.X<1000 and state.display.Y>500 and state.source.label=='Refuel the pump')
 feature.reset();assert(state.restored and state.source.opacity==.7)
 """, "state.family='UI_Guide_C';state.owner_class='BP_TextGuide_FuelObjective_A_C';state.owner_name='ChildActor_GEN_VARIABLE_BP_TextGuide_C_CAT_822';state.source.label='Refuel the pump'")
+
+run("hidden known marker is ready on its first visible frame", """
+frame();healthy();assert(state.moves==0 and state.source.opacity==0)
+state.component.visible=true;frame();healthy();assert(state.moves>0 and state.source.opacity==.7)
+""", "state.family='UI_Guide_C';state.component.visible=false")
+
+run("late widget instance binds without another full object-array pass", """
+frame();healthy();assert(state.moves==0)
+state.no_widget=false;frame();healthy();assert(state.moves>0)
+""", "state.family='UI_Guide_C';state.no_widget=true")
+
+run("newly allocated objects bypass the background scan cooldown", """
+frame();frame();healthy()
+state.objects[state.next]={get_short_name=function() state.saw_new=true;return 'unrelated' end}
+state.next=state.next+1
+frame();healthy();assert(state.saw_new)
+""")
+
+run("initial discovery yields at its time budget instead of blocking on the array", """
+frame();healthy();assert(state.reads>=32 and state.reads<=96 and state.moves==0)
+""", """
+state.next=5000;state.reads=0;state.mock_clock=0
+local array=uevr.api:get_uobject_array();local get=array.get_object
+array.get_object=function(self,i) state.reads=state.reads+1;return get(self,i) end
+os.clock=function() state.mock_clock=state.mock_clock+.001;return state.mock_clock end
+""")

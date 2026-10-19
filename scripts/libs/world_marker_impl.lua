@@ -11,6 +11,9 @@ local matrix = UEVR_Matrix4x4f.new()
 local array, component_class, widget_class, factory, layout, slate
 local entries, camera, entry_count = {}, nil, 0
 local elapsed, next_scan, scan_index = 0, 0, nil
+local candidates,candidate_count={},0
+local first_scan,observed_count,recent_index,recent_min=true,nil,nil,nil
+local clock=os and os.clock
 local stage = "startup"
 local stopped, reported = false, false
 local kinds = {
@@ -64,6 +67,8 @@ end
 local function reset()
     for _, entry in pairs(entries) do pcall(restore, entry) end
     entries, camera, next_scan, scan_index, entry_count = {}, nil, 0, nil, 0
+    candidates,candidate_count={},0
+    first_scan,observed_count,recent_index,recent_min=true,nil,nil,nil
     rejected={}
 end
 local function guarded(fn)
@@ -208,7 +213,7 @@ local function inspect_component(component)
     -- The typed bool getter throws on this backend; reflected reads work for
     -- both the component's bVisible and the actor's bHidden bitfields.
     if source
-        and component:read_byte(1512)==1 and component:get_property("bVisible")
+        and component:read_byte(1512)==1
         and not entries[component:get_address()] then
         stage="validate world-icon widget"
         assert(entry_count<64,"Too many world icons")
@@ -295,32 +300,63 @@ local function place_world_label(entry,pixel)
     end
 end
 
+local function consider(object)
+    local address=object:get_address()
+    if entries[address] or rejected[address] then return end
+    if not candidates[address] then
+        local class=object:get_property('WidgetClass')
+        if not class or not kinds[class:get_short_name()] then return end
+        if candidate_count<128 then candidates[address]=track(object);candidate_count=candidate_count+1 end
+    end
+    local success,err=pcall(inspect_component,object)
+    if not success then
+        if entries[address] then
+            pcall(restore,entries[address]);entries[address]=nil;entry_count=entry_count-1
+        end
+        rejected[address]=true
+        functions.log_warn('[FarFarWest markers] Marker skipped during '..stage..': '..tostring(err))
+    end
+end
+
 local function discover()
-    if elapsed<next_scan then return end
-    stage="scan object array"
+    -- Widget instances and visibility often arrive after their components.
+    -- Revisit recognized components without waiting for another array pass.
+    for address,ref in pairs(candidates) do
+        if not entries[address] and not rejected[address] then
+            if valid(ref) then consider(ref.object)
+            else candidates[address]=nil;candidate_count=candidate_count-1 end
+        end
+    end
+    stage='scan object array'
     local count=array:get_object_count()
     assert(count>0 and count<=250000,"Object count outside the verified budget")
+    if observed_count and count>observed_count then
+        recent_min=recent_min and math.min(recent_min,observed_count) or observed_count
+        recent_index=count-1
+    elseif observed_count and count<observed_count then
+        recent_index,recent_min=nil,nil
+        first_scan,scan_index,next_scan=true,nil,0
+    end
+    observed_count=count
+    if elapsed<next_scan and not recent_index then return end
     if scan_index==nil or scan_index>=count then scan_index=count-1 end
     -- get_objects_matching activates UObjectHook; use the proven reticle path.
-    for _=1,512 do
-        if scan_index<0 then scan_index=nil; next_scan=elapsed+1; return end
-        local object=array:get_object(scan_index)
-        scan_index=scan_index-1
+    -- Front-load initial/new objects, capped at 2 ms rather than a blocking sweep.
+    local deadline=(first_scan or recent_index) and clock and clock()+.002
+    for i=1,deadline and 8192 or 512 do
+        if recent_index and recent_index<recent_min then recent_index,recent_min=nil,nil end
+        if not recent_index and elapsed<next_scan then return end
+        if not recent_index and scan_index<0 then
+            scan_index=nil;next_scan=elapsed+1;first_scan=false;return
+        end
+        local index=recent_index or scan_index
+        local object=array:get_object(index)
+        if recent_index then recent_index=recent_index-1 else scan_index=scan_index-1 end
         local name=object and object:get_short_name()
         if (name=="Widget" or name=="WidgetInteract") and object:is_a(component_class) then
-            if not rejected[object:get_address()] then
-                -- A new adapter must not disable accepted marker families.
-                local success,err=pcall(inspect_component,object)
-                if not success then
-                    local address=object:get_address()
-                    if entries[address] then
-                        pcall(restore,entries[address]);entries[address]=nil;entry_count=entry_count-1
-                    end
-                    rejected[address]=true
-                    functions.log_warn("[FarFarWest markers] Marker skipped during "..stage..": "..tostring(err))
-                end
-            end
+            consider(object)
         end
+        if deadline and i%32==0 and clock()>=deadline then return end
     end
 end
 

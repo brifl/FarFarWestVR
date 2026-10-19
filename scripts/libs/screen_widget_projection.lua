@@ -25,6 +25,10 @@ function M.place(binding,native_pixel,eye_pixel)
     local transform=widget:get_property('RenderTransform')
     assert(math.abs(transform.Angle)<.001 and math.abs(transform.Shear.X)<.001
         and math.abs(transform.Shear.Y)<.001,'Rotated/sheared world widget needs separate calibration')
+    if not binding.written then
+        -- A hidden/new panel may finish its native layout after discovery.
+        binding.original={X=transform.Translation.X,Y=transform.Translation.Y}
+    end
     local function at(x,y)
         local pixel,viewport={},{}
         slate:LocalToViewport(widget,cached,{X=x,Y=y},pixel,viewport)
@@ -42,6 +46,10 @@ function M.place(binding,native_pixel,eye_pixel)
     binding.written=true -- Cleanup also owns a partially failed native write.
     widget:SetRenderTranslation(position)
     return true
+end
+
+function M.offset(binding,pixel_x,pixel_y)
+    return M.place(binding,{X=0,Y=0},{x=pixel_x,y=pixel_y})
 end
 
 return M

@@ -1,21 +1,42 @@
--- Preserve the accepted master-contrast increase on the game's weather grading.
+-- Configurable weather grading; preserve native RGB balance and restore our writes.
 return function()
 local api,vr,functions=uevr.api,uevr.params.vr,uevr.params.functions
+local tuning=require('libs/tuning')
 local array,class,scan_index
 local entries,elapsed,next_scan={},0,0
-local stopped,reported=false,false
-local multiplier=1.10
-local function finite(n) return type(n)=="number" and n==n and n>=0 and n<=10 end
+local stopped=false
+local specs={
+    {name='contrast',field='ColorContrast',flag='bOverride_ColorContrast',enable=false},
+    {name='saturation',field='ColorSaturation',flag='bOverride_ColorSaturation',enable=true},
+}
+local function finite(n) return type(n)=='number' and n==n and n>=0 and n<=10 end
 local function near(a,b) return math.abs(a-b)<.000001 end
+local function snapshot(v)
+    assert(v and finite(v.X) and finite(v.Y) and finite(v.Z) and finite(v.W),'Invalid grading vector')
+    return {X=v.X,Y=v.Y,Z=v.Z,W=v.W}
+end
+local function same(v,expected)
+    return near(v.X,expected.X) and near(v.Y,expected.Y) and near(v.Z,expected.Z) and near(v.W,expected.W)
+end
+local function write(v,value)
+    v.X=value.X;v.Y=value.Y;v.Z=value.Z;v.W=value.W
+end
 local function valid(entry)
     local object=array:get_object(entry.index)
     return object and object:get_address()==entry.address and object:get_short_name()==entry.name
 end
-local function restore(entry)
-    if entry.written and valid(entry) then
-        local contrast=entry.object:get_property("Settings").ColorContrast
-        if near(contrast.W,entry.applied) then contrast.W=entry.original end
+local function restore_channel(settings,c)
+    if not c.applied then return end
+    local value=settings[c.spec.field]
+    if c.writing or (same(value,c.applied) and settings[c.spec.flag]==true) then
+        write(value,c.original);settings[c.spec.flag]=c.override
     end
+    c.applied=nil;c.writing=false
+end
+local function restore(entry)
+    if not valid(entry) then return end
+    local settings=entry.object:get_property('Settings')
+    for _,c in ipairs(entry.channels) do restore_channel(settings,c) end
 end
 local function reset()
     for _,entry in pairs(entries) do pcall(restore,entry) end
@@ -24,35 +45,57 @@ end
 local function prepare()
     array=api:get_uobject_array()
     assert(array and array.get_objects_offset()==0 and array.get_item_distance()==24,
-        "Compact object array unavailable")
-    class=api:find_uobject("Class /Script/Engine.PostProcessComponent")
-    assert(class and class:find_property("Settings"),"Post-process settings unavailable")
+        'Compact object array unavailable')
+    class=api:find_uobject('Class /Script/Engine.PostProcessComponent')
+    assert(class and class:find_property('Settings'),'Post-process settings unavailable')
 end
 local function discover()
     if elapsed<next_scan then return end
     local count=array:get_object_count()
-    assert(count>0 and count<=250000,"Object count exceeds verified budget")
+    assert(count>0 and count<=250000,'Object count exceeds verified budget')
     if scan_index==nil or scan_index>=count then scan_index=count-1 end
     for _=1,512 do
         if scan_index<0 then scan_index=nil;next_scan=elapsed+1;return end
         local index=scan_index;local object=array:get_object(index);scan_index=index-1
-        if object and object:get_short_name():lower()=="postprocess" and object:is_a(class)
+        if object and object:get_short_name():lower()=='postprocess' and object:is_a(class)
             and not entries[object:get_address()] then
             local owner=object:get_outer()
-            if owner and not owner:get_short_name():match("^Default__")
-                and owner:get_class():get_short_name():match("^BP_BlendableAtmosphere_")
-                and object:get_property("bEnabled") and object:get_property("bUnbound")
-                and object:get_property("BlendWeight")>0 then
-                local settings=object:get_property("Settings")
-                if settings.bOverride_ColorContrast then
-                    local c=settings.ColorContrast
-                    assert(finite(c.X) and finite(c.Y) and finite(c.Z) and finite(c.W),"Invalid contrast values")
-                    entries[object:get_address()]={object=object,index=index,address=object:get_address(),
-                        name=object:get_short_name(),original=c.W,applied=c.W*multiplier,written=false}
+            if owner and not owner:get_short_name():match('^Default__')
+                and owner:get_class():get_short_name():match('^BP_BlendableAtmosphere_')
+                and object:get_property('bEnabled') and object:get_property('bUnbound')
+                and object:get_property('BlendWeight')>0 then
+                local settings=object:get_property('Settings')
+                local entry={object=object,index=index,address=object:get_address(),
+                    name=object:get_short_name(),channels={}}
+                for _,spec in ipairs(specs) do
+                    local override=settings[spec.flag]
+                    assert(type(override)=='boolean','Missing grading flag: '..spec.flag)
+                    entry.channels[#entry.channels+1]={spec=spec,original=snapshot(settings[spec.field]),override=override}
                 end
+                entries[entry.address]=entry
             end
         end
     end
+end
+local function apply(settings,c)
+    local value=settings[c.spec.field]
+    local native=same(value,c.original) and settings[c.spec.flag]==c.override
+    local ours=c.applied and same(value,c.applied) and settings[c.spec.flag]==true
+    if not native and not ours then return end -- Preserve a different game-controlled grade.
+    local multiplier=tuning.get('graphics.'..c.spec.name..'_multiplier')
+    if multiplier==1 then restore_channel(settings,c);return end
+    if not c.override and not c.spec.enable then return end
+    -- An inactive native override has neutral effective values. Do not enable
+    -- unused RGB tint values when introducing a saturation multiplier.
+    local baseline=c.override and c.original or {X=1,Y=1,Z=1,W=1}
+    local target={X=baseline.X,Y=baseline.Y,Z=baseline.Z,W=baseline.W*multiplier}
+    if ours and same(value,target) then return end
+    c.applied=target;c.writing=true
+    write(value,target);settings[c.spec.flag]=true
+    assert(same(settings[c.spec.field],target) and settings[c.spec.flag]==true,'Grading write did not take effect')
+    c.writing=false
+    functions.log_info(string.format('[FarFarWest grading] %s multiplier %.3f; master %.4f -> %.4f.',
+        c.spec.name,multiplier,baseline.W,target.W))
 end
 local function tick(_,delta)
     if stopped then return end
@@ -63,29 +106,17 @@ local function tick(_,delta)
         discover()
         local count=0
         for address,entry in pairs(entries) do
-            count=count+1;assert(count<=16,"Unexpected number of weather post-process components")
+            count=count+1;assert(count<=16,'Unexpected number of weather post-process components')
             if not valid(entry) then entries[address]=nil
             else
-                local settings=entry.object:get_property("Settings")
-                local c=settings.ColorContrast
-                assert(finite(c.W),"Invalid master contrast")
-                -- Reapply a refreshed native baseline without multiplying our
-                -- own value. Leave a different game-controlled master alone.
-                if settings.bOverride_ColorContrast and near(c.W,entry.original) then
-                    entry.written=true
-                    c.W=entry.applied
-                    assert(near(settings.ColorContrast.W,entry.applied),"Contrast write did not take effect")
-                    if not reported then
-                        reported=true
-                        functions.log_info(string.format("[FarFarWest contrast] Master %.4f -> %.4f; accepted ten-percent increase active, RGB preserved.",entry.original,entry.applied))
-                    end
-                end
+                local settings=entry.object:get_property('Settings')
+                for _,c in ipairs(entry.channels) do apply(settings,c) end
             end
         end
     end)
     if not ok then
         reset();stopped=true
-        functions.log_warn("[FarFarWest contrast] Stopped safely: "..tostring(err))
+        functions.log_warn('[FarFarWest grading] Stopped safely: '..tostring(err))
     end
 end
 return {tick=tick,reset=reset}

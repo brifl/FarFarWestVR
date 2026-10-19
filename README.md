@@ -2,6 +2,32 @@ The files in this enlistment can be zipped into FarFarWest-Win64-Shipping.zip an
 
 See [BACKLOG.md](BACKLOG.md) for the intended controls, working baseline, and next changes.
 
+Personal tuning is in [data/tuning.ini](data/tuning.ini). On robot1-x, edit
+`C:\Users\brian\AppData\Roaming\UnrealVRMod\FarFarWest-Win64-Shipping\data\tuning.ini`.
+Numeric edits reload while playing, about once a second. Installing new helper
+code still requires UEVR's **Reset scripts** or a normal game relaunch.
+
+| Section | Setting | Starting value | Meaning |
+| --- | --- | --- | --- |
+| graphics | saturation_multiplier | 0.95 | Five percent less saturation; 1.0 uses the native amount. |
+| graphics | contrast_multiplier | 1.10 | The accepted ten-percent increase; 1.0 uses the native amount. |
+| graphics | fog_density_multiplier | 0.00 | The accepted clear-distance setting; 1.0 uses native density. |
+| hud | dialogue_offset_y | -0.10 | Raise conversation text by ten percent of viewport height. |
+| hud | boss_health_offset_y | 0.08 | Lower boss health by eight percent. |
+| hud | mission_info_offset_y | 0.08 | Lower mission counters and timers by eight percent. |
+| hud | compass_offset_y | 0.08 | Lower the compass background and marker overlay together by eight percent. |
+
+HUD offsets use the full viewport height: positive moves down, negative moves up,
+and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,
+fog 0–1 and HUD offsets -0.5–0.5. Invalid edits retain the previous values.
+The boss-bar and mission-counter controls apply as those widgets appear; their
+height can be tuned during later fights/objectives without restarting scripts.
+
+Marker discovery front-loads the initial and newly allocated objects within a
+two-millisecond scan budget. Known components are retained while their widgets
+load, and hidden markers are prepared before they become visible. This reduces
+the former multi-second scan delay without a blocking full-array sweep.
+
 Quest B sends Escape. The menu helper now follows the game's logged input-mode
 changes, including clicking Resume, instead of toggling presentation on B presses.
 Logged level/loading state keeps the title screen in menu mode even when UEVR
@@ -72,10 +98,11 @@ they load, using the guarded UE5.8 backend. This matches the tested haze removal
 a 25-percent reduction was imperceptible. Script reset restores captured native
 density values before the helper reloads. Other atmosphere layers keep their settings.
 
-[scripts/contrast.lua](scripts/contrast.lua) applies the accepted ten-percent
-increase to the weather grading's master contrast. It preserves the native RGB
-balance and saturation, avoids compounding its own value, and restores the
-captured master value on script reset.
+[scripts/contrast.lua](scripts/contrast.lua) applies configurable contrast and
+saturation multipliers to weather grading. The accepted contrast increase remains
+the default. Native RGB balance is preserved; a previously inactive saturation
+override starts from neutral RGB. Its original vector/override flags restore on
+script reset, and repeated updates do not compound the multipliers.
 
 Location markers are being tested with
 [scripts/world_markers.lua](scripts/world_markers.lua). It displays copies of the
