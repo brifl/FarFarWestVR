@@ -29,7 +29,7 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- IN PROGRESS (ready for deployment): user requests editable saturation/contrast
+- IN PROGRESS (deployed 3d797a7; awaiting script reset): user requests editable saturation/contrast
   multipliers, lower boss-health/mission-info HUD panels, and faster stabilization
   after loading. data/tuning.ini + libs/tuning.lua + scripts/tuning.lua provide
   bounded numeric INI reloads every second. Starting values: saturation=.95,
@@ -61,10 +61,12 @@ previous backend; restore that backend before using them.
   PYTHONPATH=/tmp/ffw-lua-test. Lua syntax passes. No native build needed.
   Native ScriptState.cpp opens the os library and leaves os.clock available, so
   the time budget is supported. README documents the editable values and installed
-  path. Remaining: commit/push/pull, request Reset scripts once, inspect logs and
-  verify actual saturation W=.95/contrast W=1.10 (no compounded old helper). A
-  temporary read-only data/world_markers_dev.lua probe is active in the user's
-  running mission; remove before the reset. Probe JSON persists at
+  path. Commit 3d797a7 is pushed and pulled to robot1-x; existing runtime changes
+  to config.txt/imgui.ini were preserved. The temporary read-only
+  data/world_markers_dev.lua probe was removed. An async request for one Reset
+  scripts is pending; inspect logs afterward and verify actual saturation W=.95 /
+  contrast W=1.10 (no compounded old helper). Last scan still found only the
+  main HUD, with no live boss/counter/timer panel. Probe JSON persists at
   C:/src/uevr_far_west_build/ffw-tests/hud-probe.json and hud-names.json. The
   compass can be checked now; boss and objective info need later visual acceptance.
 - Quest objective correction is USER-CONFIRMED: "Anchored; title and distance
