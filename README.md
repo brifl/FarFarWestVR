@@ -14,7 +14,7 @@ code still requires UEVR's **Reset scripts** or a normal game relaunch.
 | graphics | fog_density_multiplier | 0.00 | The accepted clear-distance setting; 1.0 uses native density. |
 | hud | dialogue_offset_y | -0.10 | Raise conversation text by ten percent of viewport height. |
 | hud | boss_health_offset_y | 0.08 | Lower boss health by eight percent. |
-| hud | mission_info_offset_y | 0.08 | Lower mission counters and timers by eight percent. |
+| hud | mission_info_offset_y | 0.10 | Lower mission counters and timers by ten percent. |
 | hud | compass_offset_y | 0.10 | Lower the compass background and marker overlay together by ten percent. |
 
 HUD offsets use the full viewport height: positive moves down, negative moves up,

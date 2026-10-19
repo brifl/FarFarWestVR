@@ -33,9 +33,11 @@ previous backend; restore that backend before using them.
   multipliers, lower boss-health/mission-info HUD panels, and faster stabilization
   after loading. data/tuning.ini + libs/tuning.lua + scripts/tuning.lua provide
   bounded numeric INI reloads every second. Starting values: saturation=.95,
-  contrast=1.10, fog-density=0; HUD fractions dialogue=-.10, boss=.08, mission=.08,
+  contrast=1.10, fog-density=0; HUD fractions dialogue=-.10, boss=.08, mission=.10,
   compass=.10 (increased from .08 after the user requested a little lower)
   (positive down). Malformed/unknown/out-of-range values retain previous settings.
+  Mission info also increased from .08 to .10 at the user's request; its control
+  is independent of compass and boss health.
   Grading now supports saturation with neutral effective RGB when enabling an
   inactive native override, restores original flags/vectors, avoids compounding,
   and preserves different game-controlled grades. Fog scaling uses its captured
