@@ -29,12 +29,12 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- IN PROGRESS (deployed 3d797a7; awaiting script reset): user requests editable saturation/contrast
+- IN PROGRESS (loaded and live-verified): user requests editable saturation/contrast
   multipliers, lower boss-health/mission-info HUD panels, and faster stabilization
   after loading. data/tuning.ini + libs/tuning.lua + scripts/tuning.lua provide
   bounded numeric INI reloads every second. Starting values: saturation=.95,
   contrast=1.10, fog-density=0; HUD fractions dialogue=-.10, boss=.08, mission=.08,
-  compass=.08
+  compass=.10 (increased from .08 after the user requested a little lower)
   (positive down). Malformed/unknown/out-of-range values retain previous settings.
   Grading now supports saturation with neutral effective RGB when enabling an
   inactive native override, restores original flags/vectors, avoids compounding,
@@ -63,9 +63,11 @@ previous backend; restore that backend before using them.
   the time budget is supported. README documents the editable values and installed
   path. Commit 3d797a7 is pushed and pulled to robot1-x; existing runtime changes
   to config.txt/imgui.ini were preserved. The temporary read-only
-  data/world_markers_dev.lua probe was removed. An async request for one Reset
-  scripts is pending; inspect logs afterward and verify actual saturation W=.95 /
-  contrast W=1.10 (no compounded old helper). Last scan still found only the
+  data/world_markers_dev.lua probe was removed. October 18 20:44 runtime logs
+  confirm saturation master 1 -> .95 and contrast master 1 -> 1.10, with no
+  compounding. Both compass children applied .08 and dialogue applied -.10;
+  the user requests the compass a little lower, so its setting is now .10.
+  Last scan still found only the
   main HUD, with no live boss/counter/timer panel. Probe JSON persists at
   C:/src/uevr_far_west_build/ffw-tests/hud-probe.json and hud-names.json. The
   compass can be checked now; boss and objective info need later visual acceptance.

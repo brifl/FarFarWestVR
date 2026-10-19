@@ -15,7 +15,7 @@ code still requires UEVR's **Reset scripts** or a normal game relaunch.
 | hud | dialogue_offset_y | -0.10 | Raise conversation text by ten percent of viewport height. |
 | hud | boss_health_offset_y | 0.08 | Lower boss health by eight percent. |
 | hud | mission_info_offset_y | 0.08 | Lower mission counters and timers by eight percent. |
-| hud | compass_offset_y | 0.08 | Lower the compass background and marker overlay together by eight percent. |
+| hud | compass_offset_y | 0.10 | Lower the compass background and marker overlay together by ten percent. |
 
 HUD offsets use the full viewport height: positive moves down, negative moves up,
 and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,

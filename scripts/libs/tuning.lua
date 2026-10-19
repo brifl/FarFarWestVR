@@ -7,7 +7,7 @@ local rules={
     ['hud.dialogue_offset_y']={-.10,-.5,.5},
     ['hud.boss_health_offset_y']={.08,-.5,.5},
     ['hud.mission_info_offset_y']={.08,-.5,.5},
-    ['hud.compass_offset_y']={.08,-.5,.5},
+    ['hud.compass_offset_y']={.10,-.5,.5},
 }
 local values,last_source,poll={},nil,0
 for key,rule in pairs(rules) do values[key]=rule[1] end

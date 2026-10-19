@@ -187,7 +187,7 @@ state.objects[4]=image;state.objects[5]=overlay;state.object_count=6
 state.hud.children.Image_Compass=image;state.hud.children.Overlay_Pings=overlay
 local feature=require('libs/hud_layout')()
 for i=1,60 do feature.tick(nil,.016) end;healthy()
-near(image.translation.Y,11+1440*.08/2);near(overlay.translation.Y,image.translation.Y)
+near(image.translation.Y,11+1440*.10/2);near(overlay.translation.Y,image.translation.Y)
 near(state.hud.translation.Y,11)
 reload('[hud]\ncompass_offset_y=.15');feature.tick(nil,.016);healthy()
 near(image.translation.Y,11+1440*.15/2);near(overlay.translation.Y,image.translation.Y)
