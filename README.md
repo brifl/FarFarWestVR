@@ -51,9 +51,13 @@ These are the tested Quest button labels.
 | Right trigger | Fire; click in menus |
 | Left trigger | Native aim action |
 | Left/right grip | Spells |
+| Shifted D-pad Down | Third spell (`C`) |
 | X | Interact |
 | Y | Switch weapons |
 | B | Pause/resume |
+
+Directional actions require UEVR's **D-pad Shifting** to be enabled. The tested
+activation method is **Gesture (Head) + Left Joystick**.
 
 ## Personal tuning
 

@@ -29,17 +29,20 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- THIRD SPELL TEST: JoyToKey now maps D-pad Down to C in both normal and LB/grip
+- THIRD SPELL USER-CONFIRMED: "Third spell casts correctly." JoyToKey maps D-pad Down to C in both normal and LB/grip
   layers. Left/Up/Right bindings and the installed user's D-pad activation mode
-  are preserved. Restart Far Far West to ensure the native plugin rereads its
-  settings, then trigger shifted Down with a usable third spell equipped. Check
-  that only that spell fires, with no movement/other action, and map/Utility/photo
-  mode still work. Do not assume Reset scripts reloads native plugin settings.
-  Runtime acceptance is pending; no code/native backend changes are needed.
-- NEW PLAYTEST REQUESTS (October 19): third-spell binding is the test above;
+  are preserved. The user confirmed the requested no-extra-action/movement test.
+  Native plugin setting changes need a restart; do not assume Reset scripts
+  reloads them. No code/native backend changes were needed. User subsequently
+  raised horse summoning as a possible latent native D-pad action, or Utility
+  behavior; ownership is not yet available for gameplay testing. Saved INI files
+  do not expose these assignments. Check the in-game control bindings without
+  requiring a horse purchase; do not assume Down has no native action in all
+  contexts. If it conflicts with summoning later, preserve access to both actions.
+  Train mission-preview size is next.
+- NEW PLAYTEST REQUESTS (October 19): third-spell binding is confirmed above;
   the remaining improvements are queued.
-  Tentative easiest-first order: expose third spell C through intentional D-pad
-  shifting, resize the train mission preview, investigate reticle stepping,
+  Tentative easiest-first order: resize the train mission preview, investigate reticle stepping,
   replace relevant input hints with VR labels/icons, investigate central vertical
   stretching, then correct train cinematic viewpoints. Inspect dependencies
   before implementation; preview size may depend on the cinematic camera.
@@ -52,8 +55,8 @@ previous backend; restore that backend before using them.
   bindings without duplicating native game actions. User reports existing D-pad
   actions when enabled: Left enters screenshot/photo mode (low priority), Up uses
   Utility (purpose unknown), Right opens the map (preserve), Down has no observed
-  effect. Preserve these existing actions; Down now has C for a controlled test
-  checking for a context-dependent native action. Do not treat all four
+  effect. Preserve these existing actions; Down now has user-confirmed C, with
+  a possible horse-context native action still to check. Do not treat all four
   directions as unused or guess what Utility does.
   Preserve grips/spells, interaction, pause/resume and controller menu pointing.
 - OBJECT/LOCATION TAGS USER-CONFIRMED: "Tags stay anchored and follow the chickens."
@@ -529,8 +532,8 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
 | Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
-| Testing | Third spell through shifted D-pad Down; preserve existing actions | D-pad Down now sends C in normal and LB/grip JoyToKey layers. Restart to reload native plugin settings; confirm only the equipped third spell activates without movement/another native action. Existing Left = photo mode, Up = Utility (purpose unknown), Right = map remain unchanged. Preserve the user's gesture/shift mode, grips/spells and menus. |
-| 2 | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
+| Done | Third spell through shifted D-pad Down; preserve existing actions | User confirms third spell casts correctly in the requested no-extra-action/movement test. D-pad Down sends C in normal and LB/grip JoyToKey layers; existing Left/Up/Right and activation mode are preserved. Horse-summon bindings still need a control-menu check before assuming Down is universally unused natively; horse ownership is not required to inspect bindings. |
+| Next | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
@@ -580,7 +583,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | X | Interact with F/X prompts | Confirmed working |
 | Y | Switch weapons | Preserve working behavior |
 | Left/right grip | Spells | Preserve working behavior |
-| Shift modifier + stick direction | Preserve photo mode (Left), Utility (Up), map (Right); third spell C on Down | Down binding installed for testing in both JoyToKey layers; restart and verify spell/no duplicate action or movement |
+| Shift modifier + stick direction | Preserve photo mode (Left), Utility (Up), map (Right); third spell C on Down | Third spell user-confirmed; possible horse-context native action remains unverified |
 | Left trigger | Aim | Preserve action; sight/reticle alignment queued |
 | Right trigger | Fire; click in menus | Preserve working behavior |
 | Left/right stick click | To be decided | Dash/ping observed; unchanged |
