@@ -51,7 +51,8 @@ These are the tested Quest button labels.
 | Right trigger | Fire; click in menus |
 | Left trigger | Native aim action |
 | Left/right grip | Spells |
-| Shifted D-pad Down | Third spell (`C`) |
+| Shifted D-pad Left | Third spell (`C`); replaces the photo-mode shortcut |
+| Shifted D-pad Down | Summon horse (native action) |
 | X | Interact |
 | Y | Switch weapons |
 | B | Pause/resume |
@@ -85,6 +86,9 @@ This mod is still in development. Controller aiming currently controls weapon
 orientation; full weapon/hand attachment is planned. Reticle stepping and broader
 multiplayer-marker coverage remain on the backlog. Boss-bar height needs further
 combat verification.
+
+The third spell's new Left binding is awaiting an in-mission playtest. Its
+previous Down binding conflicted with horse summoning and has been removed.
 
 The heat-distortion workaround disables all custom post-process materials;
 some damage or status effects may also be affected. One post-extraction stall

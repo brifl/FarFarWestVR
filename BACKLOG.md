@@ -1,6 +1,6 @@
 # Far Far West VR controls and backlog
 
-Updated October 19, 2026. Changes stay in this profile repository; the isolated
+Updated October 20, 2026. Changes stay in this profile repository; the isolated
 UEVR backend uses the guarded source build installed by
 `tools/deploy_native_backend.py`. Earlier binary patch tools apply only to the
 previous backend; restore that backend before using them.
@@ -29,18 +29,22 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- THIRD SPELL USER-CONFIRMED: "Third spell casts correctly." JoyToKey maps D-pad Down to C in both normal and LB/grip
-  layers. Left/Up/Right bindings and the installed user's D-pad activation mode
-  are preserved. The user confirmed the requested no-extra-action/movement test.
-  Native plugin setting changes need a restart; do not assume Reset scripts
-  reloads them. No code/native backend changes were needed. User subsequently
-  raised horse summoning as a possible latent native D-pad action, or Utility
-  behavior; ownership is not yet available for gameplay testing. Saved INI files
-  do not expose these assignments. Check the in-game control bindings without
-  requiring a horse purchase; do not assume Down has no native action in all
-  contexts. If it conflicts with summoning later, preserve access to both actions.
-  Train mission-preview size is next.
-- NEW PLAYTEST REQUESTS (October 19): third-spell binding is confirmed above;
+- THIRD SPELL CORRECTION (October 20): earlier Down/C success was incomplete.
+  In a mission, user reports Down alternated between horse summoning and spell 3.
+  Down is a real native horse action. JoyToKey Down/C is now removed in both
+  normal and LB/grip layers; C moves to Left in both layers, replacing the
+  low-priority photo-mode shortcut with the user's agreement. pause_screen.lua
+  consumes native XInput D-pad Left during active immersive gameplay, including
+  held polls, so photo mode cannot also activate. Uses the same callback as the
+  proven B/Escape duplicate-action suppression. Menus/UEVR panel retain native
+  Left navigation; Down, Up, Right and other buttons remain untouched. User's
+  gesture/shift activation mode is preserved. Lua checks passed for held input,
+  horse/other button preservation, menus/UI/inactive HMD/other user index and
+  existing B suppression. Native C dispatch and absence of photo mode still need
+  an in-mission playtest after a full game restart. Watch for the one-time
+  [FarFarWest controls] "photo input blocked" log. No backend rebuild needed.
+  Train mission-preview size follows this input test.
+- NEW PLAYTEST REQUESTS (October 19): third-spell binding is being corrected above;
   the remaining improvements are queued.
   Tentative easiest-first order: resize the train mission preview, investigate reticle stepping,
   replace relevant input hints with VR labels/icons, investigate central vertical
@@ -54,9 +58,9 @@ previous backend; restore that backend before using them.
   the shifted stick, and reconcile JoyToKey's existing D-pad G/middle-click
   bindings without duplicating native game actions. User reports existing D-pad
   actions when enabled: Left enters screenshot/photo mode (low priority), Up uses
-  Utility (purpose unknown), Right opens the map (preserve), Down has no observed
-  effect. Preserve these existing actions; Down now has user-confirmed C, with
-  a possible horse-context native action still to check. Do not treat all four
+  Utility (purpose unknown), Right opens the map (preserve), Down summons a horse
+  in missions (subsequently verified). Left is now deliberately reassigned to
+  spell 3; preserve Up/Right/Down. Do not treat all four
   directions as unused or guess what Utility does.
   Preserve grips/spells, interaction, pause/resume and controller menu pointing.
 - OBJECT/LOCATION TAGS USER-CONFIRMED: "Tags stay anchored and follow the chickens."
@@ -532,8 +536,8 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
 | Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
-| Done | Third spell through shifted D-pad Down; preserve existing actions | User confirms third spell casts correctly in the requested no-extra-action/movement test. D-pad Down sends C in normal and LB/grip JoyToKey layers; existing Left/Up/Right and activation mode are preserved. Horse-summon bindings still need a control-menu check before assuming Down is universally unused natively; horse ownership is not required to inspect bindings. |
-| Next | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
+| Testing | Third spell through shifted D-pad Left; restore native horse Down | Mission test exposed horse summoning on Down. Down/C removed in both JoyToKey layers; Left/C replaces low-priority photo shortcut. Lua consumes native Left in immersive gameplay to prevent a second action, while retaining menu navigation and all other directions. Restart, then confirm Left casts spell 3 without photo mode and Down summons a horse without casting. |
+| Next after input test | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
@@ -583,7 +587,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | X | Interact with F/X prompts | Confirmed working |
 | Y | Switch weapons | Preserve working behavior |
 | Left/right grip | Spells | Preserve working behavior |
-| Shift modifier + stick direction | Preserve photo mode (Left), Utility (Up), map (Right); third spell C on Down | Third spell user-confirmed; possible horse-context native action remains unverified |
+| Shift modifier + stick direction | Third spell C (Left), Utility (Up), map (Right), horse summon (Down) | Left/C remap with native photo-input suppression awaits mission test; prior Down/C binding removed |
 | Left trigger | Aim | Preserve action; sight/reticle alignment queued |
 | Right trigger | Fire; click in menus | Preserve working behavior |
 | Left/right stick click | To be decided | Dash/ping observed; unchanged |

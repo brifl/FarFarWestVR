@@ -135,11 +135,24 @@ end
 
 -- JoyToKey sends Escape on B's first poll but leaks native X on held polls.
 -- Remove that second action; leave its synthetic Escape and other inputs intact.
-uevr.sdk.callbacks.on_xinput_get_state(function(_, _, state)
+local spell_input_reported = false
+uevr.sdk.callbacks.on_xinput_get_state(function(_, user_index, state)
     if not vr.is_runtime_ready() then return end
     local action = vr.get_action_handle("/actions/default/in/BButtonRight")
     if vr.is_action_active(action, vr.get_right_joystick_source()) then
         state.Gamepad.wButtons = state.Gamepad.wButtons & (~0x4000)
+    end
+    -- JoyToKey sends C for shifted Left. Consume its native photo-mode action
+    -- throughout gameplay, including held polls; menu navigation stays native.
+    if user_index == vr.get_lowest_xinput_index() and _G.farfarwest_gameplay_ready == true
+        and vr.is_hmd_active() and not functions.is_drawing_ui()
+        and vr:get_mod_value("VR_2DScreenMode") == "false"
+        and (state.Gamepad.wButtons & 0x0004) ~= 0 then
+        state.Gamepad.wButtons = state.Gamepad.wButtons & (~0x0004)
+        if not spell_input_reported then
+            spell_input_reported = true
+            functions.log_info("[FarFarWest controls] Third spell consumes native D-pad Left; photo input blocked.")
+        end
     end
 end)
 
