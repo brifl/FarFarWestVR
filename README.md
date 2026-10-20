@@ -114,10 +114,16 @@ play and restored for menus or script reset. Other marker families are separate.
 NPC interaction prompts use the same headset projection while keeping the
 game's live text, key icon and hold-progress display. Only the prompt's visual
 translation changes; its world target and X interaction remain native. The
-shared screen-widget correction also supports further marker adapters, with
-player pings queued next. NPC placement is confirmed working.
+shared screen-widget correction also supports further marker adapters.
+NPC placement is confirmed working.
 
 Mission objective markers and text guides retain their live title/distance widgets
 and use the same visual-child correction as Start Mission. Objective target data
 and actor roots remain in place; controller aiming cannot move their headset
 projection. The user confirms quest markers stay anchored with correct title and distance.
+
+Object/location tags (`UI_ObjectPing_C`) reuse that correction across the
+`BP_ObjectPing` actor family. The tag's original local offset is transformed
+through its unchanged parent each frame, preserving height, rotation and scale
+while following moving targets. Native icons, distances and target data remain
+intact. The user confirms tags stay anchored and follow tagged chickens.

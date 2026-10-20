@@ -1,7 +1,8 @@
 # Read-only, bounded lookup of reticle/HUD objects in the supported game build.
 # No injection, function calls inside the game, or process-memory writes.
 # -Markers targets the identified vendor/world-icon and lobby-guide components.
-param([switch]$Markers, [switch]$Hud)
+# -Pings targets ping widgets, their actors and WidgetComponents.
+param([switch]$Markers, [switch]$Hud, [switch]$Pings)
 $ErrorActionPreference = 'Stop'
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
 Add-Type -TypeDefinition @'
@@ -29,11 +30,12 @@ public sealed class FfwReticleReader : IDisposable {
     private int calls;
     private readonly bool markerMode;
     private readonly bool hudMode;
+    private readonly bool pingMode;
     private const long PoolRva = 0xac9b900;
     private const long ArrayRva = 0xad3d980;
 
-    public FfwReticleReader(uint pid, long start, int size, bool markers, bool hud) {
-        markerMode = markers || hud; hudMode = hud;
+    public FfwReticleReader(uint pid, long start, int size, bool markers, bool hud, bool pings) {
+        markerMode = markers || hud || pings; hudMode = hud; pingMode = pings;
         moduleBase = start; moduleEnd = start + size;
         // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ. Never request VM_WRITE.
         handle = OpenProcess(0x410, false, pid);
@@ -194,6 +196,11 @@ public sealed class FfwReticleReader : IDisposable {
         return new { address=Hex(address), name=objectName, values=values };
     }
 
+    private static bool PingObject(string name) {
+        return (name.StartsWith("UI_") || name.StartsWith("BP_"))
+            && name.ToLowerInvariant().Contains("ping");
+    }
+
     private static bool HudWidget(string name) {
         string n = name.ToLowerInvariant();
         return name == "UI_Player_C" || name == "UI_PlayerInfos_C" || name == "UI_Locator_C"
@@ -233,17 +240,19 @@ public sealed class FfwReticleReader : IDisposable {
                 throw new Exception("UObject/FName layout validation failed.");
             long klass = BitConverter.ToInt64(data, 16);
             string className = ClassName(klass);
-            bool liveWidget = markerMode && (hudMode ? HudWidget(className)
+            bool liveWidget = markerMode && (pingMode ? PingObject(className) : hudMode ? HudWidget(className)
                 : (className == "UI_WorldIcon_C" || className == "UI_Guide_C")) && !name.StartsWith("Default__");
             bool component = false;
-            if (markerMode && !hudMode && className == "WidgetComponent") {
+            if (markerMode && (!hudMode || pingMode) && className == "WidgetComponent") {
                 byte[] widgetClass = Read(address + 1520, 8);
                 string widgetName = widgetClass == null ? "" : ClassName(BitConverter.ToInt64(widgetClass, 0));
-                component = widgetName == "UI_WorldIcon_C" || widgetName == "UI_Guide_C";
+                component = pingMode ? PingObject(widgetName)
+                    : widgetName == "UI_WorldIcon_C" || widgetName == "UI_Guide_C";
             }
             bool library = markerMode && ((className == "Class"
                 && (name == "WidgetBlueprintLibrary" || name == "WidgetLayoutLibrary" || name == "Image"))
-                || (hudMode && className == "WidgetBlueprintGeneratedClass" && HudWidget(name)));
+                || ((hudMode || pingMode) && className == "WidgetBlueprintGeneratedClass"
+                    && (pingMode ? PingObject(name) : HudWidget(name))));
             if (library) widgetClasses.Add(address);
             if (markerMode ? !(liveWidget || component || library) : (!Relevant(name) && !Relevant(className))) continue;
             if (className == "Image" || className == "UI_Player_C" || liveWidget || component) widgetClasses.Add(klass);
@@ -284,7 +293,7 @@ try {
 if ($timestamp -ne 907750432 -or $imageSize -ne 203960320 -or $module.ModuleMemorySize -ne $imageSize) {
     throw 'Executable differs from the verified 0.2.0.20 build; nothing changed.'
 }
-$reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize, [bool]$Markers.IsPresent, [bool]$Hud.IsPresent)
+$reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize, [bool]$Markers.IsPresent, [bool]$Hud.IsPresent, [bool]$Pings.IsPresent)
 try {
     $result = $reader.Scan()
     [ordered]@{processId=$game.Id; gameBase=('0x{0:x}' -f $module.BaseAddress.ToInt64());

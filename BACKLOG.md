@@ -1,6 +1,6 @@
 # Far Far West VR controls and backlog
 
-Updated October 18, 2026. Changes stay in this profile repository; the isolated
+Updated October 19, 2026. Changes stay in this profile repository; the isolated
 UEVR backend uses the guarded source build installed by
 `tools/deploy_native_backend.py`. Earlier binary patch tools apply only to the
 previous backend; restore that backend before using them.
@@ -29,7 +29,26 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- PRIORITY: first successful extraction left the user looking at the island/train
+- OBJECT/LOCATION TAGS USER-CONFIRMED: "Tags stay anchored and follow the chickens."
+  UI_ObjectPing_C is shared by BP_ObjectPing_Default_C and
+  BP_ObjectPing_Animal_Chicken_C; match the BP_ObjectPing actor family rather than
+  individual targets. Guarded fields: Image_Logo=824, Location=864; actor Widget=688,
+  Scene=696. Widget attaches to Scene, then the actor root. Preserve the native
+  relative offset (chickens use Z=64), icon, distance and target data. Each update
+  transforms that saved local offset through the untouched parent's current
+  transform, then uses the shared inverse-projection correction on the visual
+  child only. This follows moving objects and preserves rotation/scale without
+  feedback from the warped widget or delayed distance data. Parent/root/component
+  identities are checked before writes; menus/reset restore the original offset.
+  K2_GetComponentToWorld=96 and KismetMathLibrary.TransformLocation=144 were
+  verified read-only in-game, including native/calculated positions agreeing.
+  All 24 marker checks pass, including moving targets, rotated/scaled offsets,
+  changed attachments and wrong component bindings. Live logs confirm two object
+  tags use headset projection. tools/probe_reticle.ps1 -Pings is bounded/read-only;
+  snapshots are on robot1-x at C:/src/uevr_far_west_build/ffw-tests/player-ping.json
+  and player-ping-current.json. Reticle stepping is next.
+- WATCH ONLY: October 19 user completed another mission/extraction with no issues
+  and will report recurrence. The first successful extraction left the user looking at the island/train
   station after boarding and departure, with the same view on the desktop. No
   fatal error or new map/loading transition was logged. October 18 ~21:13:24
   PlayerArray index warnings also occurred at mission start, so they are not
@@ -40,8 +59,8 @@ previous backend; restore that backend before using them.
   Those states may be normal while awaiting results; do not force mission flags,
   sequence events, rewards or travel. UEVR remained in immersive mode. User's F8
   test showed only a black screen with Version 0.2.0.20, not a summary; toggling
-  produced no new errors. Next controlled test: a clean restart and one repeat
-  extraction with the same settings. Reticle exception logs now identify the
+  produced no new errors. The clean repeat succeeded; no extraction fix is proven.
+  Reticle exception logs now identify the
   operation that failed; no behavior changes. Bounded read-only snapshots are under
   C:/src/uevr_far_west_build/ffw-tests/extraction-state-2.json and
   extraction-departure.json. Reticle helper stopped safely at 21:13:31 with a
@@ -480,8 +499,8 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Use the themed menu cursor | User accepted its headset appearance: "It looks so good." assets/menu_cursor.png is the unchanged user-authored 128-pixel arrow; unused duplicate scales removed with permission. Native overlay displays it at 48 pixels high at 1440p with a top-left hotspot. Native checks passed; controller pointing/click logic and gameplay cursor policy are unchanged. |
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
 | Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
-| Next | Correct player pings | User reports the same aim/head coupling. Reuse the shared projection correction; identify the ping widget and its world target while visible. Preserve ping creation, visibility and existing vendor/mission/interaction behavior. |
-| 8 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
+| Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
+| Next | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
 
 Earlier items remain below; the new ordered queue takes precedence after the

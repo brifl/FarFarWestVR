@@ -25,19 +25,32 @@ local sizes={K2_GetComponentLocation=24,GetOwner=8,GetOwningPlayer=8,GetDesiredS
     K2_SetWorldLocation=296,K2_SetRelativeLocation=296,K2_GetActorLocation=24,
     DeprojectScreenPositionToWorld=64,ProjectWorldLocationToScreen=48,
     GetOwningPlayerPawn=8,SetRenderTranslation=16,GetCachedGeometry=80,
-    GetLocalSize=96,LocalToViewport=128}
+    GetLocalSize=96,LocalToViewport=128,K2_GetComponentToWorld=96,TransformLocation=144}
 local function class(name)
     return {get_short_name=function() return name end,find_property=function(_,n)
-        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=1800,Image_Icon=808,Image_Aura=824,
-            UI_Key=816,OwningActor=912,Location=872,InteractTextHolder=816}
+        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=name=='component' and 1800 or 688,Image_Icon=808,Image_Aura=824,
+            UI_Key=816,OwningActor=912,Location=state.family=='UI_ObjectPing_C' and 864 or 872,
+            InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
 end
 local component_class,widget_class,image_class=class('component'),class('widget'),class('image')
 local root=object({},'Billboard')
+local scene=object({parent=root},'Scene')
+function scene:get_class() return class('SceneComponent') end
+function scene:get_property(n) assert(n=='AttachParent');return self.parent end
+function scene:K2_GetComponentToWorld()
+    return {location=state.parent_location or state.world,rotation=state.parent_rotation or 0,
+        scale=state.parent_scale or {X=1,Y=1,Z=1}}
+end
 local actor=object({hidden=false},'owner')
-function actor:get_property(n) if n=='RootComponent' then return root end;assert(n=='bHidden');return self.hidden end
+function actor:get_property(n)
+    if n=='RootComponent' then return root end
+    if n=='Scene' then return scene end
+    if n=='Widget' then return state.wrong_component and root or state.component end
+    assert(n=='bHidden');return self.hidden
+end
 function actor:get_class() return class(state.owner_class or 'actor') end
 function actor:K2_GetActorLocation() return state.world end
 local player=object({},'player')
@@ -77,7 +90,7 @@ function source:get_property(n)
         Angle=0,Shear={X=0,Y=0}} end
     if n=='OwningActor' then return state.wrong_actor and root or actor end
     if n=='Location' then return state.objective_location or state.world end
-    assert(n==(state.family=='UI_Guide_C' and 'Image_Aura' or 'Image_Icon'));return self.icon
+    assert(n==(state.family=='UI_Guide_C' and 'Image_Aura' or state.family=='UI_ObjectPing_C' and 'Image_Logo' or 'Image_Icon'));return self.icon
 end
 function source.icon:get_property(n) return {name=n} end
 local component=object({visible=true,relative={X=0,Y=0,Z=0}},'Widget')
@@ -91,12 +104,13 @@ function component:get_outer() return {get_short_name=function()
     return state.family=='UI_Guide_C' and 'BP_LobbyGuide_C_2' or 'BP_WorldIcon_C_1' end,
     get_class=function() return actor:get_class() end} end
 function component:GetOwner() return actor end
-function component:GetAttachParent() return state.is_root and component or root end
+function component:GetAttachParent() return state.is_root and component or state.nested_parent and scene or root end
 function component:get_property(n)
     if n=='Widget' then return not state.no_widget and source or nil
     elseif n=='WidgetClass' then return source:get_class()
     elseif n=='bVisible' then return self.visible
     elseif n=='RelativeLocation' then return self.relative end
+    if n=='AttachParent' then return self:GetAttachParent() end
     assert(n=='Pivot');return {X=.5,Y=1}
 end
 function component:get_bool_property() error('native typed bool getter must not be used') end
@@ -139,6 +153,14 @@ function slate:LocalToViewport(widget,cached,point,pixel,viewport)
 end
 local classes={['Class /Script/UMG.WidgetComponent']=component_class,
     ['Class /Script/UMG.UserWidget']=widget_class,['Class /Script/UMG.Image']=image_class}
+local math_library={TransformLocation=function(_,t,p)
+    local yaw=math.rad(t.rotation);local c,s=math.cos(yaw),math.sin(yaw)
+    return {X=t.location.X+p.X*t.scale.X*c-p.Y*t.scale.Y*s,
+        Y=t.location.Y+p.X*t.scale.X*s+p.Y*t.scale.Y*c,Z=t.location.Z+p.Z*t.scale.Z}
+end}
+local math_class=class('KismetMathLibrary')
+math_class.get_class_default_object=function() return math_library end
+classes['Class /Script/Engine.KismetMathLibrary']=math_class
 for name,value in pairs({WidgetBlueprintLibrary=factory,WidgetLayoutLibrary=layout,SlateBlueprintLibrary=slate}) do
     local c=class(name);c.get_class_default_object=function() return value end
     classes['Class /Script/UMG.'..name]=c
@@ -156,6 +178,7 @@ uevr={api={get_uobject_array=function() return array end,find_uobject=function(_
     params={vr=vr,functions={get_tag=function() return 'ffw-ue58-sdk-v1' end,log_info=log,log_warn=log,
         is_drawing_ui=function() return false end}}}
 state.source,state.component,state.actor=source,component,actor
+state.scene,state.root=scene,root
 function frame(camera)
     if camera~=false then feature.camera(nil,0,100,{x=0,y=0,z=0},state.rotation,true) end
     feature.tick(nil,.016)
@@ -308,6 +331,52 @@ state.aim=170;state.rotation={x=10,y=10,z=0};frame();healthy()
 assert(state.display.X<1000 and state.display.Y>500 and state.source.label=='Refuel the pump')
 feature.reset();assert(state.restored and state.source.opacity==.7)
 """, "state.family='UI_Guide_C';state.owner_class='BP_TextGuide_FuelObjective_A_C';state.owner_name='ChildActor_GEN_VARIABLE_BP_TextGuide_C_CAT_822';state.source.label='Refuel the pump'")
+
+PING = "state.family='UI_ObjectPing_C';state.owner_class='BP_ObjectPing_Default_C';state.nested_parent=true;state.component.relative={X=0,Y=0,Z=64}"
+
+run("object ping preserves live icon/distance and height across aim and head motion", """
+frame();frame();healthy();assert(state.created==0 and state.moves>0)
+near(state.display.X,1000);near(state.display.Y,468)
+state.source.label='Ping 12m';state.aim=175;frame();healthy()
+near(state.display.X,1000);near(state.display.Y,468)
+state.rotation={x=10,y=10,z=0};frame();healthy()
+assert(state.display.X<1000 and state.display.Y>468 and state.source.label=='Ping 12m')
+local x,y=state.display.X,state.display.Y
+for i=1,120 do frame() end;healthy();near(state.display.X,x);near(state.display.Y,y)
+assert(state.world.X==1000 and state.world.Y==0 and state.scene.parent==state.root)
+feature.reset();assert(state.restored and state.source.opacity==.7 and state.component.relative.Z==64)
+""", PING)
+
+run("object ping follows moving tagged targets independently of stale distance data", """
+frame();frame();state.parent_location={X=1000,Y=200,Z=100}
+state.objective_location={X=950,Y=190,Z=99};frame();healthy()
+near(state.display.X,1200);near(state.display.Y,418)
+state.aim=-80;frame();healthy();near(state.display.X,1200);near(state.display.Y,418)
+assert(state.objective_location.Y==190 and state.world.Y==0)
+state.component.visible=false;frame();assert(state.source.opacity==0)
+state.component.visible=true;frame();assert(state.source.opacity==.7)
+feature.reset();assert(state.restored and state.objective_location.Y==190)
+""", PING)
+
+run("chicken and other object tags preserve rotated/scaled native attachment offsets", """
+frame();frame();healthy()
+near(state.display.X,1000+40000/970);near(state.display.Y,500-16000/970)
+state.parent_location={X=1200,Y=100,Z=50};state.aim=170;frame();healthy()
+near(state.display.X,1000+140000/1170);near(state.display.Y,500-41000/1170)
+assert(state.created==0 and state.world.X==1000)
+feature.reset();near(state.component.relative.X,20);near(state.component.relative.Y,10);near(state.component.relative.Z,64)
+""", PING+";state.owner_class='BP_ObjectPing_Animal_Chicken_C';state.component.relative={X=20,Y=10,Z=64};state.parent_rotation=90;state.parent_scale={X=2,Y=3,Z=.5}")
+
+run("object ping rejects a mismatched actor/component binding before writing", """
+frame();healthy();assert(state.moves==0 and state.source.opacity==.7 and state.created==0)
+""", PING+";state.wrong_component=true")
+
+run("object ping stops moving when its verified scene attachment changes", """
+frame();frame();healthy();local moves=state.moves
+state.scene.parent=nil;frame();healthy()
+assert(state.moves==moves and state.source.opacity==.7 and state.world.Y==0)
+frame();healthy();assert(state.moves==moves)
+""", PING)
 
 run("hidden known marker is ready on its first visible frame", """
 frame();healthy();assert(state.moves==0 and state.source.opacity==0)

@@ -8,7 +8,7 @@ local loaded, geometry = pcall(require, "libs/reticle_projection")
 if not loaded then functions.log_warn("[FarFarWest markers] Projection helper unavailable."); return end
 
 local matrix = UEVR_Matrix4x4f.new()
-local array, component_class, widget_class, factory, layout, slate
+local array, component_class, widget_class, factory, layout, slate, math_library
 local entries, camera, entry_count = {}, nil, 0
 local elapsed, next_scan, scan_index = 0, 0, nil
 local candidates,candidate_count={},0
@@ -22,6 +22,9 @@ local kinds = {
     UI_Interact_C={owner="^BP_Player.*_C_", field="UI_Key",offset=816,screen=true},
     UI_PingObjective_C={owner_class="^BP_ObjectivePing.*_C$",field="OwningActor",offset=912,
         world_label=true,actor_field="OwningActor",target_field="Location",target_offset=872,label="objective marker"},
+    UI_ObjectPing_C={owner_class="^BP_ObjectPing.*_C$",field="Image_Logo",offset=824,
+        world_label=true,target_field="Location",target_offset=864,label="object ping",
+        parent_field="Scene",parent_offset=696,component_field="Widget",component_offset=688},
 }
 local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder",offset=816,
     world_label=true,label="mission guide"}
@@ -50,7 +53,21 @@ end
 local function component_valid(entry)
     if not valid(entry.component) or not valid(entry.source) or not valid(entry.owner) then return false end
     local widget = entry.component.object:get_property("Widget")
-    return widget and widget:get_address()==entry.source.address
+    if not widget or widget:get_address()~=entry.source.address then return false end
+    if entry.parent then
+        if not valid(entry.parent) or not valid(entry.root) then return false end
+        local parent=entry.component.object:get_property("AttachParent")
+        local root=entry.parent.object:get_property("AttachParent")
+        local owner_root=entry.owner.object:get_property("RootComponent")
+        local owner_widget=entry.owner.object:get_property(entry.kind.component_field)
+        local owner_parent=entry.owner.object:get_property(entry.kind.parent_field)
+        return parent and parent:get_address()==entry.parent.address
+            and root and root:get_address()==entry.root.address
+            and owner_root and owner_root:get_address()==entry.root.address
+            and owner_widget and owner_widget:get_address()==entry.component.address
+            and owner_parent and owner_parent:get_address()==entry.parent.address
+    end
+    return true
 end
 local function restore(entry)
     if valid(entry.proxy) then entry.proxy.object:RemoveFromParent() end
@@ -141,16 +158,43 @@ local function bind_world_label(component,source,kind)
     local parent=component:GetAttachParent()
     local root=owner and owner:get_property("RootComponent")
     -- Only reposition this visual child. Its separate actor remains the target.
-    assert(parent and root and root:get_address()==parent:get_address()
-        and root:get_address()~=component:get_address(),"World label must be a child of its actor root")
+    assert(parent and root and root:get_address()~=component:get_address(),
+        "World label must be a child of its actor root")
+    if kind.parent_field then
+        for field,offset in pairs({[kind.parent_field]=kind.parent_offset,[kind.component_field]=kind.component_offset}) do
+            local p=owner:get_class():find_property(field)
+            assert(p and p:get_offset()==offset,"Ping actor layout differs: "..field)
+        end
+        local bound_parent=owner:get_property(kind.parent_field)
+        local bound_widget=owner:get_property(kind.component_field)
+        local attach=parent:get_class():find_property("AttachParent")
+        assert(attach and attach:get_offset()==208,"Ping scene attachment layout differs")
+        local parent_root=parent:get_property("AttachParent")
+        assert(bound_parent and bound_parent:get_address()==parent:get_address()
+            and bound_widget and bound_widget:get_address()==component:get_address()
+            and parent_root and parent_root:get_address()==root:get_address(),"Ping attachment binding differs")
+        checked(parent:get_class(),"K2_GetComponentToWorld",96,96)
+        if not math_library then
+            local class
+            math_library,class=default_object("/Script/Engine.KismetMathLibrary")
+            checked(class,"TransformLocation",144,144)
+        end
+    else
+        assert(root:get_address()==parent:get_address(),"World label must be a child of its actor root")
+    end
     local relative=component:get_property("RelativeLocation")
-    assert(math.abs(relative.X)<.001 and math.abs(relative.Y)<.001
-        and math.abs(relative.Z)<.001,"Unexpected world-label attachment offset")
+    assert(finite(relative.X) and finite(relative.Y) and finite(relative.Z),"Invalid world-label attachment offset")
+    if not kind.parent_field then
+        assert(math.abs(relative.X)<.001 and math.abs(relative.Y)<.001
+            and math.abs(relative.Z)<.001,"Unexpected world-label attachment offset")
+    end
     if kind.actor_field then
         local target=source:get_property(kind.actor_field)
         assert(target and target:get_address()==owner:get_address(),"Objective widget/actor binding differs")
+    end
+    if kind.target_field then
         local field=source:get_class():find_property(kind.target_field)
-        assert(field and field:get_offset()==kind.target_offset,"Objective target layout differs")
+        assert(field and field:get_offset()==kind.target_offset,"World-label target layout differs")
     end
     local player=source:GetOwningPlayer()
     assert(player,"World-label player unavailable")
@@ -162,6 +206,7 @@ local function bind_world_label(component,source,kind)
     assert(finite(opacity),"Invalid lobby-guide opacity")
     entries[component:get_address()]={component=track(component),source=track(source),
         owner=track(owner),player=track(player),kind=kind,opacity=opacity,hidden=true,
+        parent=kind.parent_field and track(parent) or nil,root=kind.parent_field and track(root) or nil,
         relative={X=relative.X,Y=relative.Y,Z=relative.Z},moved=false}
     entry_count=entry_count+1
     info("Tracking live "..(kind.label or "lobby guide").."; original text retained, actor unchanged.")
@@ -406,7 +451,11 @@ callbacks.tick = function(_,delta)
                 if not ready then display:SetRenderOpacity(0)
                 else
                     local point
-                    if entry.kind.target_field then point=entry.source.object:get_property(entry.kind.target_field)
+                    if entry.parent then
+                        -- The untouched parent follows tagged objects. Transform
+                        -- the native local offset, never our warped visual child.
+                        point=math_library:TransformLocation(entry.parent.object:K2_GetComponentToWorld(),entry.relative)
+                    elseif entry.kind.target_field then point=entry.source.object:get_property(entry.kind.target_field)
                     elseif entry.kind.world_label then point=entry.owner.object:K2_GetActorLocation()
                     else point=entry.component.object:K2_GetComponentLocation() end
                     local pixel=geometry.project({x=point.X,y=point.Y,z=point.Z},camera.position,
@@ -447,7 +496,7 @@ callbacks.tick = function(_,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendors, lobby/mission guides, objectives and interaction prompts use headset projection.")
+info("Helper loaded; vendors, lobby/mission guides, objectives, object pings and interaction prompts use headset projection.")
 
 return callbacks
 end
