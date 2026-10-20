@@ -36,8 +36,10 @@ previous backend; restore that backend before using them.
   stretching, then correct train cinematic viewpoints. Inspect dependencies
   before implementation; preview size may depend on the cinematic camera.
   Backend VR.hpp confirms thumbrest + joystick shifting modes; repository default
-  VR_DPadShifting=false. User has tested enabling it. Left Thumbrest + Right Joystick is a candidate, not an
-  applied setting. Suppress our Lua snap-turn and native look/movement input on
+  VR_DPadShifting=false. Installed profile currently has VR_DPadShifting=true,
+  VR_DPadShiftingMethod=4 (Gesture/Head + Left Joystick); preserve the user's
+  runtime preferences. Left Thumbrest + Right Joystick remains an alternative
+  candidate. Suppress our Lua snap-turn and native look/movement input on
   the shifted stick, and reconcile JoyToKey's existing D-pad G/middle-click
   bindings without duplicating native game actions. User reports existing D-pad
   actions when enabled: Left enters screenshot/photo mode (low priority), Up uses
