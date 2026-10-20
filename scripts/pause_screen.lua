@@ -152,7 +152,7 @@ uevr.sdk.callbacks.on_xinput_get_state(function(_, _, state)
     end
 end)
 
-uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
+uevr.sdk.callbacks.on_pre_engine_tick(function(engine, delta)
     local elapsed = math.min(math.max(delta or 0, 0), 0.1)
     poll_time = poll_time + elapsed
     if poll_time >= 0.05 then
@@ -181,7 +181,7 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
     -- guessing from button presses. F8 remains a manual fallback until the
     -- next observed transition. Missing logs never guess that a click is Resume.
     local desired_menu = menu_state
-    local preview_visible = preview and preview.tick(nil,delta)
+    local preview_visible = preview and preview.tick(engine,delta)
     if not playable_map or loading or preview_visible then desired_menu = true end
     if desired_menu ~= nil and desired_menu ~= applied_state and not functions.is_drawing_ui() then
         vr.set_mod_value("VR_2DScreenMode", desired_menu and "true" or "false")

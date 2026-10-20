@@ -1,10 +1,11 @@
 -- The game's mission-loading card outlives the engine's loading-screen log.
--- Observe only that card; the menu helper owns presentation and cleanup.
+-- Query that card directly; the menu helper owns presentation and cleanup.
 return function()
 local api,log=uevr.api,uevr.params.functions
-local array,widget_class,scan,count_seen,recent,recent_min
-local entries,elapsed,next_scan={},0,0
+local array,widget_class,viewport_class,library,card_class
+local entries,elapsed,next_query={},0,0
 local failed,shown=false,false
+local class_path='WidgetBlueprintGeneratedClass /Game/Interfaces/UI_LoadingScreen.UI_LoadingScreen_C'
 local function prepare()
     array=api:get_uobject_array()
     assert(array and array.get_objects_offset()==0 and array.get_item_distance()==24,
@@ -15,57 +16,76 @@ local function prepare()
     assert(fn and fn:get_properties_size()==1,'Unexpected IsInViewport parameters')
     local field=widget_class:find_property('Visibility')
     assert(field and field:get_offset()==221,'Unexpected widget visibility layout')
+    viewport_class=api:find_uobject('Class /Script/Engine.GameViewportClient')
+    local class=api:find_uobject('Class /Script/UMG.WidgetBlueprintLibrary')
+    assert(viewport_class and class,'Native widget query unavailable')
+    fn=class:find_function('GetAllWidgetsOfClass')
+    assert(fn and fn:get_properties_size()==40,'Unexpected widget query parameters')
+    for name,offset in pairs({WorldContextObject=0,FoundWidgets=8,WidgetClass=24,TopLevelOnly=32}) do
+        field=fn:find_property(name)
+        assert(field and field:get_offset()==offset,'Widget query layout mismatch: '..name)
+    end
+    library=class:get_class_default_object();assert(library,'Widget query library unavailable')
+end
+local function track(object)
+    local count=array:get_object_count()
+    assert(count>0 and count<=250000,'Object count outside the verified budget')
+    local index=object:read_dword(12)
+    assert(index<count,'Widget query returned an invalid index')
+    local current=array:get_object(index)
+    assert(current and current:get_address()==object:get_address(),'Widget query identity mismatch')
+    return {index=index,address=object:get_address(),name=object:get_short_name(),object=object}
+end
+local function valid(ref)
+    local object=array:get_object(ref.index)
+    return object and object:get_address()==ref.address and object:get_short_name()==ref.name
 end
 local function visible()
     local active=false
     for address,ref in pairs(entries) do
-        local object=array:get_object(ref.index)
-        if not object or object:get_address()~=address or object:get_short_name()~=ref.name then
-            entries[address]=nil
+        if not valid(ref) then entries[address]=nil
         else
-            local visibility=object:get_property('Visibility')
-            if visibility~=1 and visibility~=2 and object:IsInViewport() then active=true end
+            local visibility=ref.object:get_property('Visibility')
+            if visibility~=1 and visibility~=2 and ref.object:IsInViewport() then active=true end
         end
     end
     return active
 end
-local function discover()
-    local count=array:get_object_count()
-    assert(count>0 and count<=250000,'Object count outside the verified budget')
-    if count_seen and count>count_seen then
-        recent_min=recent_min and math.min(recent_min,count_seen) or count_seen
-        recent=count-1
-    elseif count_seen and count<count_seen then
-        scan,recent,recent_min=nil,nil,nil;next_scan=0
+local function discover(engine)
+    if elapsed<next_query or not engine then return end
+    next_query=elapsed+.05
+    if card_class and not valid(card_class) then card_class=nil end
+    if not card_class then
+        local class=api:find_uobject(class_path)
+        if not class then next_query=elapsed+.25;return end
+        assert(class:get_short_name()=='UI_LoadingScreen_C'
+            and class:get_class():get_short_name()=='WidgetBlueprintGeneratedClass','Unexpected mission-card class')
+        card_class=track(class)
     end
-    count_seen=count
-    if elapsed<next_scan and not recent then return end
-    if scan==nil or scan>=count then scan=count-1 end
-    local deadline=os.clock()+.001
-    for _=1,8192 do
-        if recent and recent<recent_min then recent,recent_min=nil,nil end
-        if not recent and scan<0 then scan=nil;next_scan=elapsed+.25;return end
-        local index=recent or scan
-        if recent then recent=recent-1 else scan=scan-1 end
-        local object=array:get_object(index)
-        local name=object and object:get_short_name()
-        if name and name:match('^UI_LoadingScreen_C_%d+$')
-            and not entries[object:get_address()]
-            and object:get_class():get_short_name()=='UI_LoadingScreen_C'
-            and object:is_a(widget_class) then
-            entries[object:get_address()]={index=index,name=name}
-            if object:IsInViewport() then return end
-        end
-        if os.clock()>=deadline then return end
+    -- Use the callback's live engine and its viewport as the native world
+    -- context. Do not call the unsupported SDK UEngine::get_world lookup.
+    local field=engine:get_class():find_property('GameViewport')
+    assert(field and field:get_offset()==3448,'Unexpected engine viewport layout')
+    local viewport=engine:get_property('GameViewport')
+    if not viewport then return end
+    assert(viewport:is_a(viewport_class),'Unexpected native viewport context')
+    local found={}
+    library:GetAllWidgetsOfClass(viewport,found,card_class.object,true)
+    assert(#found<=16,'Too many mission cards')
+    entries={}
+    for _,object in ipairs(found) do
+        assert(object:is_a(widget_class) and object:get_class():get_short_name()=='UI_LoadingScreen_C',
+            'Unexpected widget query result')
+        local ref=track(object);entries[ref.address]=ref
     end
 end
-local function tick(_,delta)
+local function tick(engine,delta)
     if failed then return false end
     local ok,active=pcall(function()
         elapsed=elapsed+math.min(math.max(delta or 0,0),.1)
         if not array then prepare() end
         if visible() then return true end
-        discover()
+        discover(engine)
         return visible()
     end)
     if not ok then

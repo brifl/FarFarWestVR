@@ -8,7 +8,7 @@ from lupa import LuaRuntime
 
 ROOT = Path(__file__).resolve().parents[1]
 MOCK = r'''
-state={objects={},count=48,logs={},values={VR_2DScreenMode='false'},screen_writes=0,
+state={objects={},count=48,logs={},values={VR_2DScreenMode='false'},screen_writes=0,queries=0,reads=0,
     runtime=true,hmd=true,tag='ffw-ue58-sdk-v1',bad_layout=false}
 local function log(s) table.insert(state.logs,s) end
 local widget_class={find_function=function(_,name)
@@ -17,9 +17,10 @@ end,find_property=function(_,name)
     assert(name=='Visibility');return {get_offset=function() return state.bad_layout and 0 or 221 end}
 end}
 function make_widget(index,name,kind,viewport,visibility)
-    local o={viewport=viewport,visibility=visibility or 3,index=index}
+    local o={viewport=viewport,visibility=visibility or 3,index=index,kind=kind}
     function o:get_address() return index*256 end
     function o:get_short_name() return name end
+    function o:read_dword(offset) assert(offset==12);return index end
     function o:get_class() return {get_short_name=function() return kind end} end
     function o:is_a(c) return c==widget_class end
     function o:get_property(n) assert(not self.dead and n=='Visibility');return self.visibility end
@@ -28,8 +29,32 @@ function make_widget(index,name,kind,viewport,visibility)
 end
 state.card=make_widget(42,'UI_LoadingScreen_C_1','UI_LoadingScreen_C',false)
 state.map=make_widget(43,'UI_Map_C_1','UI_Map_C',true)
+state.card_class=make_widget(47,'UI_LoadingScreen_C','WidgetBlueprintGeneratedClass',false)
+local viewport_class={}
+state.viewport={is_a=function(_,c) return c==viewport_class end}
+state.engine={get_class=function() return {find_property=function(_,name)
+    assert(name=='GameViewport');return {get_offset=function() return 3448 end} end} end,
+    get_property=function(_,name) assert(name=='GameViewport');return state.viewport end}
+local library={}
+function library:GetAllWidgetsOfClass(viewport,found,kind,top_level)
+    assert(viewport==state.viewport and kind==state.card_class and top_level)
+    state.queries=state.queries+1
+    for _,o in pairs(state.objects) do
+        if o.kind=='UI_LoadingScreen_C' and o.viewport then found[#found+1]=o end
+    end
+end
+local library_class={get_class_default_object=function() return library end,
+    find_function=function(_,name)
+        assert(name=='GetAllWidgetsOfClass')
+        return {get_properties_size=function() return 40 end,find_property=function(_,field)
+            return {get_offset=function()
+                return ({WorldContextObject=0,FoundWidgets=8,WidgetClass=24,TopLevelOnly=32})[field]
+            end}
+        end}
+    end}
 local array={get_objects_offset=function() return 0 end,get_item_distance=function() return 24 end,
-    get_object_count=function() return state.count end,get_object=function(_,i) return state.objects[i] end}
+    get_object_count=function() return state.count end,get_object=function(_,i)
+        state.reads=state.reads+1;return state.objects[i] end}
 local vr={is_runtime_ready=function() return state.runtime end,is_hmd_active=function() return state.hmd end,
     recenter_view=function() end,get_rotation_offset=function() end,set_rotation_offset=function() end,
     get_action_handle=function() return 1 end,get_right_joystick_source=function() return 2 end,
@@ -41,7 +66,12 @@ function vr.set_mod_value(name,value)
 end
 UEVR_Quaternionf={new=function() return {} end}
 uevr={api={get_uobject_array=function() return array end,find_uobject=function(_,name)
-    assert(name=='Class /Script/UMG.UserWidget');return widget_class end},
+    if name=='Class /Script/UMG.UserWidget' then return widget_class end
+    if name=='Class /Script/UMG.WidgetBlueprintLibrary' then return library_class end
+    if name=='Class /Script/Engine.GameViewportClient' then return viewport_class end
+    assert(name=='WidgetBlueprintGeneratedClass /Game/Interfaces/UI_LoadingScreen.UI_LoadingScreen_C')
+    if state.class_missing then return nil end
+    return state.card_class end},
     params={vr=vr,functions={get_tag=function() return state.tag end,
         log_info=log,log_warn=log,is_drawing_ui=function() return false end}},
     sdk={callbacks={on_xinput_get_state=function(fn) state.input=fn end,
@@ -59,7 +89,7 @@ io.open=function(name)
         local text=state.game_log:sub(position+1,position+n);position=position+#text;return text
     end,close=function() end}
 end
-function frames(n) for i=1,n or 40 do state.tick(nil,.016) end end
+function frames(n) for i=1,n or 40 do state.tick(state.engine,.016) end end
 function capture(mode)
     state.game_log=state.game_log..'LogViewport: Viewport MouseCaptureMode Changed, old -> '..mode..'\n'
     frames(8)
@@ -89,7 +119,8 @@ state.card.viewport=true;frames(20);healthy()
 assert(state.values.VR_2DScreenMode=='true' and state.values.VR_EnableGUI=='true')
 assert(state.values.UI_Size=='1.800000' and state.values.UI_Distance=='3.000000')
 assert(not farfarwest_gameplay_ready)
-local writes=state.screen_writes;frames(120);assert(state.screen_writes==writes)
+local writes,queries=state.screen_writes,state.queries;frames(120)
+assert(state.screen_writes==writes and state.queries==queries)
 state.card.viewport=false;frames(2);healthy()
 assert(state.values.VR_2DScreenMode=='false' and state.values.VR_EnableGUI=='false')
 assert(farfarwest_gameplay_ready)
@@ -117,7 +148,7 @@ state.card=make_widget(42,'UI_LoadingScreen_C_2','UI_LoadingScreen_C',true)
 frames(30);healthy();assert(state.values.VR_2DScreenMode=='true')
 state.card.viewport=false;frames(2)
 state.card=make_widget(48,'UI_LoadingScreen_C_3','UI_LoadingScreen_C',true);state.count=49
-frames(2);healthy();assert(state.values.VR_2DScreenMode=='true')
+frames(5);healthy();assert(state.values.VR_2DScreenMode=='true')
 """)
 run("layout mismatch disables detection while normal menu transitions work", """
 frames();assert(state.values.VR_2DScreenMode=='false')
@@ -132,3 +163,18 @@ state.card.viewport=true;frames();healthy();assert(farfarwest_gameplay_ready)
 capture('CaptureDuringMouseDown');assert(state.values.VR_2DScreenMode=='true')
 capture('CapturePermanently');assert(farfarwest_gameplay_ready)
 """, "state.tag='other-backend'")
+
+run("large object arrays do not delay a low-index mission card", """
+frames();assert(state.values.VR_2DScreenMode=='false')
+local reads=state.reads;state.card.viewport=true;frames(4);healthy()
+assert(state.values.VR_2DScreenMode=='true' and state.reads-reads<30)
+""", "state.count=200000")
+
+run("class availability and viewport replacement are retried without stale context", """
+frames();healthy();assert(state.queries==0)
+state.class_missing=false;state.card.viewport=true;frames(20);healthy()
+assert(state.values.VR_2DScreenMode=='true')
+state.card.viewport=false;frames(8);assert(state.values.VR_2DScreenMode=='false')
+state.viewport={is_a=function() return true end}
+state.card.viewport=true;frames(4);healthy();assert(state.values.VR_2DScreenMode=='true')
+""", "state.class_missing=true")

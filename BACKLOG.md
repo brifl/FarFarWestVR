@@ -29,23 +29,25 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- TRAIN PREVIEW (October 20, visual test pending): user confirms the map/details
-  screen is readable; the earlier title/objectives card is oversized. Capture
-  identifies UI_LoadingScreen_C, whose template includes TextBlock_Map (font 50)
-  and the three UI_Map_Task objective panels. UI_MissionStart_C contains only
-  countdown text, so do not resize it or the good UI_Map_C. Generic engine loading
-  ended at 00:56:50, but the mission-loading card stayed in the viewport around
-  00:56:53-58 with VR_2DScreenMode=false. The later map used screen=true correctly.
-  New libs/mission_preview.lua observes only live, visible UI_LoadingScreen_C
-  instances through the guarded compact array, with bounded discovery and stale
-  reference checks. pause_screen.lua retains its existing readable menu mode
-  until this card is actually removed, then follows the game's current input
-  mode. It does not change fonts, widget geometry, map scaling or global UI size.
-  Six detector/menu integration checks pass, including removal, the map handoff,
-  hidden widgets, GC/reused slots and unsupported layouts/backends. Pending next
-  full launch and train ride for visual confirmation. Read-only capture artifacts
-  are in robot1-x C:/src/uevr_far_west_build/ffw-tests/train-preview-*. The tagged
-  world_markers_dev.lua capture must be removed after verification.
+- TRAIN PREVIEW (October 20): user reports 864b157 mostly fixes readability, but
+  the title/objectives card takes a few seconds to adopt the correct presentation.
+  Map/details screen remains good. Latest logs: generic loading ended 15:50:40.367;
+  card detection enabled menu view at 15:50:45.176. The bounded Lua object scan can
+  delay discovery; do not add a blind loading timer or resize the map.
+  Replaced card discovery with the native WidgetBlueprintLibrary.GetAllWidgetsOfClass
+  query for /Game/Interfaces/UI_LoadingScreen.UI_LoadingScreen_C, TopLevelOnly=true.
+  Uses the callback's live engine GameViewport (verified offset 3448) as the native
+  world context; never calls SDK UEngine::get_world or enables UObjectHook.
+  Query parameter layout verified: size 40, context=0, output=8, class=24, top=32.
+  Polls at 50 ms while no card is visible; tracked visible cards need no repeated
+  query. Class/widget identity and visibility checks survive GC and world changes.
+  Eight integration checks pass, including a low-index card in a 200,000-object
+  array, delayed class availability, live viewport replacement, hidden/removed
+  cards and map/pause handoffs. Read-only native query, nonempty output-array
+  conversion and updated helper setup verified in the running game. Pending next full launch/ride to assess latency.
+  Native query probe archived on robot1-x under ffw-tests/preview-query-*.lua;
+  temporary world_markers_dev.lua override removed. Other helpers still use their
+  existing bounded scans; broader startup polish remains separate work.
 - HORSE DISMOUNT FOLLOW-UP (October 20): after 506dd8b, user completed a full
   mission without issues. Reticle now reads the current owning pawn each tick,
   safely handles no-pawn gaps and validates its cached HUD owner. Four lifecycle
@@ -53,8 +55,8 @@ previous backend; restore that backend before using them.
   trace. Earlier live capture: mount 00:19:34, replacement player 00:19:39, cached
   pawn trace exception 00:20:05, then stuck world despite normal pause/dilation/
   input flags and StateName=Playing. Snapshot on robot1-x:
-  C:/src/uevr_far_west_build/ffw-tests/horse-dismount-stuck.json. Remove the tagged
-  read-only horse monitor override; retain it under ffw-tests for continuity.
+  C:/src/uevr_far_west_build/ffw-tests/horse-dismount-stuck.json. The read-only horse
+  monitor override was removed and retained under ffw-tests for continuity.
   Monitor future reports; the separate earlier extraction stall is not proven fixed.
 - THIRD SPELL SIMPLIFIED (October 20): user discovered the native third-spell
   action is BOTH GRIPS simultaneously (corrected from an initial "both triggers"
@@ -557,11 +559,12 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
 | Done | Use native third spell and restore D-pad actions | User discovered both grips together cast spell 3. Remove temporary Left/C and native-photo suppression; keep horse Down and existing Utility Up/map Right. |
 | Done; monitor | Fix reticle pawn lifetime across dismount | 506dd8b refreshes the possessed pawn instead of tracing with a discarded one. Lifecycle regression passes; user completed a full mission without issues afterward. |
-| In progress; visual test pending | Make train mission title/objectives readable | UI_LoadingScreen_C stays visible after the generic loading log ends, while the profile has already returned to immersive mode. Keep the card in the existing menu presentation until removed; preserve the later readable map. Six lifecycle/menu checks pass; next train ride needs visual confirmation. |
+| Mostly accepted; latency follow-up pending | Make train mission title/objectives readable | User reports it is mostly fixed, with a few seconds before correction. Native query now replaces the Lua discovery scan; eight transition checks and live setup pass. Verify the next ride adopts menu mode promptly; preserve the readable map. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
-| 6 | Correct train cinematic viewpoints | Ride viewpoint seems displaced relative to 2D. Inspect the game's active cinematic camera and our camera/aim offsets during the sequence. Match the intended camera position while preserving headset look and restore normal aiming afterward. Keep this separate from the extraction stall, which did not recur. |
+| 6; low priority | Compare/correct train cinematic viewpoints | User sees a perspective under the train and has no 2D reference to establish whether it differs from normal play. User says this is not very important. Compare the intended 2D camera before inspecting our offsets; preserve headset look and restore aiming afterward. Keep separate from the extraction stall. |
+| Later; polish | Reduce remaining script startup delays | Separate widget creation time from discovery latency. After validating the direct mission-card query, consider the same guarded approach for other widget helpers; preserve bounded frame cost and working projections. |
 | Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
 
 Earlier items remain below; the new ordered queue takes precedence after the

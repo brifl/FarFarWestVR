@@ -88,8 +88,9 @@ orientation; full weapon/hand attachment is planned. Reticle stepping and broade
 multiplayer-marker coverage remain on the backlog. Boss-bar height needs further
 combat verification.
 
-The train mission-title/objective card now retains menu presentation through its
-loading transition; headset confirmation is pending.
+The train mission-title/objective card retains menu presentation through its
+loading transition. Readability is mostly confirmed; faster card detection awaits
+a repeat headset check.
 
 The reticle now follows possession changes when mounting and dismounting; a full
 mission completed without issues after this correction.
