@@ -29,6 +29,23 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- VENDOR SPELL HINTS CONFIRMED (October 20): user confirms "Readable and stable."
+  Requested grip labels after clarifying RT/LT meant the grip controls. The joker
+  vendor's Q/IA_SpellA maps to LG (native xbox_lb_outline), E/IA_SpellB to RG
+  (xbox_rb_outline), and C/IA_SpellC to LG+RG. libs/spell_slot_hints.lua queries
+  /Game/Interfaces/Spells/UI_Spell_CardSlot.UI_Spell_CardSlot_C directly, verifies
+  ID=888/actionKey=944, and updates only HorizontalBox_Keys=856. PNG labels occupy
+  the existing key Image_GamepadIcon at its native 35-unit height; extra native
+  combo keys and the keyboard letter are collapsed. Native input changes rebuild
+  rows, so children are read fresh. Six checks cover mode changes, menu/texture
+  lifetimes, asset failures and guards; all ten tuning/HUD checks pass too.
+  Native texture import and typed GetDesiredSize/SetDesiredSizeOverride work;
+  no backend rebuild or FText support was needed. Normal scripts derive the
+  asset directory from their load path. Current-session wrapper uses the same
+  logic and preserves the earlier live dialogue fix until normal reload.
+  Remote ffw-tests/spell-hint-*.lua retains probes for continuity. Spell selection
+  and gameplay mappings/cooldown HUD are unchanged. Both requested hint locations
+  are accepted; inspect any additional hints only when reported.
 - DIALOGUE NEXT HINT CONFIRMED (October 20): user confirms "X stays correct and
   works." User's F/X reports refer to dialogue, not the
   targeting prompt, which was already X. The targeting-hint experiment was removed
@@ -42,8 +59,8 @@ previous backend; restore that backend before using them.
   icon Visibility=0, keyboard Text_Key Visibility=1. Current session uses the
   same helper in a bounded temporary wrapper;
   normal relaunch/reset uses HUD integration. Remote ffw-tests/dialogue-hint-*.lua
-  retains the read-only probe and live check for continuity. Other action hints
-  remain queued; inspect their bindings rather than relabeling globally.
+  retains the read-only probe and live check for continuity. Vendor hints are
+  now confirmed above; inspect other bindings rather than relabeling globally.
 - RETICLE STEPPING CONFIRMED (October 20): after 6c29490, user reports "Wow it
   works great!" Direct native aiming is accepted. The read-only eight-second
   sweep captured ~93 engine ticks/second, while small
@@ -603,7 +620,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done; monitor | Fix reticle pawn lifetime across dismount | 506dd8b refreshes the possessed pawn instead of tracing with a discarded one. Lifecycle regression passes; user completed a full mission without issues afterward. |
 | Done | Make train mission title/objectives readable | User reports "It is much better" after f5f6d70 replaces the discovery scan with a direct native query. Menu presentation and faster detection are accepted; eight transition checks and live setup pass. Preserve the readable map. |
 | Done | Reduce aim/reticle stepping | User reports "Wow it works great!" after 6c29490 replaces stick-feedback pulses with typed native controller rotation. Eight aim checks, four reticle lifecycle checks and native setter/readback passed before the accepted headset test. |
-| 4; dialogue confirmed | Show VR controls in action hints | User confirms Dialogue Next stays X and works. Targeting already showed X. Remaining spell/shifted hints need their actual bindings inspected. Preserve context, live labels and hold-progress behavior; avoid global string replacements. Lua FText access is limited, so other labels may need a narrow native text/glyph bridge. |
+| Done; other hints as encountered | Show VR controls in requested action hints | User confirms Dialogue Next stays X and works, and the joker vendor's LG/RG/LG+RG labels are readable and stable. Targeting already showed X. Inspect additional spell/shifted hints when reported; preserve bindings, live labels and hold-progress behavior. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
 | 6; low priority | Compare/correct train cinematic viewpoints | User sees a perspective under the train and has no 2D reference to establish whether it differs from normal play. User says this is not very important. Compare the intended 2D camera before inspecting our offsets; preserve headset look and restore aiming afterward. Keep separate from the extraction stall. |
 | Later; polish | Reduce remaining script startup delays | Separate widget creation time from discovery latency. After validating the direct mission-card query, consider the same guarded approach for other widget helpers; preserve bounded frame cost and working projections. |

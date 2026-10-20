@@ -40,6 +40,17 @@ the gamepad icon. Widget identities and reflected layouts are checked before
 use. Dialogue text, action bindings and the already-correct targeting prompt
 retain their native behavior. No FText bridge or backend rebuild is required.
 
+`scripts/spell_hints.lua` handles the joker vendor's three spell-slot rows. A
+guarded native query finds only `UI_Spell_CardSlot_C` widgets; their ID and
+`actionKey` must agree before applying a label. The existing key image displays
+`assets/control_hints/{left_grip,right_grip,both_grips}.png` at the native hint
+height. Q/SpellA is LG, E/SpellB is RG, and C/SpellC is LG+RG. The asset directory
+is resolved beside the loaded profile scripts, so it follows profile installation.
+Unreal imports the textures through its own `ImportFileAsTexture2D` function.
+Native input-mode changes can rebuild the key row, so the helper reads its current
+children instead of retaining old key widgets. It preserves selection bindings
+and leaves the separate gameplay cooldown hints unchanged.
+
 Quest B sends Escape. The menu helper now follows the game's logged input-mode
 changes, including clicking Resume, instead of toggling presentation on B presses.
 Logged level/loading state keeps the title screen in menu mode even when UEVR

@@ -19,6 +19,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Corrected interaction prompts:** NPC prompts follow the aiming target while
   preserving the game's interaction text and hold-progress display. Dialogue's
   Next prompt keeps the X icon when the game switches to keyboard input hints.
+- **VR spell-selection hints:** the joker card vendor shows LG, RG, and LG+RG
+  for left grip, right grip, and both grips. Labels stay stable across input modes.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
   for the compass, mission counters/timers, and boss health bar.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
