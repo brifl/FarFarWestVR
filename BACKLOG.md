@@ -35,11 +35,16 @@ previous backend; restore that backend before using them.
   replace relevant input hints with VR labels/icons, investigate central vertical
   stretching, then correct train cinematic viewpoints. Inspect dependencies
   before implementation; preview size may depend on the cinematic camera.
-  Backend VR.hpp confirms thumbrest + joystick shifting modes; current profile
-  VR_DPadShifting=false. Left Thumbrest + Right Joystick is a candidate, not an
+  Backend VR.hpp confirms thumbrest + joystick shifting modes; repository default
+  VR_DPadShifting=false. User has tested enabling it. Left Thumbrest + Right Joystick is a candidate, not an
   applied setting. Suppress our Lua snap-turn and native look/movement input on
   the shifted stick, and reconcile JoyToKey's existing D-pad G/middle-click
-  bindings. Allocate one direction to C; other actions remain to be chosen.
+  bindings without duplicating native game actions. User reports existing D-pad
+  actions when enabled: Left enters screenshot/photo mode (low priority), Up uses
+  Utility (purpose unknown), Right opens the map (preserve), Down has no observed
+  effect. Preserve these existing actions; Down is the candidate for third spell
+  C after checking for a context-dependent native action. Do not treat all four
+  directions as unused or guess what Utility does.
   Preserve grips/spells, interaction, pause/resume and controller menu pointing.
 - OBJECT/LOCATION TAGS USER-CONFIRMED: "Tags stay anchored and follow the chickens."
   UI_ObjectPing_C is shared by BP_ObjectPing_Default_C and
@@ -514,7 +519,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
 | Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
-| Next | Third spell and a four-direction shifted action layer | Third spell is currently C. Use a deliberate UEVR thumbrest + joystick modifier to expose four directions; assign one to C and choose the remaining actions later. Handle existing D-pad mappings and suppress normal input/snap turns on the shifted stick. Preserve grips/spells and menus; each direction triggers only its assigned action. |
+| Next | Third spell through shifted D-pad Down; preserve existing actions | Third spell is currently C. When shifting is enabled, user reports Left = photo mode, Up = Utility (purpose unknown), Right = map, Down = no observed action. Preserve existing actions and verify Down is free in relevant contexts before assigning C. Reconcile JoyToKey G/middle-click mappings with native inputs to avoid duplicate actions. Suppress normal movement/look/snap turns on the shifted stick; preserve grips/spells and menus. |
 | 2 | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
@@ -565,7 +570,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | X | Interact with F/X prompts | Confirmed working |
 | Y | Switch weapons | Preserve working behavior |
 | Left/right grip | Spells | Preserve working behavior |
-| Shift modifier + stick direction | Four additional actions, including third spell C | Queued; choose modifier/directions and prevent movement/look/snap conflicts |
+| Shift modifier + stick direction | Preserve photo mode (Left), Utility (Up), map (Right); third spell C proposed on Down | Existing actions reported when enabled; Down is only apparently free. Confirm modifier and prevent duplicate actions/movement/look/snap conflicts |
 | Left trigger | Aim | Preserve action; sight/reticle alignment queued |
 | Right trigger | Fire; click in menus | Preserve working behavior |
 | Left/right stick click | To be decided | Dash/ping observed; unchanged |
