@@ -1,129 +1,91 @@
-The files in this enlistment can be zipped into FarFarWest-Win64-Shipping.zip and imported into UEVR.
+# Far Far West VR
 
-See [BACKLOG.md](BACKLOG.md) for the intended controls, working baseline, and next changes.
+A UEVR profile and custom backend for playing **Far Far West** in VR, with
+controller aiming, readable menus, and world markers that stay where they belong.
 
-Personal tuning is in [data/tuning.ini](data/tuning.ini). On robot1-x, edit
-`C:\Users\brian\AppData\Roaming\UnrealVRMod\FarFarWest-Win64-Shipping\data\tuning.ini`.
-Numeric edits reload while playing, about once a second. Installing new helper
-code still requires UEVR's **Reset scripts** or a normal game relaunch.
+- **Right-controller aiming:** aim with your controller while looking around
+  independently. The reticle follows the firing target, including at different
+  ranges and when casting spells.
+- **Controller-operated menus:** point with the right controller and click with
+  the trigger. Menus stay readable and stationary, with B handling pause/resume.
+- **Themed menu cursor:** a custom arrow with a precise tip hotspot.
+- **Movement and snap turning:** left-stick movement and 45-degree turns on the
+  right stick.
+- **Stable world markers:** vendor icons, Start Mission, quest objectives, and
+  mission guides follow their world locations independently of controller aim.
+- **Object and location tags:** tag a spot or object with the right-stick click.
+  Tags follow moving targets, including chickens, and retain their icons,
+  distances, and height offsets.
+- **Corrected interaction prompts:** NPC prompts follow the aiming target while
+  preserving the game's interaction text and hold-progress display.
+- **Adjustable HUD placement:** raised dialogue text and separate height controls
+  for the compass, mission counters/timers, and boss health bar.
+- **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
+  and editable contrast and saturation multipliers.
+- **Live tuning:** adjust graphics multipliers and HUD heights during play.
+- **Earlier marker initialization:** prepare markers as a level loads to reduce
+  the delay before stabilization.
 
-| Section | Setting | Starting value | Meaning |
-| --- | --- | --- | --- |
-| graphics | saturation_multiplier | 0.95 | Five percent less saturation; 1.0 uses the native amount. |
-| graphics | contrast_multiplier | 1.10 | The accepted ten-percent increase; 1.0 uses the native amount. |
-| graphics | fog_density_multiplier | 0.00 | The accepted clear-distance setting; 1.0 uses native density. |
-| hud | dialogue_offset_y | -0.10 | Raise conversation text by ten percent of viewport height. |
-| hud | boss_health_offset_y | 0.08 | Lower boss health by eight percent. |
-| hud | mission_info_offset_y | 0.10 | Lower mission counters and timers by ten percent. |
-| hud | compass_offset_y | 0.10 | Lower the compass background and marker overlay together by ten percent. |
+## Requirements and setup
 
-HUD offsets use the full viewport height: positive moves down, negative moves up,
-and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,
-fog 0–1 and HUD offsets -0.5–0.5. Invalid edits retain the previous values.
-The boss-bar and mission-counter controls apply as those widgets appear; their
-height can be tuned during later fights/objectives without restarting scripts.
+The current setup is tested with **Far Far West 0.2.0.20**, **Meta Quest 3**,
+**Virtual Desktop**, and **SteamVR**. It requires the custom UEVR backend developed
+for this profile; importing the profile alone does not install that backend.
+See [development and deployment](docs/DEVELOPMENT.md) for the existing installation
+workflow and compatibility details.
 
-Marker discovery front-loads the initial and newly allocated objects within a
-two-millisecond scan budget. Known components are retained while their widgets
-load, and hidden markers are prepared before they become visible. This reduces
-the former multi-second scan delay without a blocking full-array sweep.
+Package the profile files as `FarFarWest-Win64-Shipping.zip` and import them into
+UEVR, or update an existing profile checkout with `git pull`. After updating Lua
+helpers, use **UEVR → Main → Reset scripts** or restart the game. Keep the game
+window focused for menu input.
 
-Quest B sends Escape. The menu helper now follows the game's logged input-mode
-changes, including clicking Resume, instead of toggling presentation on B presses.
-Logged level/loading state keeps the title screen in menu mode even when UEVR
-saved immersive mode and verbose input-mode events are unavailable.
-It restores the readable menu distance and disables the cached menu overlay
-when returning to immersive play.
-The menu behavior is confirmed. Install its logging and the distortion workaround
-in WSL on robot1-x:
-`python3 tools/prepare_menu_helper.py --material-test`.
-The tool links the game log into the profile's Lua data directory and enables
-focused menu logging and the tested distortion workaround. Settings now go in
-the game's `FarFarWest/Config/UserEngine.ini`; the generated Saved/Config copy
-was repeatedly deleted. The startup log confirms this source layer loads; check persistence on
-further launches. Reapply preparation after changing the repository's settings preset.
-F8 remains a manual presentation fallback.
+## Controls
 
-Controller aiming is being tested with
-[scripts/controller_aim.lua](scripts/controller_aim.lua). Right-controller
-orientation drives the game's look input while head direction remains independent.
-Horizontal right-stick deflection requests one 45-degree snap turn, rearmed at
-center. The existing menu controls are preserved. Gun position/hand attachment
-is still queued. The projected crosshair is confirmed aligned at different
-ranges and with spells. The menu helper hides UEVR's extra mouse cursor in
-immersive gameplay and restores it for menus.
-Aiming and snap turns require a loaded gameplay level; menus cannot activate them.
+These are the tested Quest button labels.
 
-Menu pointing now uses the right controller's ray intersection with the existing
-screen. Move/rotate the controller to move the pointer and use the right trigger
-to click. JoyToKey's stick-to-mouse movement is disabled in both grip modes;
-gameplay snap turns keep their native stick input. This requires the latest
-isolated backend below and is confirmed working. The game window must have
-focus. Menu placement, B pause/resume and gameplay aiming are preserved.
+| Control | Action |
+| --- | --- |
+| Left stick | Move forward/back and strafe |
+| Right stick left/right | 45-degree snap turn |
+| Right-stick click | Tag an object or location |
+| Right trigger | Fire; click in menus |
+| Left trigger | Native aim action |
+| Left/right grip | Spells |
+| X | Interact |
+| Y | Switch weapons |
+| B | Pause/resume |
 
-Game menus use the supplied themed arrow in [assets/menu_cursor.png](assets/menu_cursor.png).
-Its top-left tip is the click hotspot; it displays at 48 pixels high in a 1440p
-view and scales with the viewport. The UEVR panel retains its standard cursor,
-and immersive gameplay keeps the menu cursor hidden. The isolated backend loads
-the PNG into its existing font texture; a missing image falls back to the standard
-cursor. Changes to the image load on the next game launch.
+## Personal tuning
 
-The isolated backend now uses a source build with the modern UE5.8 object
-layout and the accepted rendering/aim compatibility fixes. After pulling this
-profile on robot1-x, deploy its verified DLL/PDB while the game is closed:
-`python3 tools/deploy_native_backend.py apply`.
-The build artifacts live in `C:/src/uevr_far_west_build/build/bin/uevr`.
-The installer preserves the prior pair; `restore` reinstates it. Older binary
-patch tools require that prior backend and cannot patch the source build.
-The cursor source change is in [native_patches/menu_cursor.patch](native_patches/menu_cursor.patch);
-[its native smoke test](native_patches/tests/menu_cursor.cpp) checks PNG decoding,
-atlas rebuilds, alpha/color preservation, the hotspot and missing-image fallback.
+Edit [data/tuning.ini](data/tuning.ini) in the installed profile. Numeric changes
+reload during play, about once a second.
 
-[scripts/reticle.lua](scripts/reticle.lua) validates the backend identity,
-widget layout and function metadata before moving the original crosshair to
-the firing-camera trace target. It restores the crosshair in menus and leaves
-quest markers alone. For a read-only geometry probe, put `probe` in the
-profile's `data/reticle_mode.txt`; remove the file to enable movement again.
+| Setting | Default | Effect |
+| --- | --- | --- |
+| `saturation_multiplier` | `0.95` | Slightly lower saturation |
+| `contrast_multiplier` | `1.10` | Ten percent more contrast |
+| `fog_density_multiplier` | `0.00` | Remove primary distance haze |
+| `dialogue_offset_y` | `-0.10` | Raise conversation text |
+| `boss_health_offset_y` | `0.08` | Lower boss health |
+| `mission_info_offset_y` | `0.10` | Lower mission counters and timers |
+| `compass_offset_y` | `0.10` | Lower the compass and its markers together |
 
-The repeating upward-moving distortion is absent on the repeat test with the
-startup override `r.PostProcessing.DisableMaterials=1`, confirmed in the live
-game log. This suppresses all custom post-process materials; the exact offending
-material remains unidentified. Check damage/status effects during further play.
-The prepared FXAA experiment is retained outside the autorun scripts in
-[experiments/temporal_aa_test.lua](experiments/temporal_aa_test.lua).
+A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
+fractions of viewport height: positive moves down, negative moves up, and `0`
+restores the original position. For example, `0.10` moves a panel down by ten
+percent. Invalid edits retain the previous settings.
 
-The accepted clear-distance setting is applied by [scripts/fog.lua](scripts/fog.lua).
-It sets primary fog density to zero on the game's ambient weather components as
-they load, using the guarded UE5.8 backend. This matches the tested haze removal;
-a 25-percent reduction was imperceptible. Script reset restores captured native
-density values before the helper reloads. Other atmosphere layers keep their settings.
+## Development status
 
-[scripts/contrast.lua](scripts/contrast.lua) applies configurable contrast and
-saturation multipliers to weather grading. The accepted contrast increase remains
-the default. Native RGB balance is preserved; a previously inactive saturation
-override starts from neutral RGB. Its original vector/override flags restore on
-script reset, and repeated updates do not compound the multipliers.
+This mod is still in development. Controller aiming currently controls weapon
+orientation; full weapon/hand attachment is planned. Reticle stepping and broader
+multiplayer-marker coverage remain on the backlog. Boss-bar height needs further
+combat verification.
 
-Location markers are being tested with
-[scripts/world_markers.lua](scripts/world_markers.lua). It displays copies of the
-saloon's `UI_WorldIcon` markers at their world positions projected through the
-headset camera. Looking up/right moves a fixed-world marker down/left; controller
-aiming cannot change its position. The originals are hidden only during immersive
-play and restored for menus or script reset. Other marker families are separate.
+The heat-distortion workaround disables all custom post-process materials;
+some damage or status effects may also be affected. One post-extraction stall
+was observed; a repeat mission completed normally, and recurrence is being watched.
 
-NPC interaction prompts use the same headset projection while keeping the
-game's live text, key icon and hold-progress display. Only the prompt's visual
-translation changes; its world target and X interaction remain native. The
-shared screen-widget correction also supports further marker adapters.
-NPC placement is confirmed working.
-
-Mission objective markers and text guides retain their live title/distance widgets
-and use the same visual-child correction as Start Mission. Objective target data
-and actor roots remain in place; controller aiming cannot move their headset
-projection. The user confirms quest markers stay anchored with correct title and distance.
-
-Object/location tags (`UI_ObjectPing_C`) reuse that correction across the
-`BP_ObjectPing` actor family. The tag's original local offset is transformed
-through its unchanged parent each frame, preserving height, rotation and scale
-while following moving targets. Native icons, distances and target data remain
-intact. The user confirms tags stay anchored and follow tagged chickens.
+See [the backlog](BACKLOG.md) for progress and planned improvements, or
+[development notes](docs/DEVELOPMENT.md) for backend deployment, diagnostics, and
+implementation details.
