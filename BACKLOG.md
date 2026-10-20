@@ -29,6 +29,29 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- RETICLE STEPPING (October 20, native aim playtest pending): user is testing in
+  game. Read-only eight-second sweep captured ~93 engine ticks/second, while small
+  native control-rotation corrections clustered around 0.32 degrees. Existing
+  controller_aim.lua stopped within 0.25 degrees and otherwise emitted at least
+  26-percent stick input. The reticle translations are already fractional;
+  Crosshair_Top and its owner both report PixelSnapping=0 (left unchanged).
+  New aiming path uses native GetPlayerController with the callback engine's live
+  GameViewport context, then typed GetControlRotation/SetControlRotation on the
+  current controller. No cached pawn/controller or SDK engine/world lookup.
+  Eliminates the analog feedback dead band on ffw-ue58-sdk-v1; old backends/native
+  metadata failures retain analog fallback. Preserves world-anchor compensation,
+  45-degree snap latch, menu/gameplay gating, buttons/triggers/left stick and game
+  look-input locks; no-pawn transitions wait. Reticle projection is unchanged.
+  IMPORTANT: named Lua table input to SetControlRotation failed a no-change test.
+  Typed double rotation passed an exact round-trip and a 0.01-degree yaw increment,
+  native readback and restoration (16:47:24). Use the typed getter result, setting
+  its Pitch/Yaw/Roll members before the setter. Eight aiming checks and four
+  reticle lifecycle checks pass. Needs full restart, slow aiming, shot alignment
+  and snap-turn confirmation in headset. Capture/probe artifacts on robot1-x:
+  ffw-tests/reticle-step-baseline.csv, reticle-step-sweep.csv, direct-aim-*.lua.
+  Temporary profile override and sample CSV are removed with deployment.
+  Roughly half the sampled hand poses repeat at the higher engine tick rate;
+  if stepping remains, inspect pose cadence after this feedback-loop correction.
 - TRAIN PREVIEW CONFIRMED (October 20): after f5f6d70, user reports "It is much
   better." The title/objectives presentation and faster discovery are accepted.
   864b157 mostly fixed readability but still took a few seconds to switch modes;
@@ -563,7 +586,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Use native third spell and restore D-pad actions | User discovered both grips together cast spell 3. Remove temporary Left/C and native-photo suppression; keep horse Down and existing Utility Up/map Right. |
 | Done; monitor | Fix reticle pawn lifetime across dismount | 506dd8b refreshes the possessed pawn instead of tracing with a discarded one. Lifecycle regression passes; user completed a full mission without issues afterward. |
 | Done | Make train mission title/objectives readable | User reports "It is much better" after f5f6d70 replaces the discovery scan with a direct native query. Menu presentation and faster detection are accepted; eight transition checks and live setup pass. Preserve the readable map. |
-| 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
+| In progress; headset test pending | Reduce aim/reticle stepping | Live capture identifies ~0.32-degree control-rotation pulses from the stick-feedback bridge. The guarded backend now uses typed native controller rotation; eight aim checks, four reticle lifecycle checks and native setter/readback pass. Verify smooth motion, shot alignment and snap turns. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
 | 6; low priority | Compare/correct train cinematic viewpoints | User sees a perspective under the train and has no 2D reference to establish whether it differs from normal play. User says this is not very important. Compare the intended 2D camera before inspecting our offsets; preserve headset look and restore aiming afterward. Keep separate from the extraction stall. |

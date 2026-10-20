@@ -84,9 +84,10 @@ percent. Invalid edits retain the previous settings.
 ## Development status
 
 This mod is still in development. Controller aiming currently controls weapon
-orientation; full weapon/hand attachment is planned. Reticle stepping and broader
-multiplayer-marker coverage remain on the backlog. Boss-bar height needs further
-combat verification.
+orientation; full weapon/hand attachment is planned. Direct controller rotation
+now targets aim/reticle stepping; headset confirmation is pending. Broader
+multiplayer-marker coverage remains on the backlog, and boss-bar height needs
+further combat verification.
 
 The train mission-title/objective card retains menu presentation through its
 loading transition, with faster detection confirmed in headset testing.
