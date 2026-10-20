@@ -29,9 +29,11 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
-- TRAIN PREVIEW (October 20): user reports 864b157 mostly fixes readability, but
-  the title/objectives card takes a few seconds to adopt the correct presentation.
-  Map/details screen remains good. Latest logs: generic loading ended 15:50:40.367;
+- TRAIN PREVIEW CONFIRMED (October 20): after f5f6d70, user reports "It is much
+  better." The title/objectives presentation and faster discovery are accepted.
+  864b157 mostly fixed readability but still took a few seconds to switch modes;
+  f5f6d70 replaces that discovery scan. Map/details screen remains good.
+  Earlier logs: generic loading ended 15:50:40.367;
   card detection enabled menu view at 15:50:45.176. The bounded Lua object scan can
   delay discovery; do not add a blind loading timer or resize the map.
   Replaced card discovery with the native WidgetBlueprintLibrary.GetAllWidgetsOfClass
@@ -44,7 +46,8 @@ previous backend; restore that backend before using them.
   Eight integration checks pass, including a low-index card in a 200,000-object
   array, delayed class availability, live viewport replacement, hidden/removed
   cards and map/pause handoffs. Read-only native query, nonempty output-array
-  conversion and updated helper setup verified in the running game. Pending next full launch/ride to assess latency.
+  conversion and updated helper setup verified in the running game. Headset
+  follow-up now confirms the improvement.
   Native query probe archived on robot1-x under ffw-tests/preview-query-*.lua;
   temporary world_markers_dev.lua override removed. Other helpers still use their
   existing bounded scans; broader startup polish remains separate work.
@@ -559,7 +562,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
 | Done | Use native third spell and restore D-pad actions | User discovered both grips together cast spell 3. Remove temporary Left/C and native-photo suppression; keep horse Down and existing Utility Up/map Right. |
 | Done; monitor | Fix reticle pawn lifetime across dismount | 506dd8b refreshes the possessed pawn instead of tracing with a discarded one. Lifecycle regression passes; user completed a full mission without issues afterward. |
-| Mostly accepted; latency follow-up pending | Make train mission title/objectives readable | User reports it is mostly fixed, with a few seconds before correction. Native query now replaces the Lua discovery scan; eight transition checks and live setup pass. Verify the next ride adopts menu mode promptly; preserve the readable map. |
+| Done | Make train mission title/objectives readable | User reports "It is much better" after f5f6d70 replaces the discovery scan with a direct native query. Menu presentation and faster detection are accepted; eight transition checks and live setup pass. Preserve the readable map. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
