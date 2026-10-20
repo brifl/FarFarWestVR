@@ -1,5 +1,5 @@
 -- Follow the game's level and input mode, including Resume and submenus.
--- LogViewport is enabled by the menu-logging preset. No UObject/world lookup.
+-- LogViewport is enabled by the menu-logging preset. No engine-world lookup.
 local vr = uevr.params.vr
 local functions = uevr.params.functions
 -- UEVR removes os.getenv and permits file access only within profile/data.
@@ -19,6 +19,15 @@ local saved_rotation = nil
 -- Autorun scripts share Lua globals. Aiming must wait for a known game level,
 -- rather than trusting the immersive/screen mode saved by the previous run.
 _G.farfarwest_gameplay_ready = false
+-- This custom card remains visible after the generic loading-screen log ends.
+-- Native access is optional and restricted to the guarded backend.
+local preview
+local tag_ok,tag=pcall(functions.get_tag)
+if tag_ok and tag=='ffw-ue58-sdk-v1' then
+    local ok,helper=pcall(function() return require('libs/mission_preview')() end)
+    if ok then preview=helper
+    else functions.log_warn('[FarFarWest preview] Helper unavailable: '..tostring(helper)) end
+end
 
 local function observe_line(line)
     local map = line:match("LogLoad: LoadMap: ([^?%s]+)")
@@ -168,11 +177,12 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_, delta)
         return
     end
 
-    -- A button press requests a game action; only its resulting input-mode
-    -- transition changes presentation. F8 remains a manual fallback until the
+    -- Follow input-mode transitions and the actual mission card, rather than
+    -- guessing from button presses. F8 remains a manual fallback until the
     -- next observed transition. Missing logs never guess that a click is Resume.
     local desired_menu = menu_state
-    if not playable_map or loading then desired_menu = true end
+    local preview_visible = preview and preview.tick(nil,delta)
+    if not playable_map or loading or preview_visible then desired_menu = true end
     if desired_menu ~= nil and desired_menu ~= applied_state and not functions.is_drawing_ui() then
         vr.set_mod_value("VR_2DScreenMode", desired_menu and "true" or "false")
         applied_state = desired_menu

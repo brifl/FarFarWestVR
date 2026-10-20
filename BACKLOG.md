@@ -29,6 +29,23 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- TRAIN PREVIEW (October 20, visual test pending): user confirms the map/details
+  screen is readable; the earlier title/objectives card is oversized. Capture
+  identifies UI_LoadingScreen_C, whose template includes TextBlock_Map (font 50)
+  and the three UI_Map_Task objective panels. UI_MissionStart_C contains only
+  countdown text, so do not resize it or the good UI_Map_C. Generic engine loading
+  ended at 00:56:50, but the mission-loading card stayed in the viewport around
+  00:56:53-58 with VR_2DScreenMode=false. The later map used screen=true correctly.
+  New libs/mission_preview.lua observes only live, visible UI_LoadingScreen_C
+  instances through the guarded compact array, with bounded discovery and stale
+  reference checks. pause_screen.lua retains its existing readable menu mode
+  until this card is actually removed, then follows the game's current input
+  mode. It does not change fonts, widget geometry, map scaling or global UI size.
+  Six detector/menu integration checks pass, including removal, the map handoff,
+  hidden widgets, GC/reused slots and unsupported layouts/backends. Pending next
+  full launch and train ride for visual confirmation. Read-only capture artifacts
+  are in robot1-x C:/src/uevr_far_west_build/ffw-tests/train-preview-*. The tagged
+  world_markers_dev.lua capture must be removed after verification.
 - HORSE DISMOUNT FOLLOW-UP (October 20): after 506dd8b, user completed a full
   mission without issues. Reticle now reads the current owning pawn each tick,
   safely handles no-pawn gaps and validates its cached HUD owner. Four lifecycle
@@ -540,7 +557,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
 | Done | Use native third spell and restore D-pad actions | User discovered both grips together cast spell 3. Remove temporary Left/C and native-photo suppression; keep horse Down and existing Utility Up/map Right. |
 | Done; monitor | Fix reticle pawn lifetime across dismount | 506dd8b refreshes the possessed pawn instead of tracing with a discarded one. Lifecycle regression passes; user completed a full mission without issues afterward. |
-| Next | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
+| In progress; visual test pending | Make train mission title/objectives readable | UI_LoadingScreen_C stays visible after the generic loading log ends, while the profile has already returned to immersive mode. Keep the card in the existing menu presentation until removed; preserve the later readable map. Six lifecycle/menu checks pass; next train ride needs visual confirmation. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
