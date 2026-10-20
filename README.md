@@ -51,7 +51,8 @@ These are the tested Quest button labels.
 | Right trigger | Fire; click in menus |
 | Left trigger | Native aim action |
 | Left/right grip | Spells |
-| Shifted D-pad Left | Third spell (`C`); replaces the photo-mode shortcut |
+| Both grips together | Third spell |
+| Shifted D-pad Left | Native photo mode |
 | Shifted D-pad Down | Summon horse (native action) |
 | X | Interact |
 | Y | Switch weapons |
@@ -87,8 +88,8 @@ orientation; full weapon/hand attachment is planned. Reticle stepping and broade
 multiplayer-marker coverage remain on the backlog. Boss-bar height needs further
 combat verification.
 
-The third spell on Left and native horse summoning on Down are confirmed working
-in a mission. A separately reported issue after dismounting is under investigation.
+The reticle now follows possession changes when mounting and dismounting; a full
+mission completed without issues after this correction.
 
 The heat-distortion workaround disables all custom post-process materials;
 some damage or status effects may also be affected. One post-extraction stall
