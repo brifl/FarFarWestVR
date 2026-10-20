@@ -31,6 +31,15 @@ two-millisecond scan budget. Known components are retained while their widgets
 load, and hidden markers are prepared before they become visible. This reduces
 the former multi-second scan delay without a blocking full-array sweep.
 
+The HUD helper also keeps the dialogue's Next hint on Quest X. JoyToKey sends F
+for X, which can make the game select keyboard presentation during a conversation.
+`libs/dialogue_hint.lua` uses the existing tracked `UI_NpcTalk_C`, finds its
+`UI_Key_C` child in `HorizontalBox_NextKey`, and calls the native
+`F_RefreshKey(isGamepad=true)` only when its interaction hint switches away from
+the gamepad icon. Widget identities and reflected layouts are checked before
+use. Dialogue text, action bindings and the already-correct targeting prompt
+retain their native behavior. No FText bridge or backend rebuild is required.
+
 Quest B sends Escape. The menu helper now follows the game's logged input-mode
 changes, including clicking Resume, instead of toggling presentation on B presses.
 Logged level/loading state keeps the title screen in menu mode even when UEVR

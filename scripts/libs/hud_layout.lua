@@ -20,6 +20,7 @@ local function valid_ref(ref)
     local object=array:get_object(ref.index)
     return object and object:get_address()==ref.address and object:get_short_name()==ref.name
 end
+local dialogue_hint=require('libs/dialogue_hint')(valid_ref)
 local function valid(entry)
     if not valid_ref(entry) then return false end
     if entry.root then
@@ -30,6 +31,7 @@ local function valid(entry)
     return true
 end
 local function reset()
+    dialogue_hint.reset()
     for _,entry in pairs(entries) do
         if valid_ref(entry) then pcall(positioning.restore,entry.binding) end
     end
@@ -122,6 +124,7 @@ local function tick(_,delta)
                 if valid_ref(entry) then pcall(positioning.restore,entry.binding) end
                 entries[address]=nil
             else
+                if entry.kind.key=='hud.dialogue_offset_y' then dialogue_hint.update(entry.object) end
                 local fraction=tuning.get(entry.kind.key)
                 if fraction==0 then positioning.restore(entry.binding)
                 else

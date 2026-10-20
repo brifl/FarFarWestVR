@@ -41,15 +41,17 @@ local fog={density=.02,get_address=function() return 8192 end,
 function fog:get_property(name) assert(name=='FogDensity');return self.density end
 function fog:SetFogDensity(n) self.density=n end
 local sizes={SetRenderTranslation=16,GetCachedGeometry=80,GetLocalSize=96,
-    LocalToViewport=128,GetViewportSize=24}
+    LocalToViewport=128,GetViewportSize=24,GetChildrenCount=4,GetChildAt=16,F_RefreshKey=1}
 local function widget_class(name)
     return {get_short_name=function() return name end,
         find_property=function(_,field) return {get_offset=function()
             local offsets={RenderTransform=144,TextBlock_Text=832,Text_Title=816,
-                TextBlock_Seconds=816,ProgressBar_Boss=840,Image_Compass=1008,Overlay_Pings=944}
+                TextBlock_Seconds=816,ProgressBar_Boss=840,Image_Compass=1008,Overlay_Pings=944,
+                HorizontalBox_NextKey=856,Key=856,Image_GamepadIcon=848,Text_Key=832}
             return offsets[field] end} end,
         find_function=function(_,fn) return {get_properties_size=function() return sizes[fn] end,
-            get_child_properties=function() return nil end} end}
+            get_child_properties=function() return nil end,
+            find_property=function(_,name) assert(name=='isGamepad');return {get_offset=function() return 0 end} end} end}
 end
 local widget_base=widget_class('Widget')
 function make_hud(index,kind,name)
@@ -60,6 +62,9 @@ function make_hud(index,kind,name)
     function o:get_class() return widget_class(self.kind) end
     function o:is_a(c) return c==widget_base end
     function o:get_property(n)
+        assert(not self.dead,'Accessed a collected widget')
+        if n=='Visibility' then return self.visibility or 0 end
+        if n=='HorizontalBox_NextKey' then return self.children[n] end
         if self.children[n] then return self.children[n] end
         assert(n=='RenderTransform')
         return {Translation=self.translation,Scale={X=1,Y=1},Shear={X=0,Y=0},Angle=0}
@@ -87,8 +92,30 @@ uevr={api={get_uobject_array=function() return array end,find_uobject=function(_
         functions={log_info=log,log_warn=log}}}
 state.settings,state.fog,state.hud=settings,fog,hud
 state.objects=objects
+function install_dialogue_hint()
+    local panel_class=classes['Class /Script/UMG.PanelWidget'] or widget_class('PanelWidget')
+    classes['Class /Script/UMG.PanelWidget']=panel_class
+    local panel=make_hud(4,'HorizontalBox','HorizontalBox_NextKey')
+    function panel:is_a(c) return c==panel_class end
+    local key=make_hud(5,'UI_Key_C','UI_Key')
+    local image=make_hud(6,'Image','Image_GamepadIcon');image.visibility=1
+    local text=make_hud(7,'TextBlock','Text_Key')
+    local action=make_hud(8,'InputAction','IA_Interact')
+    for _,o in ipairs({panel,key,image,text,action}) do objects[o.index]=o end
+    state.object_count=9;state.refreshes=0
+    key.children={Key=action,Image_GamepadIcon=image,Text_Key=text}
+    function key:F_RefreshKey(gamepad)
+        assert(not self.dead and gamepad==true)
+        state.refreshes=state.refreshes+1
+        self.children.Image_GamepadIcon.visibility=0;self.children.Text_Key.visibility=1
+    end
+    function panel:GetChildrenCount() return 1 end
+    function panel:GetChildAt(i) assert(i==0);return key end
+    hud.children.HorizontalBox_NextKey=panel
+    state.hint_key,state.hint_image,state.hint_text=key,image,text
+end
 function healthy()
-    for _,message in ipairs(state.logs) do assert(not message:find('Stopped safely',1,true),message) end
+    for _,message in ipairs(state.logs) do assert(not message:lower():find('stopped safely',1,true),message) end
 end
 '''
 
@@ -165,6 +192,32 @@ for i=1,60 do feature.tick(nil,.016) end;healthy();near(state.hud.translation.Y,
 reload('[hud]\ndialogue_offset_y=0');feature.tick(nil,.016);near(state.hud.translation.Y,11)
 reload('[hud]\ndialogue_offset_y=.1');feature.tick(nil,.016);near(state.hud.translation.Y,11+144/2)
 state.hmd=false;feature.tick(nil,.016);near(state.hud.translation.Y,11)
+''')
+
+run('dialogue keeps X across synthetic keyboard events without continuous refresh', r'''
+install_dialogue_hint();state.hud.dialogue='Talk to vendor';state.hud.progress=.6
+local feature=require('libs/hud_layout')()
+for i=1,120 do feature.tick(nil,.016) end;healthy();assert(state.refreshes==1)
+state.hint_image.visibility=2;state.hint_text.visibility=3
+feature.tick(nil,.016);healthy();assert(state.refreshes==2)
+assert(state.hud.dialogue=='Talk to vendor' and state.hud.progress==.6)
+near(state.hud.translation.Y,11-144/2)
+''')
+
+run('hidden dialogue and unrelated action hints retain native presentation', r'''
+install_dialogue_hint();state.hud.visibility=2
+local feature=require('libs/hud_layout')();feature.tick(nil,.016);healthy();assert(state.refreshes==0)
+state.hud.visibility=0;state.hint_key.children.Key.name='IA_CallMount'
+feature.tick(nil,.016);healthy();assert(state.refreshes==0)
+state.hint_key.children.Key.name='IA_Interact';feature.tick(nil,.016);healthy();assert(state.refreshes==1)
+''')
+
+run('rebuilt dialogue children are rebound before accessing discarded objects', r'''
+install_dialogue_hint();local feature=require('libs/hud_layout')();feature.tick(nil,.016);healthy()
+for i=4,8 do state.objects[i].dead=true;state.objects[i]=nil end
+state.hud.children.HorizontalBox_NextKey=nil
+feature.tick(nil,.016) -- Hidden/teardown gaps must not read the stale cached children.
+install_dialogue_hint();feature.tick(nil,.016);healthy();assert(state.refreshes==1)
 ''')
 
 run('boss/counter/timer use independent configured HUD offsets', r'''

@@ -29,6 +29,20 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- DIALOGUE NEXT HINT (October 20): user's F/X reports refer to dialogue, not the
+  targeting prompt, which was already X. The targeting-hint experiment was removed
+  without committing it. New libs/dialogue_hint.lua runs from the HUD helper's
+  existing UI_NpcTalk_C entry; HorizontalBox_NextKey is at 856 and contains a
+  UI_Key_C bound to IA_Interact. Native F_RefreshKey takes one bool isGamepad at 0.
+  Keep the native xbox_button_x_outline icon by refreshing only after keyboard
+  presentation appears. No action rebinding, FText replacement or backend build.
+  Ten tuning/HUD checks pass, including hint switching, hidden/unrelated hints
+  and widget teardown/recreation. Live production-helper readback at 17:18:22:
+  icon Visibility=0, keyboard Text_Key Visibility=1. User visual acceptance is
+  pending. Current session uses the same helper in a bounded temporary wrapper;
+  normal relaunch/reset uses HUD integration. Remote ffw-tests/dialogue-hint-*.lua
+  retains the read-only probe and live check for continuity. Other action hints
+  remain queued; inspect their bindings rather than relabeling globally.
 - RETICLE STEPPING CONFIRMED (October 20): after 6c29490, user reports "Wow it
   works great!" Direct native aiming is accepted. The read-only eight-second
   sweep captured ~93 engine ticks/second, while small
@@ -588,7 +602,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done; monitor | Fix reticle pawn lifetime across dismount | 506dd8b refreshes the possessed pawn instead of tracing with a discarded one. Lifecycle regression passes; user completed a full mission without issues afterward. |
 | Done | Make train mission title/objectives readable | User reports "It is much better" after f5f6d70 replaces the discovery scan with a direct native query. Menu presentation and faster detection are accepted; eight transition checks and live setup pass. Preserve the readable map. |
 | Done | Reduce aim/reticle stepping | User reports "Wow it works great!" after 6c29490 replaces stick-feedback pulses with typed native controller rotation. Eight aim checks, four reticle lifecycle checks and native setter/readback passed before the accepted headset test. |
-| 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
+| 4; dialogue fix deployed | Show VR controls in action hints | Dialogue Next now retains the native X icon; awaiting visual acceptance. Targeting already showed X. Remaining spell/shifted hints need their actual bindings inspected. Preserve context, live labels and hold-progress behavior; avoid global string replacements. Lua FText access is limited, so other labels may need a narrow native text/glyph bridge. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
 | 6; low priority | Compare/correct train cinematic viewpoints | User sees a perspective under the train and has no 2D reference to establish whether it differs from normal play. User says this is not very important. Compare the intended 2D camera before inspecting our offsets; preserve headset look and restore aiming afterward. Keep separate from the extraction stall. |
 | Later; polish | Reduce remaining script startup delays | Separate widget creation time from discovery latency. After validating the direct mission-card query, consider the same guarded approach for other widget helpers; preserve bounded frame cost and working projections. |

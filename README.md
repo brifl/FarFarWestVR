@@ -17,7 +17,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   Tags follow moving targets, including chickens, and retain their icons,
   distances, and height offsets.
 - **Corrected interaction prompts:** NPC prompts follow the aiming target while
-  preserving the game's interaction text and hold-progress display.
+  preserving the game's interaction text and hold-progress display. Dialogue's
+  Next prompt keeps the X icon when the game switches to keyboard input hints.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
   for the compass, mission counters/timers, and boss health bar.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
@@ -54,7 +55,7 @@ These are the tested Quest button labels.
 | Both grips together | Third spell |
 | Shifted D-pad Left | Native photo mode |
 | Shifted D-pad Down | Summon horse (native action) |
-| X | Interact |
+| X | Interact; advance dialogue |
 | Y | Switch weapons |
 | B | Pause/resume |
 
