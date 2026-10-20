@@ -29,6 +29,28 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- HORSE DISMOUNT ISSUE (active): reproduced three times, shortly after dismount;
+  animations continue but the player and enemies cannot move. User dismounts with
+  Gesture/Head + Left Joystick Down (left controller near head, left stick down).
+  The October 20 capture shows Pawn changing from BP_Player_C to BP_Mount_C at
+  00:19:34, then a NEW BP_Player_C at 00:19:39. Reticle tracing retained the original
+  pawn and threw a native exception at 00:20:05. This is a confirmed lifecycle bug;
+  whether it causes the entire freeze still requires a fresh reproduction.
+  Read-only monitor baseline: paused=false, dilation=1, move/look ignored=false.
+  After becoming stuck, user opened pause; B did not resume, clicking Resume did,
+  but movement remained stuck and transition smoke lingered. Monitor confirmed
+  paused=false again, normal dilation and input flags. Native snapshot showed
+  StateName=Playing, Pawn and AcknowledgedPawn both the replacement player; unlike
+  the earlier extraction snapshot, possession was not lost. Snapshot on robot1-x:
+  C:/src/uevr_far_west_build/ffw-tests/horse-dismount-stuck.json.
+  Reticle now fetches the owning pawn every tick, waits safely through no-pawn
+  gaps, and validates the cached HUD owner before calling it. Four lifecycle
+  checks pass; the previous script fails the same mount/dismount regression with
+  a stale-pawn trace. Pending fresh-launch mount/dismount playtest. Read-only
+  [FFW horse state] monitor remains temporarily in data/world_markers_dev.lua on
+  robot1-x, wrapping the accepted marker helper; source /tmp/ffw-horse-state-probe.lua.
+  Remove only that tagged override after investigation. Do not force game state
+  or claim the extraction stall is fixed without a successful playtest.
 - THIRD SPELL CORRECTION (October 20): earlier Down/C success was incomplete.
   In a mission, user reports Down alternated between horse summoning and spell 3.
   Down is a real native horse action. JoyToKey Down/C is now removed in both
@@ -40,11 +62,12 @@ previous backend; restore that backend before using them.
   Left navigation; Down, Up, Right and other buttons remain untouched. User's
   gesture/shift activation mode is preserved. Lua checks passed for held input,
   horse/other button preservation, menus/UI/inactive HMD/other user index and
-  existing B suppression. Native C dispatch and absence of photo mode still need
-  an in-mission playtest after a full game restart. Watch for the one-time
+  existing B suppression. User now confirms "Both work correctly" in a mission:
+  Left casts only spell 3 and Down summons the horse without casting. Watch for the one-time
   [FarFarWest controls] "photo input blocked" log. No backend rebuild needed.
-  Train mission-preview size follows this input test.
-- NEW PLAYTEST REQUESTS (October 19): third-spell binding is being corrected above;
+  Input correction is accepted; investigate the separately reported dismount issue
+  before the train mission-preview size.
+- NEW PLAYTEST REQUESTS (October 19): third-spell binding is confirmed above;
   the remaining improvements are queued.
   Tentative easiest-first order: resize the train mission preview, investigate reticle stepping,
   replace relevant input hints with VR labels/icons, investigate central vertical
@@ -536,8 +559,9 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
 | Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
-| Testing | Third spell through shifted D-pad Left; restore native horse Down | Mission test exposed horse summoning on Down. Down/C removed in both JoyToKey layers; Left/C replaces low-priority photo shortcut. Lua consumes native Left in immersive gameplay to prevent a second action, while retaining menu navigation and all other directions. Restart, then confirm Left casts spell 3 without photo mode and Down summons a horse without casting. |
-| Next after input test | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
+| Done | Third spell through shifted D-pad Left; restore native horse Down | User confirms both work correctly in a mission: Left casts only spell 3; Down summons the horse without casting. Native photo-mode input is consumed during immersive gameplay; menu navigation and other directions remain native. |
+| Urgent | Investigate horse dismount issue | Major issue reported after dismounting; obtain the actual visual/control symptoms and inspect the current game. Preserve the confirmed input bindings. |
+| Next after dismount issue | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
 | 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
 | 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
 | 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
@@ -587,7 +611,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | X | Interact with F/X prompts | Confirmed working |
 | Y | Switch weapons | Preserve working behavior |
 | Left/right grip | Spells | Preserve working behavior |
-| Shift modifier + stick direction | Third spell C (Left), Utility (Up), map (Right), horse summon (Down) | Left/C remap with native photo-input suppression awaits mission test; prior Down/C binding removed |
+| Shift modifier + stick direction | Third spell C (Left), Utility (Up), map (Right), horse summon (Down) | Left spell and Down horse user-confirmed in a mission; dismount issue is separately under investigation |
 | Left trigger | Aim | Preserve action; sight/reticle alignment queued |
 | Right trigger | Fire; click in menus | Preserve working behavior |
 | Left/right stick click | To be decided | Dash/ping observed; unchanged |

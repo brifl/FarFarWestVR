@@ -14,7 +14,7 @@ end
 
 local projection = UEVR_Matrix4x4f.new()
 local array, image_class, user_widget_class, slate, layout, system
-local image, image_index, image_address, owner, pawn, original
+local image, image_index, image_address, owner, owner_ref, original
 local calibration, viewport_width, viewport_height, local_width, local_height
 local raw_camera, eye_camera, scan_index
 local elapsed, next_scan, next_mode = 0, 0, 0
@@ -30,6 +30,21 @@ local function active()
     return _G.farfarwest_gameplay_ready == true and vr.is_runtime_ready()
         and vr.is_hmd_active() and not functions.is_drawing_ui()
         and vr:get_mod_value("VR_2DScreenMode") == "false"
+end
+
+local function track(object)
+    local index = object:read_dword(12) -- Verified UObject index in the guarded backend.
+    if index >= array:get_object_count() then return nil end
+    local current = array:get_object(index)
+    if not current or current:get_address()~=object:get_address() then return nil end
+    return {index=index, address=current:get_address(), name=current:get_short_name()}
+end
+
+local function valid_owner()
+    if not owner_ref then return false end
+    local current = array:get_object(owner_ref.index)
+    return current and current:get_address()==owner_ref.address
+        and current:get_short_name()==owner_ref.name
 end
 
 local function valid_image()
@@ -49,7 +64,7 @@ end
 
 local function reset()
     restore()
-    image, owner, pawn, original, calibration, scan_index = nil, nil, nil, nil, nil, nil
+    image, owner, owner_ref, original, calibration, scan_index = nil, nil, nil, nil, nil, nil
     raw_camera, eye_camera = nil, nil
 end
 
@@ -127,7 +142,8 @@ local function bind_image()
         if object and object:get_short_name()=="Crosshair_Top" and object:is_a(image_class) then
             local tree = object:get_outer()
             local candidate_owner = tree and tree:get_outer()
-            if candidate_owner and candidate_owner:is_a(user_widget_class)
+            local candidate_ref = candidate_owner and track(candidate_owner)
+            if candidate_ref and candidate_owner:is_a(user_widget_class)
                 and not candidate_owner:get_short_name():find("Default__", 1, true) then
                 local candidate_pawn = candidate_owner:GetOwningPlayerPawn()
                 if candidate_pawn then
@@ -138,7 +154,7 @@ local function bind_image()
                         opacity=object:get_float_property("RenderOpacity")}
                     assert(finite(original.x) and finite(original.y) and finite(original.opacity), "Invalid crosshair defaults")
                     image, image_index, image_address = object, index, object:get_address()
-                    owner, pawn, calibration = candidate_owner, candidate_pawn, nil
+                    owner, owner_ref, calibration = candidate_owner, candidate_ref, nil
                     info("Found live Crosshair_Top; calibrating its viewport geometry.")
                     return
                 end
@@ -205,8 +221,19 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
         stage = "prepare widget API"
         if not array then prepare_api() end
         stage = "validate or discover crosshair"
-        if image and not valid_image() then reset() end
+        if image and (not valid_image() or not valid_owner()) then reset() end
         if not image then bind_image(); return end
+        -- Mounting/dismounting replaces the possessed pawn while the HUD can
+        -- survive. Never retain the old pawn across ticks or trace with it
+        -- after garbage collection. Cinematics may temporarily leave no pawn.
+        stage = "read current owning pawn"
+        local pawn = owner:GetOwningPlayerPawn()
+        if not pawn then
+            image:SetRenderOpacity(0)
+            written = true
+            raw_camera, eye_camera = nil, nil
+            return
+        end
         stage = "read crosshair viewport"
         local viewport = layout:GetViewportSize(owner)
         if not viewport or viewport.X<=0 or viewport.Y<=0 then return end
@@ -232,7 +259,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
         local endpoint = geometry.ray_end(raw_camera.position, raw_camera.rotation, 100000)
         assert(endpoint, "Invalid firing camera")
         local hit = {}
-        stage = "trace firing target using cached pawn"
+        stage = "trace firing target using current pawn"
         local blocked = system:LineTraceSingle(pawn, ue(raw_camera.position), ue(endpoint), 0,
             false, {pawn}, 0, hit, true, {R=0,G=0,B=0,A=0}, {R=0,G=0,B=0,A=0}, 0)
         local point = endpoint
@@ -262,4 +289,4 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
 end)
 
 uevr.sdk.callbacks.on_script_reset(function() pcall(restore) end)
-info("Helper loaded; validates HUD access and geometry before moving the crosshair.")
+info("Helper loaded; validates HUD access and reads the current owning pawn each tick.")

@@ -87,8 +87,8 @@ orientation; full weapon/hand attachment is planned. Reticle stepping and broade
 multiplayer-marker coverage remain on the backlog. Boss-bar height needs further
 combat verification.
 
-The third spell's new Left binding is awaiting an in-mission playtest. Its
-previous Down binding conflicted with horse summoning and has been removed.
+The third spell on Left and native horse summoning on Down are confirmed working
+in a mission. A separately reported issue after dismounting is under investigation.
 
 The heat-distortion workaround disables all custom post-process materials;
 some damage or status effects may also be affected. One post-extraction stall
