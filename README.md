@@ -3,7 +3,7 @@
 A UEVR profile and custom backend for playing **Far Far West** in VR, with
 controller aiming, readable menus, and world markers that stay where they belong.
 
-- **Right-controller aiming:** aim with your controller while looking around
+- **Right-controller aiming:** aim smoothly with your controller while looking around
   independently. The reticle follows the firing target, including at different
   ranges and when casting spells.
 - **Controller-operated menus:** point with the right controller and click with
@@ -85,9 +85,9 @@ percent. Invalid edits retain the previous settings.
 
 This mod is still in development. Controller aiming currently controls weapon
 orientation; full weapon/hand attachment is planned. Direct controller rotation
-now targets aim/reticle stepping; headset confirmation is pending. Broader
-multiplayer-marker coverage remains on the backlog, and boss-bar height needs
-further combat verification.
+removes the stick-feedback stepping, with the improvement confirmed in headset
+testing. Broader multiplayer-marker coverage remains on the backlog, and boss-bar
+height needs further combat verification.
 
 The train mission-title/objective card retains menu presentation through its
 loading transition, with faster detection confirmed in headset testing.
