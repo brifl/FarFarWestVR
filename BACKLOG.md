@@ -29,6 +29,18 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- NEW PLAYTEST REQUESTS (October 19): record only; no runtime settings changed.
+  Tentative easiest-first order: expose third spell C through intentional D-pad
+  shifting, resize the train mission preview, investigate reticle stepping,
+  replace relevant input hints with VR labels/icons, investigate central vertical
+  stretching, then correct train cinematic viewpoints. Inspect dependencies
+  before implementation; preview size may depend on the cinematic camera.
+  Backend VR.hpp confirms thumbrest + joystick shifting modes; current profile
+  VR_DPadShifting=false. Left Thumbrest + Right Joystick is a candidate, not an
+  applied setting. Suppress our Lua snap-turn and native look/movement input on
+  the shifted stick, and reconcile JoyToKey's existing D-pad G/middle-click
+  bindings. Allocate one direction to C; other actions remain to be chosen.
+  Preserve grips/spells, interaction, pause/resume and controller menu pointing.
 - OBJECT/LOCATION TAGS USER-CONFIRMED: "Tags stay anchored and follow the chickens."
   UI_ObjectPing_C is shared by BP_ObjectPing_Default_C and
   BP_ObjectPing_Animal_Chicken_C; match the BP_ObjectPing actor family rather than
@@ -46,7 +58,7 @@ previous backend; restore that backend before using them.
   changed attachments and wrong component bindings. Live logs confirm two object
   tags use headset projection. tools/probe_reticle.ps1 -Pings is bounded/read-only;
   snapshots are on robot1-x at C:/src/uevr_far_west_build/ffw-tests/player-ping.json
-  and player-ping-current.json. Reticle stepping is next.
+  and player-ping-current.json. The ordered work queue below includes new requests.
 - WATCH ONLY: October 19 user completed another mission/extraction with no issues
   and will report recurrence. The first successful extraction left the user looking at the island/train
   station after boarding and departure, with the same view on the desktop. No
@@ -481,6 +493,8 @@ previous backend; restore that backend before using them.
   ghosting/waviness remains after removing the stale overlay. If it is stable,
   proceed to safe player discovery and right-stick controls instead.
 - Disable UEVR's thumbrest D-pad shifting to avoid unintended alternate controls.
+  This remains the current default; an intentional four-direction action layer
+  is now queued below with explicit input-conflict handling.
 
 ## Work queue
 
@@ -500,7 +514,12 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Correct the NPC “Press X” prompt | User confirmed "It worked" and proceeded into a mission. Shared screen-widget translation preserves live text/key/progress and native world location/X behavior. |
 | Done | Anchor quest objective markers | User confirmed anchoring with title and distance correct. UI_PingObjective_C and mission UI_Guide_C reuse the live-label component correction, preserving target data and actor roots. Fifteen checks pass. |
 | Done | Stabilize object/location tags (right-stick ping) | User confirms tags stay anchored and follow moving chickens. UI_ObjectPing_C on the BP_ObjectPing actor family preserves native icon/distance and attachment offsets using the shared visual-child correction. |
-| Next | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
+| Next | Third spell and a four-direction shifted action layer | Third spell is currently C. Use a deliberate UEVR thumbrest + joystick modifier to expose four directions; assign one to C and choose the remaining actions later. Handle existing D-pad mappings and suppress normal input/snap turns on the shifted stick. Preserve grips/spells and menus; each direction triggers only its assigned action. |
+| 2 | Resize the train mission-preview screen | User cannot read the oversized preview. Identify its widget or in-world screen during the ride, then adjust only its scale/placement. Keep main/pause menus unchanged; if the apparent size comes from the cinematic camera, address that dependency first. |
+| 3 | Investigate reticle stepping | Reticle appears to snap to a grid and makes aiming look like low FPS. Identify whether input sampling, projection timing, pixel rounding, or UI placement quantizes it; preserve the confirmed shot alignment at different ranges and with spells. |
+| 4 | Show VR controls in action hints | Replace relevant keyboard/gamepad hint text or glyphs with the actual Quest controls, including interact, spells and shifted actions. Preserve context, live labels and hold-progress behavior. Inspect the hint binding first; Lua FText access is limited, so a narrow native text/glyph bridge may be needed. Avoid global string replacements. |
+| 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
+| 6 | Correct train cinematic viewpoints | Ride viewpoint seems displaced relative to 2D. Inspect the game's active cinematic camera and our camera/aim offsets during the sequence. Match the intended camera position while preserving headset look and restore normal aiming afterward. Keep this separate from the extraction stall, which did not recur. |
 | Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
 
 Earlier items remain below; the new ordered queue takes precedence after the
@@ -546,6 +565,7 @@ internal **X**. This distinction matters when editing `plugins/joytokey.txt`.
 | X | Interact with F/X prompts | Confirmed working |
 | Y | Switch weapons | Preserve working behavior |
 | Left/right grip | Spells | Preserve working behavior |
+| Shift modifier + stick direction | Four additional actions, including third spell C | Queued; choose modifier/directions and prevent movement/look/snap conflicts |
 | Left trigger | Aim | Preserve action; sight/reticle alignment queued |
 | Right trigger | Fire; click in menus | Preserve working behavior |
 | Left/right stick click | To be decided | Dash/ping observed; unchanged |
