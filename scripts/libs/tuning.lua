@@ -8,6 +8,8 @@ local rules={
     ['hud.boss_health_offset_y']={.08,-.5,.5},
     ['hud.mission_info_offset_y']={.10,-.5,.5},
     ['hud.compass_offset_y']={.10,-.5,.5},
+    ['audit.horizontal_margin']={.10,0,.4},
+    ['audit.vertical_margin']={.15,0,.4},
 }
 local values,last_source,poll={},nil,0
 for key,rule in pairs(rules) do values[key]=rule[1] end
@@ -24,7 +26,7 @@ local function parse(source)
         if line~='' then
             local header=line:match('^%[([%w_]+)%]$')
             if header then
-                assert(header=='graphics' or header=='hud','Unknown section: '..header)
+                assert(header=='graphics' or header=='hud' or header=='audit','Unknown section: '..header)
                 section=header
             else
                 local name,text=line:match('^([%w_]+)%s*=%s*(.-)%s*$')

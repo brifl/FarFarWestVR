@@ -29,6 +29,24 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- UI CENSUS (October 21): user requests a general sweep of edge HUD, remaining
+  marker families and keyboard F hints instead of repeated one-off debugging.
+  Read-only one-shot helper, command/fetch/report CLI and documentation are in
+  scripts/libs/ui_audit*.lua, tools/ui_audit.py and docs/UI-AUDIT.md. Diagnostic
+  margins live under [audit] in tuning.ini; they flag bounds and do not move UI.
+  Native metadata identifies UI_Player_C health/shield groups, HB_Spells=1072,
+  HB_Ammo=1128, HB_Grenades=1120, HB_MapAndHorse=1096 and player healths=824.
+  Use the resulting catalog to implement shared safe placement of appropriate
+  fixed HUD groups. No blanket UI transform or FText replacement is applied.
+  IA_Interact/UI_Key keyboard presentation is captured; literal embedded FText
+  cannot be read by current Lua bindings. New marker registry describes actual
+  corrected instances, including hidden source/proxy roles, without game writes.
+  Game was closed during implementation; native runtime verification and an hour
+  of representative gameplay are still needed. Deployment removes the unconsumed
+  temporary test wrapper and arms start 3600 for the next normal launch. Ten audit,
+  ten tuning/HUD and 26 marker checks pass. The tuning tests now use a fixed
+  fixture rather than treating the user-editable tuning.ini as a test baseline.
+
 - UI SHAPE CONFIRMED (October 21): user confirms the reticle is "Round and aligned"
   and, after the shared marker test, "wow everything looks so much better!"
   Stable buildings/characters narrowed the issue to projected glyph proportions.
@@ -647,6 +665,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Correct UI glyph stretching | User confirms a round/aligned reticle and much better shared UI after measured eye-aspect compensation. Attachment points and original position math are preserved; 37 checks pass. Permanent startup and native reticle scale/pivot verified after Reset scripts. |
 | 6; low priority | Compare/correct train cinematic viewpoints | User sees a perspective under the train and has no 2D reference to establish whether it differs from normal play. User says this is not very important. Compare the intended 2D camera before inspecting our offsets; preserve headset look and restore aiming afterward. Keep separate from the extraction stall. |
 | Later; polish | Reduce remaining script startup delays | Separate widget creation time from discovery latency. After validating the direct mission-card query, consider the same guarded approach for other widget helpers; preserve bounded frame cost and working projections. |
+| Next | Review gameplay UI census and add shared safe HUD placement | Capture an hour of normal play; review edge-hud, marker-candidates and interaction-hints reports. Bring health/cooldowns inside editable horizontal/vertical margins without moving reticles/world markers; group remaining corrections by native widget/owner binding. |
 | Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
 
 Earlier items remain below; the new ordered queue takes precedence after the

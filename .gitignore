@@ -4,3 +4,7 @@ crash.dmp
 /data/controller_aim_backend.txt
 /data/reticle_mode.txt
 /data/world_markers_dev.lua
+/data/ui_audit_command.txt
+/data/ui_audit_counter.txt
+/data/ui_audit_status.json
+/data/ui-audit-*.jsonl

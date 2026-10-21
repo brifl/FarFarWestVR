@@ -30,6 +30,7 @@ local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder"
     world_label=true,label="mission guide"}
 local screen_projection=require('libs/screen_widget_projection')
 local ui_shape=require('libs/ui_shape')
+local audit_registry=require('libs/ui_audit_registry')
 local rejected={}
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
@@ -71,6 +72,7 @@ local function component_valid(entry)
     return true
 end
 local function restore(entry)
+    audit_registry.remove(entry.component.address)
     local display=entry.proxy or entry.source
     if entry.shape and valid(display) then ui_shape.restore(entry.shape) end
     if valid(entry.proxy) then entry.proxy.object:RemoveFromParent() end
@@ -438,6 +440,11 @@ callbacks.tick = function(_,delta)
             if not component_valid(entry) or (entry.proxy and not valid(entry.proxy)) then
                 restore(entry); entries[address]=nil; entry_count=entry_count-1
             else
+                if not entry.audit_registered then
+                    audit_registry.set(entry.component,entry.source,entry.proxy,
+                        entry.kind.label or entry.source.object:get_class():get_short_name())
+                    entry.audit_registered=true
+                end
                 local proxy=entry.proxy and entry.proxy.object
                 local display=proxy or entry.source.object
                 local viewport=layout:GetViewportSize(display)

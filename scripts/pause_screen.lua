@@ -32,6 +32,7 @@ end
 local function observe_line(line)
     local map = line:match("LogLoad: LoadMap: ([^?%s]+)")
     if map then
+        _G.farfarwest_current_map = map
         playable_map = map:match("^/Game/Levels/") ~= nil
             and map ~= "/Game/Levels/L_OpeningCredits"
             and map ~= "/Game/Levels/L_Map_TitleScreen"

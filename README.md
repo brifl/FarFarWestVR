@@ -107,3 +107,10 @@ was observed; a repeat mission completed normally, and recurrence is being watch
 See [the backlog](BACKLOG.md) for progress and planned improvements, or
 [development notes](docs/DEVELOPMENT.md) for backend deployment, diagnostics, and
 implementation details.
+
+## UI diagnostics
+
+An optional [one-hour gameplay capture](docs/UI-AUDIT.md) catalogs edge HUD,
+unhandled marker families, and action-bound interaction hints during normal play.
+It records stable widget paths and positions without changing gameplay. Editable
+horizontal/vertical capture margins are in `data/tuning.ini` under `[audit]`.

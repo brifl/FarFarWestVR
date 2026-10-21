@@ -122,7 +122,8 @@ end
 
 def run(name, code):
     lua = LuaRuntime(unpack_returned_tuples=True)
-    lua.globals().ini = (ROOT / 'data/tuning.ini').read_text()
+    # User-editable tuning.ini must not determine the test fixture.
+    lua.globals().ini = '[graphics]\nsaturation_multiplier=.95\nfog_density_multiplier=0\n'
     lua.globals().script_path = str(ROOT / 'scripts/?.lua')
     lua.execute("package.path=script_path..';'..package.path")
     lua.execute(MOCK)
@@ -134,7 +135,11 @@ def run(name, code):
 run('INI reload, comments, defaults and invalid-file preservation', r'''
 near(tuning.get('graphics.saturation_multiplier'),.95)
 near(tuning.get('hud.dialogue_offset_y'),-.10)
-reload('[graphics]\nsaturation_multiplier = 0.9 ; comment\n[hud]\nboss_health_offset_y=0.12\n')
+near(tuning.get('audit.horizontal_margin'),.10)
+near(tuning.get('audit.vertical_margin'),.15)
+reload('[graphics]\nsaturation_multiplier = 0.9 ; comment\n[hud]\nboss_health_offset_y=0.12\n[audit]\nhorizontal_margin=.12\nvertical_margin=.18\n')
+near(tuning.get('audit.horizontal_margin'),.12)
+near(tuning.get('audit.vertical_margin'),.18)
 near(tuning.get('graphics.saturation_multiplier'),.9)
 near(tuning.get('graphics.contrast_multiplier'),1.1)
 near(tuning.get('hud.boss_health_offset_y'),.12)
