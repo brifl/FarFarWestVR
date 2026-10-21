@@ -15,6 +15,7 @@ state={objects={},logs={},traces=0,active=true}
 farfarwest_gameplay_ready=true
 io.open=function() return nil end
 local sizes={SetRenderTranslation=16,SetRenderOpacity=4,GetCachedGeometry=80,
+    SetRenderScale=16,SetRenderTransformPivot=16,GetDesiredSize=16,
     GetOwningPlayerPawn=8,GetLocalSize=96,LocalToViewport=128,
     GetViewportSize=24,LineTraceSingle=512}
 local function class(default)
@@ -42,23 +43,29 @@ function make_hud(first)
     end
     local image=object(first,'Crosshair_Top')
     image.opacity=.8;image.translation={X=3,Y=4}
+    image.scale={X=1,Y=1};image.pivot={X=.5,Y=.5}
     function image:is_a(c) return c==image_class end
     function image:get_outer() return {get_outer=function() return owner end} end
     function image:get_property(name)
+        if name=='RenderTransformPivot' then return self.pivot end
         assert(name=='RenderTransform')
-        return {Angle=0,Shear={X=0,Y=0},Translation=self.translation,Scale={X=1,Y=1}}
+        return {Angle=0,Shear={X=0,Y=0},Translation=self.translation,Scale=self.scale}
     end
     function image:get_float_property(name) assert(name=='RenderOpacity');return self.opacity end
     function image:SetRenderOpacity(value) self.opacity=value end
     function image:SetRenderTranslation(value) self.translation=value end
     function image:GetCachedGeometry() return {} end
+    function image:GetDesiredSize() return {X=10,Y=10,typed=true} end
+    function image:SetRenderScale(v) assert(v.typed);self.scale={X=v.X,Y=v.Y} end
+    function image:SetRenderTransformPivot(v) assert(v.typed);self.pivot={X=v.X,Y=v.Y} end
     state.image,state.owner=image,owner
 end
 state.pawn=make_pawn(902,'original player');make_hud(900)
 local layout={GetViewportSize=function(_,owner) assert(not owner.dead);return {X=1000,Y=500} end}
 local slate={GetLocalSize=function() return {X=10,Y=10} end,
     LocalToViewport=function(_,owner,geometry,local_point,pixel)
-        assert(not owner.dead);pixel.result={X=495+local_point.X,Y=245+local_point.Y}
+        assert(not owner.dead);pixel.result={X=500+(local_point.X-5)*state.image.scale.X,
+            Y=250+(local_point.Y-5)*state.image.scale.Y}
     end}
 local system={LineTraceSingle=function(_,pawn,from,to,channel,complex,ignored)
     assert(pawn==state.pawn and not pawn.dead,'Traced with a stale pawn')
@@ -141,7 +148,8 @@ for i=1,100 do frame() end
 healthy();assert(state.last_pawn==state.pawn and state.image.opacity==.8)
 """)
 run("menus restore crosshair; genuine trace failure still stops safely", """
-warmup();state.active=false;frame();assert(state.image.opacity==.8)
+warmup();assert(state.image.scale.Y==.5 and state.image.translation.X==3 and state.image.translation.Y==4)
+state.active=false;frame();assert(state.image.opacity==.8 and state.image.scale.Y==1)
 state.active=true;for i=1,12 do frame() end;healthy()
 state.trace_error=true;frame();local traces=state.traces
 frame();assert(state.traces==traces)

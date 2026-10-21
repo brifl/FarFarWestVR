@@ -25,6 +25,7 @@ local sizes={K2_GetComponentLocation=24,GetOwner=8,GetOwningPlayer=8,GetDesiredS
     K2_SetWorldLocation=296,K2_SetRelativeLocation=296,K2_GetActorLocation=24,
     DeprojectScreenPositionToWorld=64,ProjectWorldLocationToScreen=48,
     GetOwningPlayerPawn=8,SetRenderTranslation=16,GetCachedGeometry=80,
+    SetRenderScale=16,SetRenderTransformPivot=16,
     GetLocalSize=96,LocalToViewport=128,K2_GetComponentToWorld=96,TransformLocation=144}
 local function class(name)
     return {get_short_name=function() return name end,find_property=function(_,n)
@@ -73,10 +74,10 @@ function player:ProjectWorldLocationToScreen(point,pixel,relative)
     return true
 end
 local source=object({opacity=.7,visibility=0,icon={},label='Start Mission',translation={X=3,Y=4}},'source')
+source.scale={X=1.5,Y=.5};source.pivot={X=.5,Y=.5}
 function source:get_class() return class(state.family) end
 function source:GetOwningPlayer() return player end
 function source:GetOwningPlayerPawn() return actor end
-function source:GetDesiredSize() return {X=64,Y=32} end
 function source:GetCachedGeometry() return self end
 function source:SetRenderTranslation(p)
     self.translation={X=p.X,Y=p.Y}
@@ -86,12 +87,16 @@ function source:get_float_property(n) assert(n=='RenderOpacity');return self.opa
 function source:SetRenderOpacity(n) self.opacity=n end
 function source:get_property(n)
     if n=='Visibility' then return self.visibility end
-    if n=='RenderTransform' then return {Translation=self.translation,Scale={X=1.5,Y=.5},
+    if n=='RenderTransformPivot' then return self.pivot end
+    if n=='RenderTransform' then return {Translation=self.translation,Scale=self.scale,
         Angle=0,Shear={X=0,Y=0}} end
     if n=='OwningActor' then return state.wrong_actor and root or actor end
     if n=='Location' then return state.objective_location or state.world end
     assert(n==(state.family=='UI_Guide_C' and 'Image_Aura' or state.family=='UI_ObjectPing_C' and 'Image_Logo' or 'Image_Icon'));return self.icon
 end
+function source:SetRenderScale(v) assert(v.typed);self.scale={X=v.X,Y=v.Y} end
+function source:SetRenderTransformPivot(v) assert(v.typed);self.pivot={X=v.X,Y=v.Y} end
+function source:GetDesiredSize() return {X=64,Y=32,typed=true} end
 function source.icon:get_property(n) return {name=n} end
 local component=object({visible=true,relative={X=0,Y=0,Z=0}},'Widget')
 local component_name=component.get_short_name
@@ -130,9 +135,16 @@ end
 local factory={Create=function(_,context,c,owning_player)
     assert(state.family=='UI_WorldIcon_C','live guide must never be cloned')
     assert(context==source and owning_player==player);state.created=state.created+1
-    local proxy=object({icon={}},'proxy')
+    local proxy=object({icon={},scale={X=1,Y=1},pivot={X=.5,Y=.5}},'proxy')
     function proxy:is_a(c) return c==widget_class end
-    function proxy:get_property(n) assert(n=='Image_Icon');return self.icon end
+    function proxy:get_property(n)
+        if n=='RenderTransform' then return {Scale=self.scale} end
+        if n=='RenderTransformPivot' then return self.pivot end
+        assert(n=='Image_Icon');return self.icon
+    end
+    function proxy:GetDesiredSize() return {X=64,Y=32,typed=true} end
+    function proxy:SetRenderScale(v) assert(v.typed);self.scale={X=v.X,Y=v.Y} end
+    function proxy:SetRenderTransformPivot(v) assert(v.typed);self.pivot={X=v.X,Y=v.Y} end
     function proxy:SetRenderOpacity(n) self.opacity=n end
     function proxy:AddToViewport(z) assert(z==-100) end
     function proxy:RemoveFromParent() self.removed=true end
@@ -149,7 +161,7 @@ local slate={GetLocalSize=function() return state.no_geometry and {X=0,Y=0} or {
 function slate:LocalToViewport(widget,cached,point,pixel,viewport)
     assert(widget==source and cached==source)
     -- Deliberately stale position; only the inherited basis may be used.
-    pixel.result={X=123+point.X*3,Y=456+point.Y}
+    pixel.result={X=123+point.X*2*source.scale.X,Y=456+point.Y*2*source.scale.Y}
 end
 local classes={['Class /Script/UMG.WidgetComponent']=component_class,
     ['Class /Script/UMG.UserWidget']=widget_class,['Class /Script/UMG.Image']=image_class}
@@ -202,8 +214,10 @@ def run(name, test, setup=""):
 run("vendor projection and restoration", """
 frame();frame();healthy();assert(state.created==1 and state.source.opacity==0)
 near(state.proxy.pixel.X,1000);near(state.proxy.pixel.Y,500)
+near(state.proxy.scale.Y,.5);near(state.proxy.pivot.Y,1)
 state.rotation={x=10,y=10,z=0};frame();assert(state.proxy.pixel.X<1000 and state.proxy.pixel.Y>500)
 feature.reset();assert(state.proxy.removed and state.source.opacity==.7)
+near(state.proxy.scale.Y,1);near(state.proxy.pivot.Y,.5)
 """)
 run("live label and actor preserved; both axes independent of aim", """
 frame();frame();healthy();assert(state.created==0 and state.moves>0)
@@ -262,6 +276,28 @@ assert(state.created==0 and state.moves==0)
 feature.reset();near(state.source.translation.X,3);near(state.source.translation.Y,4)
 assert(state.source.opacity==.7)
 """, "state.family='UI_Interact_C'")
+
+run("prompt shape normalization preserves target projection and restores its pivot", """
+frame();frame();healthy();near(state.source.scale.Y,.5);near(state.source.pivot.Y,1)
+state.rotation={x=10,y=10,z=0};frame();healthy()
+local x=state.native_pixel.X+2*(state.source.translation.X-3)
+local y=state.native_pixel.Y+2*(state.source.translation.Y-4)
+state.aim=60;for i=1,120 do frame() end;healthy()
+near(state.native_pixel.X+2*(state.source.translation.X-3),x)
+near(state.native_pixel.Y+2*(state.source.translation.Y-4),y)
+assert(state.moves==0 and state.source.label=='Start Mission')
+feature.reset();near(state.source.scale.Y,1);near(state.source.pivot.Y,.5)
+near(state.source.translation.X,3);near(state.source.translation.Y,4)
+""", "state.family='UI_Interact_C';state.source.scale={X=1,Y=1}")
+
+run("live world-label shape keeps the actor and corrected attachment fixed", """
+frame();frame();healthy();near(state.source.scale.Y,.5);near(state.source.pivot.Y,1)
+near(state.display.X,1000);near(state.display.Y,500)
+state.aim=70;state.rotation={x=10,y=10,z=0};frame();healthy()
+assert(state.display.X<1000 and state.display.Y>500 and state.source.label=='Start Mission')
+feature.reset();near(state.source.scale.Y,1);near(state.source.pivot.Y,.5)
+assert(state.restored and state.world.X==1000 and state.world.Y==0)
+""", "state.family='UI_Guide_C';state.source.scale={X=1,Y=1}")
 
 run("prompt follows updated world target and restores for menus", """
 frame();frame();state.world={X=1000,Y=200,Z=100};frame();healthy()

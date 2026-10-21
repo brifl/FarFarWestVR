@@ -31,6 +31,17 @@ two-millisecond scan budget. Known components are retained while their widgets
 load, and hidden markers are prepared before they become visible. This reduces
 the former multi-second scan delay without a blocking full-array sweep.
 
+Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
+horizontal/vertical pixel-to-eye scaling. The height factor is
+`abs(projection[1][1]) * viewport_height / (abs(projection[0][0]) * viewport_width)`;
+it follows the active eye projection and resolution instead of a fixed preset.
+The measured 2560x1440 setup needs about 0.64684. The user confirmed a round,
+aligned reticle and improved marker appearance. Existing world-to-screen centers
+are unchanged. Marker visuals scale around their component attachment pivot;
+reticles retain their center pivot. Non-unit original scales that make a pivot
+change unsafe are skipped. Original transforms are restored for menus/reset,
+with external game changes preserved. World rendering and menu sizing are unchanged.
+
 The HUD helper also keeps the dialogue's Next hint on Quest X. JoyToKey sends F
 for X, which can make the game select keyboard presentation during a conversation.
 `libs/dialogue_hint.lua` uses the existing tracked `UI_NpcTalk_C`, finds its

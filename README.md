@@ -16,6 +16,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Object and location tags:** tag a spot or object with the right-stick click.
   Tags follow moving targets, including chickens, and retain their icons,
   distances, and height offsets.
+- **Corrected UI proportions:** reticles and world markers compensate for the
+  eye projection's aspect ratio, keeping dots round and attachment points fixed.
 - **Corrected interaction prompts:** NPC prompts follow the aiming target while
   preserving the game's interaction text and hold-progress display. Dialogue's
   Next prompt keeps the X icon when the game switches to keyboard input hints.

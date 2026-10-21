@@ -15,7 +15,7 @@ local candidates,candidate_count={},0
 local first_scan,observed_count,recent_index,recent_min=true,nil,nil,nil
 local clock=os and os.clock
 local stage = "startup"
-local stopped, reported = false, false
+local stopped, reported, shape_reported = false, false, false
 local kinds = {
     UI_WorldIcon_C={owner="^BP_WorldIcon_C_", image="Image_Icon", offset=808},
     UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, world_label=true},
@@ -29,6 +29,7 @@ local kinds = {
 local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder",offset=816,
     world_label=true,label="mission guide"}
 local screen_projection=require('libs/screen_widget_projection')
+local ui_shape=require('libs/ui_shape')
 local rejected={}
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
@@ -70,6 +71,8 @@ local function component_valid(entry)
     return true
 end
 local function restore(entry)
+    local display=entry.proxy or entry.source
+    if entry.shape and valid(display) then ui_shape.restore(entry.shape) end
     if valid(entry.proxy) then entry.proxy.object:RemoveFromParent() end
     if entry.screen and valid(entry.source) then screen_projection.restore(entry.screen) end
     if entry.moved and component_valid(entry) then
@@ -142,6 +145,8 @@ local function prepare()
     checked(widget_class,"SetPositionInViewport",17,32)
     checked(widget_class,"SetRenderOpacity",4,4)
     checked(widget_class,"SetVisibility",1,1)
+    checked(widget_class,"SetRenderScale",16,16)
+    checked(widget_class,"SetRenderTransformPivot",16,16)
     checked(image_class,"SetBrush",64,512)
     checked(image_class,"SetColorAndOpacity",16,16)
     local class
@@ -484,6 +489,17 @@ callbacks.tick = function(_,delta)
                             stage="position viewport icon"
                             proxy:SetPositionInViewport({X=pixel.x,Y=pixel.y},true)
                             proxy:SetRenderOpacity(entry.opacity)
+                        end
+                        if entries[address] then
+                            stage='normalize marker shape'
+                            if not entry.shape then
+                                entry.shape=ui_shape.bind(display,entry.component.object:get_property('Pivot'))
+                            end
+                            local factor=ui_shape.height_factor(camera.matrix,viewport.X,viewport.Y)
+                            if ui_shape.apply(entry.shape,factor) and not shape_reported then
+                                shape_reported=true
+                                info('Marker shapes use eye aspect compensation; height factor '..tostring(factor))
+                            end
                         end
                         if not reported then
                             reported=true

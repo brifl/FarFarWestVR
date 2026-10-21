@@ -7,14 +7,16 @@ if not tag_ok or tag ~= "ffw-ue58-sdk-v1" then
     return
 end
 local math_ok, geometry = pcall(require, "libs/reticle_projection")
-if not math_ok then
-    functions.log_warn("[FarFarWest reticle] Geometry helper unavailable; helper skipped.")
+local shape_ok, ui_shape = pcall(require, "libs/ui_shape")
+if not math_ok or not shape_ok then
+    functions.log_warn("[FarFarWest reticle] Projection/shape helper unavailable; helper skipped.")
     return
 end
 
 local projection = UEVR_Matrix4x4f.new()
 local array, image_class, user_widget_class, slate, layout, system
 local image, image_index, image_address, owner, owner_ref, original
+local shape
 local calibration, viewport_width, viewport_height, local_width, local_height
 local raw_camera, eye_camera, scan_index
 local elapsed, next_scan, next_mode = 0, 0, 0
@@ -55,6 +57,7 @@ local function valid_image()
 end
 
 local function restore()
+    if shape and valid_image() then ui_shape.restore(shape) end
     if written and valid_image() then
         image:SetRenderTranslation({X=original.x, Y=original.y})
         image:SetRenderOpacity(original.opacity)
@@ -65,6 +68,7 @@ end
 local function reset()
     restore()
     image, owner, owner_ref, original, calibration, scan_index = nil, nil, nil, nil, nil, nil
+    shape=nil
     raw_camera, eye_camera = nil, nil
 end
 
@@ -116,6 +120,9 @@ local function prepare_api()
     end
     function_checked(image_class, "SetRenderTranslation", 16, 16)
     function_checked(image_class, "SetRenderOpacity", 4, 4)
+    function_checked(image_class, "SetRenderScale", 16, 16)
+    function_checked(image_class, "SetRenderTransformPivot", 16, 16)
+    function_checked(image_class, "GetDesiredSize", 16, 16)
     function_checked(image_class, "GetCachedGeometry", 32, 256)
     function_checked(user_widget_class, "GetOwningPlayerPawn", 8, 8)
     local class
@@ -155,6 +162,7 @@ local function bind_image()
                     assert(finite(original.x) and finite(original.y) and finite(original.opacity), "Invalid crosshair defaults")
                     image, image_index, image_address = object, index, object:get_address()
                     owner, owner_ref, calibration = candidate_owner, candidate_ref, nil
+                    shape=ui_shape.bind(image,{X=.5,Y=.5})
                     info("Found live Crosshair_Top; calibrating its viewport geometry.")
                     return
                 end
@@ -278,9 +286,11 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
         end
         local translation = geometry.translation(calibration,pixel,original.x,original.y)
         assert(translation, "Invalid reticle projection")
+        written = true -- Cleanup owns partial translation/shape setter failures.
         image:SetRenderTranslation(translation)
         image:SetRenderOpacity(original.opacity)
-        written = true
+        stage='normalize crosshair shape'
+        ui_shape.apply(shape,ui_shape.height_factor(eye_camera.matrix,viewport_width,viewport_height))
         if not reported then
             info("Original crosshair now follows the traced firing-camera target in each eye.")
             reported = true

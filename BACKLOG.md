@@ -1,6 +1,6 @@
 # Far Far West VR controls and backlog
 
-Updated October 20, 2026. Changes stay in this profile repository; the isolated
+Updated October 21, 2026. Changes stay in this profile repository; the isolated
 UEVR backend uses the guarded source build installed by
 `tools/deploy_native_backend.py`. Earlier binary patch tools apply only to the
 previous backend; restore that backend before using them.
@@ -29,6 +29,28 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- UI SHAPE CONFIRMED (October 21): user confirms the reticle is "Round and aligned"
+  and, after the shared marker test, "wow everything looks so much better!"
+  Stable buildings/characters narrowed the issue to projected glyph proportions.
+  Read-only 80-sample capture: viewport 2560x1440, reticle local size 256x256,
+  equal 1.333 pixel bases, original scale (1,1), center pivot (.5,.5), eye fx about
+  .72654/fy .83548. Implied height factor is .646840106; the reticle-only test
+  verified it visually. libs/ui_shape.lua computes abs(fy)*H/(abs(fx)*W) dynamically
+  for reticle and marker visuals, preserving the original placement math.
+  Native marker roots also had unit scales/center pivots. Markers use the component
+  Pivot as their render pivot so bottom/edge attachments stay fixed. Unsafe pivot
+  changes on pre-scaled roots are skipped; game transform changes are respected.
+  Seven shape, four reticle lifecycle and 26 marker checks pass. Shared live
+  factory loaded without errors at 15:42:04; user accepted its appearance.
+  Production code restores owned scale/pivot on menus/reset and validates existing
+  object identities before cleanup. Native getters supply typed FVector2D values
+  to scale/pivot setters; no backend rebuild or global projection setting change.
+  Remote ffw-tests/ui-shape-*-20261021.lua, ui-shape-baseline-20261021.csv retain
+  probes for continuity. Normal startup activation is the remaining deployment
+  check: pull the committed helpers, remove the dev override, then Reset scripts
+  once and verify logs/readback. Current live wrapper keeps the accepted changes
+  active until that reset; it has session-specific HUD references only for its
+  temporary reticle test. Production discovery remains dynamic across HUD changes.
 - VENDOR SPELL HINTS CONFIRMED (October 20): user confirms "Readable and stable."
   Requested grip labels after clarifying RT/LT meant the grip controls. The joker
   vendor's Q/IA_SpellA maps to LG (native xbox_lb_outline), E/IA_SpellB to RG
@@ -621,7 +643,7 @@ Use one focused visual change/test at a time and preserve working controls.
 | Done | Make train mission title/objectives readable | User reports "It is much better" after f5f6d70 replaces the discovery scan with a direct native query. Menu presentation and faster detection are accepted; eight transition checks and live setup pass. Preserve the readable map. |
 | Done | Reduce aim/reticle stepping | User reports "Wow it works great!" after 6c29490 replaces stick-feedback pulses with typed native controller rotation. Eight aim checks, four reticle lifecycle checks and native setter/readback passed before the accepted headset test. |
 | Done; other hints as encountered | Show VR controls in requested action hints | User confirms Dialogue Next stays X and works, and the joker vendor's LG/RG/LG+RG labels are readable and stable. Targeting already showed X. Inspect additional spell/shifted hints when reported; preserve bindings, live labels and hold-progress behavior. |
-| 5 | Investigate central vertical stretching | User reports a fisheye-like effect: the center is stretched vertically more than the top/bottom. Compare a fixed scene/grid in headset and desktop, and distinguish world rendering from curved menu presentation. Check projection/aspect/copy geometry before changing settings; preserve accepted eye alignment, full-width rendering and reticle/marker projection. |
+| Done; startup verification pending | Correct UI glyph stretching | User confirms a round/aligned reticle and much better shared UI after measured eye-aspect compensation. Attachment points and original position math are preserved; 37 focused checks pass. Verify the committed helpers after one script reset. |
 | 6; low priority | Compare/correct train cinematic viewpoints | User sees a perspective under the train and has no 2D reference to establish whether it differs from normal play. User says this is not very important. Compare the intended 2D camera before inspecting our offsets; preserve headset look and restore aiming afterward. Keep separate from the extraction stall. |
 | Later; polish | Reduce remaining script startup delays | Separate widget creation time from discovery latency. After validating the direct mission-card query, consider the same guarded approach for other widget helpers; preserve bounded frame cost and working projections. |
 | Later | Other-player and remaining marker families | Reuse shared projection where applicable; inspect only their widget/world-target binding when visible. Preserve visibility, labels, distance indicators and any edge clamping. No separate full debugging effort for every individual marker. |
