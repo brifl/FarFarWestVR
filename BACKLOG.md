@@ -41,9 +41,14 @@ previous backend; restore that backend before using them.
   IA_Interact/UI_Key keyboard presentation is captured; literal embedded FText
   cannot be read by current Lua bindings. New marker registry describes actual
   corrected instances, including hidden source/proxy roles, without game writes.
-  Game was closed during implementation; native runtime verification and an hour
-  of representative gameplay are still needed. Deployment removes the unconsumed
-  temporary test wrapper and arms start 3600 for the next normal launch. Twelve audit,
+  Runtime VERIFIED after normal launch at 16:23:43 on October 21. Capture
+  data/ui-audit-000001.jsonl is active for 3600 seconds; no errors or dropped
+  records at the first status check. Saved catalog has 1004 stable IDs, 403 with
+  measured bounds and 130 with reflected fields. HealProgressBar is at y=.912-.927;
+  HB_Spells spans x=.025-.119, y=.834-.940 in UI_PlayerLobby_C. Existing marker
+  source/proxy coverage is recorded correctly. Continue representative play;
+  fetch/report after the session before implementing shared HUD placement. The
+  unconsumed temporary wrapper is removed. Twelve audit,
   ten tuning/HUD and 26 marker checks pass. The tuning tests now use a fixed
   fixture rather than treating the user-editable tuning.ini as a test baseline.
 
