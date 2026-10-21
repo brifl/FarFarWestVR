@@ -42,13 +42,25 @@ previous backend; restore that backend before using them.
   cannot be read by current Lua bindings. New marker registry describes actual
   corrected instances, including hidden source/proxy roles, without game writes.
   Runtime VERIFIED after normal launch at 16:23:43 on October 21. Capture
-  data/ui-audit-000001.jsonl is active for 3600 seconds; no errors or dropped
+  data/ui-audit-000001.jsonl was armed for 3600 seconds; no errors or dropped
   records at the first status check. Saved catalog has 1004 stable IDs, 403 with
   measured bounds and 130 with reflected fields. HealProgressBar is at y=.912-.927;
   HB_Spells spans x=.025-.119, y=.834-.940 in UI_PlayerLobby_C. Existing marker
-  source/proxy coverage is recorded correctly. Continue representative play;
-  fetch/report after the session before implementing shared HUD placement. The
-  unconsumed temporary wrapper is removed. Twelve audit,
+  source/proxy coverage is recorded correctly. Full-mission check-in capture is
+  STOPPED and flushed at 825.53 engine seconds: 2884 IDs, 268 edge candidates,
+  3 unhandled owner families, 3 interaction-hint contexts (1 visible keyboard
+  presentation), zero errors/drops, 7,886,569 bytes. Raw capture/status are archived
+  on robot1-x at ffw-tests/ui-census-20261021/ under uevr_far_west_build; local
+  generated CSV/summary snapshot is /tmp/ffw-ui-audit-mission-final/. User can exit.
+  Next batch: shared margins for fixed HUD (health near y=.91-.93, spells near
+  x=.02/.83-.94y, right-side ammo/weapons near x=.89-.98/y=.81-.93); exclude
+  reticles/world markers/full-screen effects. The F flip is the existing
+  UI_Interact_C/UI_Key bound to IA_Interact, not dialogue. All three unhandled
+  owner types share /Game/Interfaces/UI_Lifebar.UI_Lifebar_C, field
+  ProgressBar_Boss@808: BP_Enemy_Cryptic_Nuker_C, BP_RadioactiveBarrel_C and
+  BP_GasBomb_BossSpawner_C. Preserve non-root component attachment offsets and
+  native bar values when extending shared projection. No live gameplay changes
+  were made at check-in. The temporary wrapper is removed. Twelve audit,
   ten tuning/HUD and 26 marker checks pass. The tuning tests now use a fixed
   fixture rather than treating the user-editable tuning.ini as a test baseline.
 
