@@ -180,11 +180,37 @@ def check_hidden(lua):
     assert not errors
     health = next(r for r in rows.values() if r['path'].endswith('HealProgressBar'))
     assert health['visible'] == 0 and health['edge_samples'] == 0
+    assert not any('interact_keyboard_hint' in r['flags'] for r in rows.values())
 
 
 run('hidden ancestor does not produce a false visible edge candidate', '''
 state.panel.props.Visibility=1;start();tick(100);stop();healthy()
 ''', check_hidden)
+
+def check_covered(lua):
+    rows, _, errors = report.load_capture(capture(lua))
+    assert not errors
+    assert any(r['coverage'] for r in rows.values())
+    assert not any('unhandled_screen_marker_candidate' in r['flags'] for r in rows.values())
+
+
+run('corrected sources are recognized through shared registry metadata', r'''
+local function ref(o) return {object=o,index=o.index,address=o:get_address(),name=o.name} end
+require('libs/ui_audit_registry').set(ref(state.component),ref(state.source),nil,'existing fix')
+start();tick(100);stop();healthy()
+''', check_covered)
+
+
+def check_hidden_marker(lua):
+    rows, _, errors = report.load_capture(capture(lua))
+    assert not errors
+    assert not any('unhandled_screen_marker_candidate' in r['flags'] for r in rows.values())
+
+
+run('hidden world owners do not become unhandled visible marker candidates', '''
+state.owner.props.bHidden=true;start();tick(100);stop();healthy()
+''', check_hidden_marker)
+
 
 run('stale queued objects are validated before use', '''
 start();local old=state.health;state.objects[old.index]=nil;old.dead=true

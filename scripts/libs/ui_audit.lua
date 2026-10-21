@@ -256,7 +256,6 @@ local function sample(ref,viewport)
             if relative then data.relative_x,data.relative_y,data.relative_z=relative.X,relative.Y,relative.Z end
         end
         data.component=catalog.normalize(link.component.name);data.space=c:read_byte(1512)==1 and 'screen' or 'world'
-        if data.space=='screen' and not coverage then data.flag='unhandled_screen_marker_candidate' end
         placed=c:get_property('bVisible') and not owner:get_property('bHidden')
     end
     if class_name=='UI_Key_C' then
@@ -266,12 +265,15 @@ local function sample(ref,viewport)
         local text,image=o:get_property('Text_Key'),o:get_property('Image_GamepadIcon')
         local function shown(w) local v=w and w:get_property('Visibility');return w and v~=1 and v~=2 end
         data.mode=(shown(text) and 'keyboard' or '')..(shown(image) and '+gamepad' or '')
-        if data.action=='IA_Interact' and shown(text) then data.flag='interact_keyboard_hint' end
         if override then data.fields=(data.fields or '')..';gamepadKeys='..override:get_short_name() end
         data.kind='key_hint'
     end
     data.visible=visible and placed==true
     if data.visible then
+        if data.space=='screen' and not coverage then data.flag='unhandled_screen_marker_candidate' end
+        if data.action=='IA_Interact' and data.mode and data.mode:find('keyboard',1,true) then
+            data.flag='interact_keyboard_hint'
+        end
         data.x0,data.y0,data.x1,data.y1=bounds(o,viewport)
         if data.x0 then
             local h,v=tuning.get('audit.horizontal_margin'),tuning.get('audit.vertical_margin')

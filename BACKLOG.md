@@ -43,7 +43,7 @@ previous backend; restore that backend before using them.
   corrected instances, including hidden source/proxy roles, without game writes.
   Game was closed during implementation; native runtime verification and an hour
   of representative gameplay are still needed. Deployment removes the unconsumed
-  temporary test wrapper and arms start 3600 for the next normal launch. Ten audit,
+  temporary test wrapper and arms start 3600 for the next normal launch. Twelve audit,
   ten tuning/HUD and 26 marker checks pass. The tuning tests now use a fixed
   fixture rather than treating the user-editable tuning.ini as a test baseline.
 
