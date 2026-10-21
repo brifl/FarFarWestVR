@@ -3,6 +3,8 @@
 A UEVR profile and custom backend for playing **Far Far West** in VR, with
 controller aiming, readable menus, and world markers that stay where they belong.
 
+- **Aligned stereo rendering:** the custom backend provides matching eye views
+  and full-width menu presentation.
 - **Right-controller aiming:** aim smoothly with your controller while looking around
   independently. The reticle follows the firing target, including at different
   ranges and when casting spells.
@@ -23,6 +25,12 @@ controller aiming, readable menus, and world markers that stay where they belong
   Next prompt keeps the X icon when the game switches to keyboard input hints.
 - **VR spell-selection hints:** the joker card vendor shows LG, RG, and LG+RG
   for left grip, right grip, and both grips. Labels stay stable across input modes.
+- **Readable train mission previews:** the title/objective card uses the readable
+  menu presentation, with faster detection during loading transitions.
+- **Native spell controls:** left grip, right grip, and both grips cast the three
+  spells while preserving the native shifted D-pad actions.
+- **Possession-aware reticle:** aiming traces follow the current player after
+  mounting and dismounting, avoiding the earlier stale-pawn freeze.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
   for the compass, mission counters/timers, and boss health bar.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
@@ -30,6 +38,9 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Live tuning:** adjust graphics multipliers and HUD heights during play.
 - **Earlier marker initialization:** prepare markers as a level loads to reduce
   the delay before stabilization.
+- **UI monitoring across play sessions:** optional automatic capture preserves
+  widget IDs, positions, marker coverage, and input-hint observations in a
+  cumulative findings document.
 
 ## Requirements and setup
 
@@ -59,6 +70,8 @@ These are the tested Quest button labels.
 | Both grips together | Third spell |
 | Shifted D-pad Left | Native photo mode |
 | Shifted D-pad Down | Summon horse (native action) |
+| Shifted D-pad Up | Native Utility action |
+| Shifted D-pad Right | Map |
 | X | Interact; advance dialogue |
 | Y | Switch weapons |
 | B | Pause/resume |
@@ -71,34 +84,31 @@ activation method is **Gesture (Head) + Left Joystick**.
 Edit [data/tuning.ini](data/tuning.ini) in the installed profile. Numeric changes
 reload during play, about once a second.
 
-| Setting | Default | Effect |
+| Setting | Profile value | Effect |
 | --- | --- | --- |
 | `saturation_multiplier` | `0.95` | Slightly lower saturation |
 | `contrast_multiplier` | `1.10` | Ten percent more contrast |
-| `fog_density_multiplier` | `0.00` | Remove primary distance haze |
+| `fog_density_multiplier` | `0.20` | Reduce primary distance haze to twenty percent |
 | `dialogue_offset_y` | `-0.10` | Raise conversation text |
-| `boss_health_offset_y` | `0.08` | Lower boss health |
-| `mission_info_offset_y` | `0.10` | Lower mission counters and timers |
-| `compass_offset_y` | `0.10` | Lower the compass and its markers together |
+| `boss_health_offset_y` | `0.10` | Lower boss health |
+| `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
+| `compass_offset_y` | `0.15` | Lower the compass and its markers together |
 
 A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
 fractions of viewport height: positive moves down, negative moves up, and `0`
 restores the original position. For example, `0.10` moves a panel down by ten
-percent. Invalid edits retain the previous settings.
+percent. Invalid edits retain the previous settings. The saved world scale is
+`0.010000`, matching the tested setup; preserve personal runtime adjustments.
 
 ## Development status
 
-This mod is still in development. Controller aiming currently controls weapon
-orientation; full weapon/hand attachment is planned. Direct controller rotation
-removes the stick-feedback stepping, with the improvement confirmed in headset
-testing. Broader multiplayer-marker coverage remains on the backlog, and boss-bar
-height needs further combat verification.
+Controller aiming currently follows the right controller’s orientation. Full
+position and wrist-roll tracking for hands/weapons is a
+[planned design project](docs/LOOSE-HANDS.md); implementation has not started.
 
-The train mission-title/objective card retains menu presentation through its
-loading transition, with faster detection confirmed in headset testing.
-
-The reticle now follows possession changes when mounting and dismounting; a full
-mission completed without issues after this correction.
+[Ongoing UI monitoring](docs/UI-FINDINGS.md) is identifying additional edge HUD,
+health-bar markers, and control hints to improve. Those remaining cases are
+tracked in the [backlog](BACKLOG.md). Boss-bar height still needs combat validation.
 
 The heat-distortion workaround disables all custom post-process materials;
 some damage or status effects may also be affected. One post-extraction stall
