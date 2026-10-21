@@ -8,6 +8,7 @@ local rules={
     ['hud.boss_health_offset_y']={.08,-.5,.5},
     ['hud.mission_info_offset_y']={.10,-.5,.5},
     ['hud.compass_offset_y']={.10,-.5,.5},
+    ['audit.auto_start']={0,0,1},
     ['audit.horizontal_margin']={.10,0,.4},
     ['audit.vertical_margin']={.15,0,.4},
 }
@@ -37,6 +38,8 @@ local function parse(source)
                 local n=tonumber(text)
                 assert(n and n==n and n>=rule[2] and n<=rule[3],
                     key..' must be between '..tostring(rule[2])..' and '..tostring(rule[3]))
+                assert(key~='audit.auto_start' or n==0 or n==1,
+                    'audit.auto_start must be 0 or 1')
                 candidate[key]=n
             end
         end

@@ -1,4 +1,4 @@
--- No scan runs unless a one-shot capture is requested in profile/data.
+-- Capture on launch when enabled, or on a one-shot request in profile/data.
 local functions=uevr.params.functions
 local ok,tag=pcall(functions.get_tag)
 if not ok or tag~='ffw-ue58-sdk-v1' then return end

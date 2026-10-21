@@ -15,12 +15,13 @@ state={files={},logs={},objects={},query_count=0,reads=0,now=0,writes=0}
 os.clock=function() state.now=state.now+.000001;return state.now end
 io.open=function(name,mode)
     if mode=='rb' and state.files[name]==nil then return nil end
-    if mode=='wb' then state.files[name]='' end
+    if mode=='wb' or (mode=='ab' and state.files[name]==nil) then state.files[name]='' end
     return {read=function(_,n) return state.files[name]:sub(1,n) end,
         write=function(_,s)
             if state.fail_write then return nil,'disk full' end
             state.files[name]=(state.files[name] or '')..s;return true
-        end,flush=function() return true end,close=function() return true end}
+        end,seek=function() return #(state.files[name] or '') end,
+        flush=function() return true end,close=function() return true end}
 end
 local sizes={GetParent=8,GetCachedGeometry=80,GetChildrenCount=4,GetChildAt=16,
     IsInViewport=1,GetAllWidgetsOfClass=40,GetLocalSize=96,LocalToViewport=128,GetViewportSize=24}
@@ -112,6 +113,7 @@ local function log(s) state.logs[#state.logs+1]=s end
 uevr={api={get_uobject_array=function() return array end,find_uobject=function(_,path) return classes[path] end},
     params={vr={is_runtime_ready=function() return true end},functions={log_info=log,log_warn=log}}}
 package.loaded['libs/tuning']={get=function(key)
+    if key=='audit.auto_start' then return state.auto_start or 0 end
     if key=='audit.horizontal_margin' then return .1 end
     assert(key=='audit.vertical_margin');return .15
 end}
@@ -143,6 +145,26 @@ def capture(lua):
 run('idle helper performs no native discovery or gameplay writes', '''
 tick(100);healthy();assert(state.reads==0 and state.query_count==0)
 assert(state.files['ui_audit_status.json']==nil)
+''')
+
+
+run('automatic capture appends a session ledger and preserves previous launches', r'''
+state.auto_start=1;tick(12);healthy()
+assert(state.files['ui-audit-000001.jsonl'])
+feature.reset();local first=state.files['ui-audit-000001.jsonl']
+feature=require('libs/ui_audit')();tick(12);healthy()
+assert(state.files['ui-audit-000002.jsonl'])
+assert(state.files['ui-audit-000001.jsonl']==first)
+stop();local queries=state.query_count;tick(100);assert(state.query_count==queries)
+local ledger=state.files['ui_audit_sessions.md']
+assert(ledger:find('ui%-audit%-000001.jsonl.*script reset'))
+assert(ledger:find('ui%-audit%-000002.jsonl.*stopped'))
+local _,headings=ledger:gsub('# Gameplay UI capture sessions','');assert(headings==1)
+''')
+
+run('explicit stop before startup suppresses automatic capture for that script load', '''
+state.auto_start=1;state.files['ui_audit_command.txt']='stop';tick(100);healthy()
+assert(state.query_count==0 and not state.files['ui-audit-000001.jsonl'])
 ''')
 
 
@@ -263,3 +285,74 @@ print('PASS repeated static UI stays bounded through a long session')
 rows, meta, errors = report.load_capture('{"type":"start"}\n{"type":"widget","id":"a","revision":2}\n{"type":"widget","id":"a","revision":1}\n{"type":')
 assert rows['a']['revision'] == 2 and errors == ['Ignored incomplete final line']
 print('PASS interrupted capture retains latest complete revision')
+
+with TemporaryDirectory() as d:
+    root = Path(d)
+    archive = root / 'sessions'
+    host = archive / 'robot1-x'
+    host.mkdir(parents=True)
+    first = host / 'ui-audit-000001.jsonl'
+    second = host / 'ui-audit-000002.jsonl'
+    def sample(revision, seen, **extra):
+        return dict(type='widget', id='Class /Test/Key|HUD/Key', revision=revision,
+                    **dict(dict(seen=seen, visible=seen, edge_samples=0, path='HUD/Key',
+                                kind='key_hint', **{'class': 'Class /Test/Key'}), **extra))
+    first.write_text('\n'.join(map(json.dumps, [dict(type='start'),
+        sample(1, 2), sample(2, 7, flags={'interact_keyboard_hint': True}, modes={'keyboard': True}),
+        dict(type='end', elapsed=60, reason='stopped', errors=0)]))+'\n')
+    second.write_text('\n'.join(map(json.dumps, [dict(type='start'),
+        sample(1, 3, modes={'gamepad': True}, coverage={'new fix': True})]))+'\n{"type":')
+    records, sessions = report.merge_captures([first, second], archive)
+    row = records['Class /Test/Key|HUD/Key']
+    assert row['seen'] == 10 and len(row['sessions']) == 2
+    assert row['flags']['interact_keyboard_hint'] and row['latest_coverage']['new fix']
+    assert set(row['modes']) == {'keyboard', 'gamepad'}
+    assert sessions[1]['reason'].startswith('unfinished')
+    doc = root / 'UI-FINDINGS.md'
+    report.write_history(archive, doc)
+    saved = json.loads((root / 'history/catalog.json').read_text())
+    report.write_history(archive, doc)
+    assert json.loads((root / 'history/catalog.json').read_text()) == saved
+    text = doc.read_text()
+    assert '2 sessions, 1 distinct widget ID' in text and row['audit_id'] in text
+    assert 'new fix' in text and 'Missing from a later session does not mean fixed' in text
+print('PASS cumulative report deduplicates revisions and repeat collection across sessions')
+print('PASS interrupted sessions retain findings and later coverage does not erase history')
+
+with TemporaryDirectory() as d:
+    root = Path(d)
+    archive = root / 'sessions'
+    document = root / 'findings.md'
+    import io
+    import zipfile
+    def packet(files):
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, 'w') as z:
+            for name, content in files.items():
+                z.writestr(name, content)
+        return buffer.getvalue()
+    one = '\n'.join(map(json.dumps, [sample(1, 7), dict(type='end', elapsed=60, reason='stopped')]))+'\n'
+    two = '\n'.join(map(json.dumps, [sample(1, 3), dict(type='end', elapsed=60, reason='completed')]))+'\n'
+    packets = [packet({'ui-audit-000001.jsonl': one,
+                       'manifest.json': json.dumps({'ui-audit-000001.jsonl': [len(one), 1]})}),
+               packet({'ui-audit-000002.jsonl': two,
+                       'manifest.json': json.dumps({'ui-audit-000001.jsonl': [len(one), 1],
+                                                    'ui-audit-000002.jsonl': [len(two), 2]})}),
+               packet({'manifest.json': '{}'})]
+    calls = []
+    original = report.remote
+    def fake_remote(host, body, binary=False):
+        assert host == 'robot1-x' and binary
+        calls.append(body)
+        return packets.pop(0)
+    report.remote = fake_remote
+    try:
+        report.collect('robot1-x', archive, document)
+        report.collect('robot1-x', archive, document)
+        assert "'ui-audit-000001.jsonl':" in calls[1]
+        report.collect('robot1-x', archive, document)
+        merged, sessions = report.merge_captures(archive.glob('*/*.jsonl'), archive)
+        assert len(sessions) == 2 and next(iter(merged.values()))['seen'] == 10
+    finally:
+        report.remote = original
+print('PASS incremental collection preserves old sessions when remote files disappear')

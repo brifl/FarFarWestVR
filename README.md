@@ -110,7 +110,8 @@ implementation details.
 
 ## UI diagnostics
 
-An optional [one-hour gameplay capture](docs/UI-AUDIT.md) catalogs edge HUD,
-unhandled marker families, and action-bound interaction hints during normal play.
-It records stable widget paths and positions without changing gameplay. Editable
-horizontal/vertical capture margins are in `data/tuning.ini` under `[audit]`.
+A [gameplay capture](docs/UI-AUDIT.md) catalogs edge HUD, marker families, and
+action-bound interaction hints across play sessions. Capture starts on each launch
+when `[audit] auto_start = 1`. The [cumulative findings](docs/UI-FINDINGS.md) retain
+widget IDs, positions, and session history; refresh them with
+`python3 tools/ui_audit.py collect`. Capture does not change gameplay.

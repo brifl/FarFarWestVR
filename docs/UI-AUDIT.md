@@ -8,42 +8,65 @@ The current capture is intended to identify missing edge HUD (health, shields,
 ammo, cooldowns), additional world-marker families, and interaction hints that
 switch back to keyboard presentation.
 
-## Capture a session
+## Multiple play sessions
 
-Run these commands from this repository on the development machine. The tool
-uses the existing SSH-to-WSL workflow on **robot1-x**.
+The installed [tuning.ini](../data/tuning.ini) enables `audit.auto_start = 1`.
+Each game launch or **Reset scripts** starts a separate capture, limited to one
+hour or 16 MiB. Earlier captures are preserved. The helper stays idle after that
+limit or a manual Stop until the next launch/reset. Set `auto_start = 0` to prevent
+automatic capture on future launches; Stop ends the current capture immediately.
+
+The game automatically appends start/checkpoint/end counts to
+`data/ui_audit_sessions.md` in the installed profile. An unfinished entry may mean
+the game exited without a final script callback; its JSONL checkpoints survive.
+
+The repository's cumulative findings document is
+[UI-FINDINGS.md](UI-FINDINGS.md). Refresh it at check-ins from the development
+machine using the existing SSH-to-WSL workflow on **robot1-x**:
+
+```bash
+python3 tools/ui_audit.py collect
+```
+
+Collect copies only changed captures, keeps a local archive of all sessions under
+`diagnostics/ui-audit/sessions/`, and rebuilds the document and combined reports.
+The document is tracked in Git; raw captures and generated CSV/JSON reports are
+ignored. They also remain in the installed profile. Collecting again replaces the
+same session's checkpoint instead of double-counting its observations. Interrupted
+sessions and historical problems remain visible even when coverage is recorded
+later. Files already archived locally remain in history if removed from the
+installed profile.
+
+The combined CSV reports and full stable-ID catalog are in
+`diagnostics/ui-audit/history/`. The Markdown dictionary contains flagged candidates
+with stable abbreviated IDs, widget paths, coordinates, and session counts. The
+CSV and JSON include both abbreviated IDs and the full class/path IDs.
+
+The cumulative repository document refreshes when Collect runs; no background SSH
+service is required. The game's session ledger updates automatically while playing.
+
+## Manual capture controls
 
 ```bash
 python3 tools/ui_audit.py start
 python3 tools/ui_audit.py status
-```
-
-After deploying new scripts, restart the game or use **UEVR → Main → Reset
-scripts**. Start arms the next loaded helper; it also works during play once the
-helper is loaded. Play normally for up to one hour, including menus, conversations,
-missions, and any uncommon marker/hint cases. There is no need to reproduce each
-case separately or keep a particular screen open.
-
-```bash
 python3 tools/ui_audit.py stop
 python3 tools/ui_audit.py fetch
 ```
 
-Fetching works while the capture is active or afterward. Results go to
-`diagnostics/ui-audit/`: `summary.txt`, `widgets.csv`, `edge-hud.csv`,
-`marker-candidates.csv`, `interaction-hints.csv`, and the original `capture.jsonl`.
-The CSV files are suitable for sorting/filtering. To summarize an archived file:
+Start also works during play. Fetch downloads only the most recent capture to
+`diagnostics/ui-audit/`, including `summary.txt`, `widgets.csv`, `edge-hud.csv`,
+`marker-candidates.csv`, `interaction-hints.csv`, and `capture.jsonl`. Fetch and
+Collect work while recording or afterward. To summarize an individual archived file:
 
 ```bash
 python3 tools/ui_audit.py report path/to/capture.jsonl
 ```
 
 If SSH is unavailable, write `start 3600` or `stop` to
-`data/ui_audit_command.txt` in the installed profile. Raw captures and status live
-in that same directory and are ignored by Git. Each capture gets a new filename;
-starting another capture preserves earlier ones. Resetting scripts or restarting
-the game ends the current capture; issue Start again for another session. A crash
-retains the last flushed checkpoint. The helper is otherwise idle.
+`data/ui_audit_command.txt` in the installed profile. After deploying new Lua
+helpers, restart the game or use **Reset scripts** to load them. Play normally;
+there is no need to hold a particular screen open or reproduce each case separately.
 
 ## Safe-area thresholds
 
@@ -51,6 +74,7 @@ In [data/tuning.ini](../data/tuning.ini):
 
 ```ini
 [audit]
+auto_start = 1
 horizontal_margin = 0.10
 vertical_margin = 0.15
 ```
@@ -92,5 +116,4 @@ The capture stops after 3,600 seconds of engine time or at 16 MiB, with caps of
 schemas. New IDs, new contexts/modes/flags, and bounds-extrema changes of at least two
 percentage points checkpoint about every 30 seconds in small batches. Repeated
 static samples update in-memory totals without filling the file; stopping writes
-final totals for every ID. The
-status includes errors and dropped samples so an incomplete sweep is visible.
+final totals for every ID. The status includes errors and dropped samples so an incomplete sweep is visible.

@@ -135,9 +135,11 @@ def run(name, code):
 run('INI reload, comments, defaults and invalid-file preservation', r'''
 near(tuning.get('graphics.saturation_multiplier'),.95)
 near(tuning.get('hud.dialogue_offset_y'),-.10)
+near(tuning.get('audit.auto_start'),0)
 near(tuning.get('audit.horizontal_margin'),.10)
 near(tuning.get('audit.vertical_margin'),.15)
-reload('[graphics]\nsaturation_multiplier = 0.9 ; comment\n[hud]\nboss_health_offset_y=0.12\n[audit]\nhorizontal_margin=.12\nvertical_margin=.18\n')
+reload('[graphics]\nsaturation_multiplier = 0.9 ; comment\n[hud]\nboss_health_offset_y=0.12\n[audit]\nauto_start=1\nhorizontal_margin=.12\nvertical_margin=.18\n')
+near(tuning.get('audit.auto_start'),1)
 near(tuning.get('audit.horizontal_margin'),.12)
 near(tuning.get('audit.vertical_margin'),.18)
 near(tuning.get('graphics.saturation_multiplier'),.9)
@@ -146,7 +148,7 @@ near(tuning.get('hud.boss_health_offset_y'),.12)
 reload(string.char(239,187,191)..'[graphics]\nsaturation_multiplier=.9')
 near(tuning.get('graphics.saturation_multiplier'),.9)
 for _,bad in ipairs({'[graphics]\nsaturation_multiplier=5','[graphics]\nsaturation_multiplier=1e999',
-    '[hud]\nboss_heath_offset_y=.2','[oops]\nvalue=1',string.rep('x',8193)}) do
+    '[audit]\nauto_start=.5','[audit]\nauto_start=2','[hud]\nboss_heath_offset_y=.2','[oops]\nvalue=1',string.rep('x',8193)}) do
     reload(bad);near(tuning.get('graphics.saturation_multiplier'),.9)
 end
 ''')

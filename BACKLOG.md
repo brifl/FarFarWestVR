@@ -29,6 +29,22 @@ previous backend; restore that backend before using them.
 
 ## Continuation checkpoint
 
+- MULTI-SESSION CENSUS (October 21): user requests ongoing capture across play
+  sessions into a document. [audit] auto_start=1 now starts one bounded capture
+  per launch/reset, preserving old files; Stop/limits idle until another load.
+  data/ui_audit_sessions.md automatically appends starts, five-minute checkpoints
+  and ends. tools/ui_audit.py collect incrementally archives all sessions under
+  ignored diagnostics/ui-audit/sessions/<host>/ and rebuilds tracked
+  docs/UI-FINDINGS.md plus ignored history CSV/catalog.json reports. Repeated
+  collections use each session's latest revision and never add its counts twice.
+  Historical flags and interrupted sessions remain visible; later coverage is
+  reported separately. Seeded with the completed first mission (2884 IDs). The
+  cumulative repo document refreshes at collection/check-ins; runtime session
+  ledger is automatic. No background SSH service or backend changes. Seventeen
+  audit/history checks and ten tuning/HUD checks pass. Real SSH collection of
+  the stopped mission and a repeated incremental collection both succeed.
+  Native automatic-start/ledger behavior takes effect on the next launch/reset.
+
 - UI CENSUS (October 21): user requests a general sweep of edge HUD, remaining
   marker families and keyboard F hints instead of repeated one-off debugging.
   Read-only one-shot helper, command/fetch/report CLI and documentation are in

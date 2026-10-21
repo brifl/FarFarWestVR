@@ -1,4 +1,4 @@
--- Optional read-only UI census. Activated once by data/ui_audit_command.txt.
+-- Read-only UI census. Each script load can start its own bounded capture.
 return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
 local catalog=require('libs/ui_audit_catalog')
@@ -13,6 +13,8 @@ local queue,head,visited,links,schemas={},1,{},{},{}
 local link_count,schema_count=0,0
 local errors,scans,max_tick_ms,queue_dropped=0,0,0,0
 local last_command
+local auto_pending=true
+local next_ledger=300
 local function field(class,name,offset)
     local p=class:find_property(name)
     assert(p and p:get_offset()==offset,'Unexpected audit field: '..name)
@@ -68,13 +70,26 @@ local function status(reason)
     local f=assert(io.open('ui_audit_status.json','wb'))
     assert(f:write(catalog.json(stats)..'\n'));assert(f:close())
 end
+local function session_note(event)
+    local stats=store.stats()
+    local note=assert(io.open('ui_audit_sessions.md','ab'))
+    if note:seek('end')==0 then
+        assert(note:write('# Gameplay UI capture sessions\n\n'..
+            'Each capture has its own JSONL file. An unfinished entry retains its last checkpoint.\n\n'..
+            '| Capture | Event | Engine seconds | IDs | Errors | Dropped | Bytes |\n'..
+            '| --- | --- | ---: | ---: | ---: | ---: | ---: |\n'))
+    end
+    assert(note:write(string.format('| %s | %s | %.1f | %d | %d | %d | %d |\n',
+        output,event,elapsed,stats.records,errors,stats.dropped,stats.bytes)))
+    assert(note:close())
+end
 local function finish(reason)
     if not active then return end
     active=false
     store.flush_all()
     store.event({type='end',reason=reason,elapsed=elapsed,errors=errors,sweeps=scans})
     assert(file:flush());assert(file:close());file=nil
-    status(reason);command('done '..output)
+    status(reason);session_note(reason);command('done '..output)
     queue,visited,links,schemas={}, {}, {}, {}
     log.log_info('[FarFarWest audit] '..reason..': data/'..output)
 end
@@ -95,7 +110,7 @@ local function start(seconds)
     counter=assert(io.open('ui_audit_counter.txt','wb'));assert(counter:write(tostring(n)));assert(counter:close())
     file=assert(io.open(output,'wb'))
     store=catalog.new(function(line) return file:write(line) end)
-    active=true;elapsed=0;duration=seconds
+    active=true;elapsed=0;duration=seconds;next_ledger=300
     queue,head,visited,links,schemas={},1,{},{},{}
     link_count,schema_count=0,0
     poll,next_query,next_flush,next_status,scan_index,next_scan=0,0,30,10,0,0
@@ -104,7 +119,7 @@ local function start(seconds)
         horizontal_margin=tuning.get('audit.horizontal_margin'),vertical_margin=tuning.get('audit.vertical_margin'),
         text_access='Action bindings and key-widget modes; arbitrary FText strings unavailable',
         bounds='Normalized viewport bounds; these are diagnostic margins, not a headset visibility measurement'})
-    assert(file:flush());command('active '..output);status('active')
+    assert(file:flush());command('active '..output);status('active');session_note('started')
     log.log_info('[FarFarWest audit] Read-only capture started: data/'..output)
 end
 local function parent(o)
@@ -300,8 +315,13 @@ local function tick(engine,delta)
                 last_command=text
                 local seconds=text:match('^start%s+(%d+)$')
                 if text=='start' then seconds='3600' end
-                if seconds then start(math.max(10,math.min(tonumber(seconds),3600)))
-                elseif text=='stop' then finish('stopped') end
+                if seconds then
+                    auto_pending=false;start(math.max(10,math.min(tonumber(seconds),3600)))
+                elseif text=='stop' then auto_pending=false;finish('stopped') end
+            end
+            if auto_pending then
+                auto_pending=false
+                if tuning.get('audit.auto_start')==1 then start(3600) end
             end
         end
         if not active then return end
@@ -313,6 +333,7 @@ local function tick(engine,delta)
             if pending==0 then file:flush();next_flush=elapsed+30 end
         end
         if elapsed>=next_status then status('active');next_status=elapsed+10 end
+        if elapsed>=next_ledger then session_note('checkpoint');next_ledger=elapsed+300 end
         if not engine or not vr.is_runtime_ready() then return end
         field(engine:get_class(),'GameViewport',3448)
         local viewport=engine:get_property('GameViewport')
