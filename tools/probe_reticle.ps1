@@ -31,11 +31,12 @@ public sealed class FfwReticleReader : IDisposable {
     private readonly bool markerMode;
     private readonly bool hudMode;
     private readonly bool pingMode;
-    private const long PoolRva = 0xac9b900;
-    private const long ArrayRva = 0xad3d980;
+    private readonly long PoolRva;
+    private readonly long ArrayRva;
 
-    public FfwReticleReader(uint pid, long start, int size, bool markers, bool hud, bool pings) {
+    public FfwReticleReader(uint pid, long start, int size, bool markers, bool hud, bool pings, long poolRva, long arrayRva) {
         markerMode = markers || hud || pings; hudMode = hud; pingMode = pings;
+        PoolRva = poolRva; ArrayRva = arrayRva;
         moduleBase = start; moduleEnd = start + size;
         // PROCESS_QUERY_INFORMATION | PROCESS_VM_READ. Never request VM_WRITE.
         handle = OpenProcess(0x410, false, pid);
@@ -203,7 +204,7 @@ public sealed class FfwReticleReader : IDisposable {
 
     private static bool HudWidget(string name) {
         string n = name.ToLowerInvariant();
-        return name == "UI_Player_C" || name == "UI_PlayerInfos_C" || name == "UI_Locator_C"
+        return name == "UI_Player_C" || name == "UI_PlayerLobby_C" || name == "UI_PlayerInfos_C" || name == "UI_Locator_C"
             || name == "UI_Counter_C" || name == "UI_Timer_C" || (name.StartsWith("UI_")
             && (n.Contains("boss") || n.Contains("mission") || n.Contains("quest") || n.Contains("compass")
                 || (n.Contains("objective") && name != "UI_PingObjective_C" && name != "UI_ObjectiveCompass_C")));
@@ -250,7 +251,7 @@ public sealed class FfwReticleReader : IDisposable {
                     : widgetName == "UI_WorldIcon_C" || widgetName == "UI_Guide_C";
             }
             bool library = markerMode && ((className == "Class"
-                && (name == "WidgetBlueprintLibrary" || name == "WidgetLayoutLibrary" || name == "Image"))
+                && (name == "WidgetBlueprintLibrary" || name == "WidgetLayoutLibrary" || name == "Image" || name == "CanvasPanelSlot"))
                 || ((hudMode || pingMode) && className == "WidgetBlueprintGeneratedClass"
                     && (pingMode ? PingObject(name) : HudWidget(name))));
             if (library) widgetClasses.Add(address);
@@ -290,10 +291,15 @@ try {
     $binary.BaseStream.Position = $pe + 24 + 56
     $imageSize = $binary.ReadUInt32()
 } finally { $binary.Dispose() }
-if ($timestamp -ne 907750432 -or $imageSize -ne 203960320 -or $module.ModuleMemorySize -ne $imageSize) {
-    throw 'Executable differs from the verified 0.2.0.20 build; nothing changed.'
+if ($timestamp -eq 907750432 -and $imageSize -eq 203960320) {
+    $poolRva = 0xac9b900; $arrayRva = 0xad3d980
+} elseif ($timestamp -eq 1404130593 -and $imageSize -eq 207814656) {
+    $poolRva = 0xafed600; $arrayRva = 0xb08f680
+} else {
+    throw 'Executable differs from the verified 0.2.0.20 and 0.3.0.0 builds; nothing changed.'
 }
-$reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize, [bool]$Markers.IsPresent, [bool]$Hud.IsPresent, [bool]$Pings.IsPresent)
+if ($module.ModuleMemorySize -ne $imageSize) { throw 'Image size mismatch; nothing changed.' }
+$reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize, [bool]$Markers.IsPresent, [bool]$Hud.IsPresent, [bool]$Pings.IsPresent, [long]$poolRva, [long]$arrayRva)
 try {
     $result = $reader.Scan()
     [ordered]@{processId=$game.Id; gameBase=('0x{0:x}' -f $module.BaseAddress.ToInt64());

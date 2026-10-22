@@ -1,5 +1,8 @@
 # Far Far West VR
 
+> **Fear Fear West update:** We are working on compatibility fixes for the October 22
+> release (0.3.0.0). HUD, world-marker, and UI-proportion regressions are being addressed.
+
 A UEVR profile and custom backend for playing **Far Far West** in VR, with
 controller aiming, readable menus, and world markers that stay where they belong.
 

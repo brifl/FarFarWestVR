@@ -36,10 +36,29 @@ Preserve user/runtime changes to `config.txt`, `imgui.ini`, and personal tuning.
 
 ## Native access constraints
 
-The working backend tag is `ffw-ue58-sdk-v1`; the observed game is 0.2.0.20 on
+The backend tag is `ffw-ue58-sdk-v1`; observed games 0.2.0.20 and 0.3.0.0 use
 UE5.8.1 CanyonEngine. Guard reflected layouts and function parameter metadata
 before native calls. Old binary-patch tools target the previous backend, not
 this source build.
+
+The Fear Fear West release on October 22 initially disabled all SDK-dependent
+helpers because the backend deliberately rejected an unvalidated executable.
+The retained SDK source now selects an explicit compact-array address per build;
+unknown executables still fail closed. Read-only process inspection verified
+object identities, names, chunk-boundary indices, UI_Player.MovingCanvas at 960,
+and CanvasPanelSlot.LayoutData at 56 in 0.3.0.0. Startup/visual validation of the
+new backend is pending. Do not loosen Lua layout assertions to bypass this gate.
+
+| Game | PE timestamp | Image size | Object-array RVA | Name-pool RVA |
+| --- | --- | --- | --- | --- |
+| 0.2.0.20 | 907750432 | 203960320 | 0xad3d980 | 0xac9b900 |
+| 0.3.0.0 | 1404130593 | 207814656 | 0xb08f680 | 0xafed600 |
+
+`tools/probe_game_layout.ps1` finds these tables read-only within the executable's
+bounded .data section, checking unique candidates and UObject/name identities.
+`tools/probe_reticle.ps1` supports both verified builds. Native source and private
+SDK patches remain in the retained build checkout; the profile repository contains
+deployment tooling and artifact hashes, not those private sources.
 
 - Use the engine supplied to an engine-tick callback and its native GameViewport
   as world context. Verified viewport offset is 3448; native GameplayStatics
