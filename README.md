@@ -39,7 +39,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   for the compass, mission counters/timers, and boss health bar. Minimum edge
   margins bring fixed health, shield, ammo, spell/cooldown, party, currency,
   and level groups into view. Fixed HUD groups have adjustable size, eye-aspect
-  correction, four independent edge margins, and overlap avoidance.
+  correction, four independent edge margins, and overlap avoidance. Gameplay
+  bypasses the game's curved HUD rendering stage to prevent doubled hints.
 - **Additional marker families:** shared projection adapters for enemy/object
   health bars and dropped Joker cards preserve native content and attachment offsets.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,

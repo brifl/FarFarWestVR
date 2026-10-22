@@ -146,6 +146,17 @@ size/aspect remain independent. Explicit HUD edges override legacy HUD axis pair
 which override legacy audit axis pairs, regardless of INI ordering. Monitoring
 records and flags the same four edge margins. Numeric edits reload live.
 
+The user confirmed improved fixed-HUD proportions and separated cooldowns, but
+the corner control hints still rendered doubled. A read-only scan found one hint
+panel with separated rows. Bypassing UI_Player's RetainerBox_0 live eliminated
+the duplication. `libs/hud_retainer.lua` applies that bypass only in gameplay,
+using the existing widgets and preserving the normal renderer for menus. It
+requires the DPIScalerBox_2 parent chain, bRetainRender at 400, EffectMaterial at
+416 with the exact MI_CurvedUI asset, and SetRetainRendering's one-byte parameter
+bInRetainRendering at zero. Ownership and compact-array identity checks restore
+only a valid retainer's owned flag; unrelated materials/retainers stay native.
+The test identifies the retained/curved rendering stage, not the material alone.
+
 Marker discovery front-loads the initial and newly allocated objects within a
 two-millisecond scan budget. Known components are retained while their widgets
 load, and hidden markers are prepared before they become visible. This reduces

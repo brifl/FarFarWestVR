@@ -17,6 +17,7 @@ function track(o) return {object=o,index=o.index,address=o:get_address(),name=o.
 function valid(ref) return state.objects[ref.index]==ref.object end
 local canvas=object(1,'MovingCanvas')
 function canvas:GetCachedGeometry() return self end
+function canvas:GetParent() return self.parent end
 local slot=object(2,'Slot')
 function slot:get_class() return {get_short_name=function() return 'CanvasPanelSlot' end,
  find_property=function(_,name) assert(name=='LayoutData');return {get_offset=function() return 56 end} end} end
@@ -220,6 +221,94 @@ _G.farfarwest_gameplay_ready=false;feature.tick({},.1)
 near(state.widget.scale.X,1);near(state.widget.scale.Y,1);near(state.widget.translation.Y,0)
 for _,s in ipairs(state.logs) do assert(not s:find('Stopped',1,true),s) end
 ''')
+
+RETAINER = r'''
+state={objects={},writes=0,retained=true}
+local function object(i,name)
+ local o={index=i,name=name}
+ function o:get_address() return self.index*256 end
+ function o:get_short_name() assert(not self.dead);return self.name end
+ function o:GetParent() assert(not self.dead);return self.parent end
+ state.objects[i]=o;return o
+end
+function track(o) return {object=o,index=o.index,address=o:get_address(),name=o.name} end
+function valid(r) return state.objects[r.index]==r.object end
+state.make_object=object
+state.canvas=object(1,'MovingCanvas');state.scaler=object(2,'DPIScalerBox_2')
+state.retainer=object(3,'RetainerBox_0')
+state.canvas.parent=state.scaler;state.scaler.parent=state.retainer
+local c={get_short_name=function() return 'RetainerBox' end,
+ find_property=function(_,n) return {get_offset=function() return state.bad_layout and 0 or ({bRetainRender=400,EffectMaterial=416})[n] end} end,
+ find_function=function(_,n) assert(n=='SetRetainRendering')
+  return {get_properties_size=function() return 1 end,
+   find_property=function(_,p) assert(p=='bInRetainRendering');return {get_offset=function() return 0 end} end}
+ end}
+function state.retainer:get_class() assert(not self.dead);return c end
+function state.retainer:get_property(n)
+ assert(not self.dead)
+ if n=='bRetainRender' then return state.retained end
+ assert(n=='EffectMaterial')
+ return {get_full_name=function() return state.material or 'MaterialInstanceConstant /Game/Interfaces/MI_CurvedUI.MI_CurvedUI' end}
+end
+function state.retainer:SetRetainRendering(v) assert(not self.dead);state.writes=state.writes+1;state.retained=v end
+retainer=require('libs/hud_retainer')
+binding=retainer.bind(state.canvas,track)
+'''
+
+run('curved HUD bypass writes once and restores the original renderer', RETAINER, r'''
+assert(binding and retainer.valid(binding,valid))
+for i=1,100 do assert(retainer.apply(binding)) end
+assert(not state.retained and state.writes==1)
+retainer.restore(binding,valid);retainer.restore(binding,valid)
+assert(state.retained and state.writes==2)
+''')
+run('native pass-through and later native renderer changes retain ownership correctly', RETAINER, r'''
+state.retained=false;binding=retainer.bind(state.canvas,track)
+assert(not retainer.apply(binding));retainer.restore(binding,valid);assert(state.writes==0)
+state.retained=true;assert(retainer.apply(binding));retainer.restore(binding,valid)
+assert(state.retained and state.writes==2)
+assert(retainer.apply(binding));state.retained=true;local n=state.writes
+retainer.restore(binding,valid);assert(state.writes==n and state.retained)
+''')
+run('retainer replacement and stale objects cannot receive cleanup writes', RETAINER, r'''
+assert(retainer.apply(binding));state.scaler.parent=nil;assert(not retainer.valid(binding,valid))
+retainer.restore(binding,valid);assert(state.retained)
+state.scaler.parent=state.retainer;assert(retainer.apply(binding))
+state.objects[3]=nil;state.retainer.dead=true;local writes=state.writes
+assert(not retainer.valid(binding,valid));retainer.restore(binding,valid);assert(state.writes==writes)
+''')
+run('unknown retainer materials or layouts are left untouched', RETAINER, r'''
+state.material='MaterialInstanceConstant /Game/Other.Other'
+assert(retainer.bind(state.canvas,track)==nil and state.writes==0)
+state.material=nil;state.bad_layout=true
+assert(not pcall(retainer.bind,state.canvas,track) and state.writes==0)
+''')
+run('HUD coordinator bypasses its retainer in gameplay and restores it for menus', RETAINER, r'''
+local root=state.make_object(4,'UI_Player_C')
+function root:get_class() return {find_property=function() return {get_offset=function() return 960 end} end} end
+function root:get_property(n) assert(n=='MovingCanvas');return state.canvas end
+function state.canvas:GetChildrenCount() return 0 end
+package.loaded['libs/live_widgets']=function()
+ return {track=track,valid=valid,get=function() return {track(root)} end,reset=function() end}
+end
+package.loaded['libs/tuning']={get=function(n)
+ if n=='hud.aspect_correction' then return 0 end
+ if n=='hud.scale_multiplier' then return .8 end
+ return .2
+end}
+UEVR_Matrix4x4f={new=function() return {} end}
+local sizes={SetRenderTranslation=16,SetRenderScale=16,GetDesiredSize=16,GetParent=8,GetViewportSize=24}
+state.logs={};local function log(s) state.logs[#state.logs+1]=s end
+uevr={api={find_uobject=function() return {get_class_default_object=function() return {} end,
+ find_function=function(_,n) return {get_properties_size=function() return sizes[n] end} end} end},
+ params={vr={is_runtime_ready=function() return true end,is_hmd_active=function() return true end},
+ functions={log_info=log,log_warn=log}}}
+local feature=require('libs/hud_margins')()
+_G.farfarwest_gameplay_ready=true;feature.tick({},.1);assert(not state.retained and state.writes==1)
+_G.farfarwest_gameplay_ready=false;feature.tick({},.1);assert(state.retained and state.writes==2)
+for _,s in ipairs(state.logs) do assert(not s:find('stopped',1,true) and not s:find('Stopped',1,true),s) end
+''')
+
 run('measured HUD groups pack inside margins without ammo/cooldown overlap or drift', GEOMETRY, r'''
 local function plan(name,priority,native,box)
  return {binding={widget={name=name}},priority=priority,group=1,native=native,

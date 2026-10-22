@@ -3,6 +3,7 @@ local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
 local tuning=require('libs/tuning')
 local safe=require('libs/hud_safe_area')
 local shape=require('libs/ui_shape')
+local retainer=require('libs/hud_retainer')
 local projection=UEVR_Matrix4x4f.new()
 local eye,projection_error
 local query=require('libs/live_widgets')(
@@ -14,7 +15,7 @@ local nested={UI_Equipment_PlayerStats=true,VB_Lobby=true}
 local priority={HorizontalBox_1=1,HB_Spells=2,HB_JokerCooldown=3,VerticalBox_0=4,
     UI_Equipment_PlayerStats=5,HB_Moneys=5,VerticalBox_PlayerHealths=6,VB_Lobby=7}
 local elapsed,entries,slate,layout,failed,next_bind,next_apply=0,{},nil,nil,false,0,0
-local rejected={}
+local rejected,retainers={},{}
 local function bind(child,root,canvas,ancestors)
     local address=child:get_address()
     if entries[address] or rejected[address] then return end
@@ -30,7 +31,8 @@ local function bind(child,root,canvas,ancestors)
 end
 local function restore_all()
     for _,entry in pairs(entries) do pcall(safe.restore,entry,query.valid) end
-    entries,rejected={},{};query.reset()
+    for _,binding in pairs(retainers) do pcall(retainer.restore,binding,query.valid) end
+    entries,rejected,retainers={},{},{};query.reset()
 end
 local function tick(engine,delta)
     if failed then return end
@@ -62,6 +64,15 @@ local function tick(engine,delta)
                 assert(field and field:get_offset()==960,'Unexpected HUD canvas field')
                 local canvas=root.object:get_property('MovingCanvas')
                 if canvas then
+                    local address=canvas:get_address()
+                    if not retainers[address] and not rejected[address] then
+                        local ok,binding=pcall(retainer.bind,canvas,query.track)
+                        if ok and binding then binding.root=root;retainers[address]=binding
+                        elseif not ok then
+                            rejected[address]=true
+                            log.log_warn('[FarFarWest HUD margins] Retainer skipped: '..tostring(binding))
+                        end
+                    end
                     local n=canvas:GetChildrenCount();assert(n>=0 and n<=64,'Too many direct HUD groups')
                     for i=0,n-1 do
                         local child=canvas:GetChildAt(i);local name=child and child:get_short_name()
@@ -82,6 +93,20 @@ local function tick(engine,delta)
                 end
             end
         end
+        end
+        for address,binding in pairs(retainers) do
+            if not query.valid(binding.root) or not retainer.valid(binding,query.valid) then
+                pcall(retainer.restore,binding,query.valid);retainers[address]=nil
+            else
+                local ok,result=pcall(retainer.apply,binding)
+                if not ok then
+                    pcall(retainer.restore,binding,query.valid);retainers[address]=nil;rejected[address]=true
+                    log.log_warn('[FarFarWest HUD margins] Retainer stopped: '..tostring(result))
+                elseif result and not binding.reported then
+                    binding.reported=true
+                    log.log_info('[FarFarWest HUD margins] Curved retained HUD bypassed during gameplay; native widgets preserved.')
+                end
+            end
         end
         local margins={left=tuning.get('hud.left_margin'),right=tuning.get('hud.right_margin'),
             top=tuning.get('hud.top_margin'),bottom=tuning.get('hud.bottom_margin')}
