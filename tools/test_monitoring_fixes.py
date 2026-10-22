@@ -52,7 +52,9 @@ local function class(name)
  return {get_short_name=function() return name end,get_address=function() return name end,
  find_property=function(_,n) return {get_offset=function() return n=='isGamepad' and 0 or offsets[n] end} end,
  find_function=function() return {get_properties_size=function() return 1 end,
- find_property=function(_,n) assert(n=='isGamepad');return {get_offset=function() return 0 end} end} end}
+ find_property=function(_,n)
+  if n==(state.modern_parameter and 'bIsGamepad' or 'isGamepad') then return {get_offset=function() return 0 end} end
+ end} end}
 end
 local function widget(name,visibility)
  local o={visibility=visibility or 0}
@@ -124,6 +126,46 @@ run('oversized groups center without shrinking text', GEOMETRY, r'''
 near(safe.shift(10,910,200,1000),40)
 near(safe.shift(210,790,200,1000),0)
 ''')
+run('nested lobby groups use their verified parent canvas without reparenting', GEOMETRY, r'''
+state.canvas.name='CanvasPanel_86'
+local nested=safe.bind(state.widget,binding.slate,track,'CanvasPanel_86')
+assert(nested and safe.apply(nested,state.viewport,.2,.3))
+near(state.widget.translation.X,236);near(state.widget.translation.Y,-196)
+safe.restore(nested,valid);near(state.widget.translation.X,0);near(state.widget.translation.Y,0)
+''')
+run('measured HUD groups pack inside margins without ammo/cooldown overlap or drift', GEOMETRY, r'''
+local function plan(name,priority,native,box)
+ return {binding={widget={name=name}},priority=priority,group=1,native=native,
+  left=box[1]*2560,top=box[2]*1440,right=box[3]*2560,bottom=box[4]*1440,
+  min_x=512,max_x=2048,min_y=432,max_y=1008,width=2560,height=1440,
+  dx=0,dy=0,enabled=true,horizontal=true,vertical=true}
+end
+local function rect(x,y,r,b) return {left=x*2560,top=y*1440,right=r*2560,bottom=b*1440} end
+local function make()
+ return {
+  plan('health',1,rect(.35,.88,.581,.933),{.35,.648,.581,.7}),
+  plan('spells',2,rect(.02,.835,.098,.93),{.2,.605,.278,.7}),
+  plan('cooldowns',3,rect(.601,.883,.8,.934),{.601,.649,.8,.7}),
+  plan('ammo',4,rect(.885,.808,.981,.939),{.704,.569,.8,.7}),
+  plan('level',5,rect(.547,.058,.979,.085),{.368,.3,.8,.327}),
+  plan('party',6,rect(.02,.06,.24,.33),{.2,.3,.42,.57}),
+  plan('hints',7,rect(.812,.78,.971,.957),{.641,.523,.8,.7}),
+ }
+end
+local previous
+for step=1,100 do
+ local plans=make();safe.avoid_overlaps(plans,4)
+ local result={}
+ for i,p in ipairs(plans) do
+  assert(p.left>=p.min_x and p.right<=p.max_x+.001 and p.top>=p.min_y and p.bottom<=p.max_y+.001,p.binding.widget.name)
+  for j=1,i-1 do local q=plans[j]
+   assert(p.right<=q.left or p.left>=q.right or p.bottom<=q.top or p.top>=q.bottom,p.binding.widget.name..' overlaps '..q.binding.widget.name)
+  end
+  result[#result+1]=p.left..','..p.top
+ end
+ local signature=table.concat(result,';');assert(not previous or signature==previous);previous=signature
+end
+''')
 run('world and dropped-item Interact hints keep X without changing hold presentation', KEY, r'''
 assert(hint.update(state.key));assert(state.refreshes==1 and state.hold.visibility==3)
 assert(not hint.update(state.key));assert(state.refreshes==1)
@@ -136,6 +178,7 @@ state.action='IA_Interact';state.override='IA_Other';assert(not hint.update(stat
 state.override=nil;state.key.visibility=2;assert(not hint.update(state.key));assert(state.refreshes==0)
 ''')
 run('0.3.0.0 key layout keeps X and native hold presentation', KEY, r'''
+state.modern_parameter=true
 for name,value in pairs(state.offsets) do state.offsets[name]=value-16 end
 assert(hint.update(state.key));assert(state.refreshes==1 and state.hold.visibility==3)
 ''')

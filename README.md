@@ -13,8 +13,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   ranges and when casting spells.
 - **Controller-operated menus:** point with the right controller and click with
   the trigger. Menus stay readable and stationary, with B handling pause/resume.
-- **Native menu cursor:** the game's cursor handles menus; the earlier custom
-  arrow is disabled for the Fear Fear West release.
+- **Native menu cursor:** the game's arrow follows controller pointing, with a
+  visibility and hotspot correction. The earlier custom arrow is disabled.
 - **Movement and snap turning:** left-stick movement and 45-degree turns on the
   right stick.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
@@ -37,8 +37,9 @@ controller aiming, readable menus, and world markers that stay where they belong
   mounting and dismounting, avoiding the earlier stale-pawn freeze.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
   for the compass, mission counters/timers, and boss health bar. Minimum edge
-  margins bring fixed health, shield, ammo, spell/cooldown, party, and currency
-  groups into view without shrinking their contents.
+  margins bring fixed health, shield, ammo, spell/cooldown, party, currency,
+  and level groups into view without shrinking their contents, with overlap
+  avoidance for groups sharing the same HUD.
 - **Additional marker families:** shared projection adapters for enemy/object
   health bars and dropped Joker cards preserve native content and attachment offsets.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,

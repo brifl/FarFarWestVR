@@ -48,8 +48,10 @@ unknown executables still fail closed. Read-only process inspection verified
 object identities, names, chunk-boundary indices, UI_Player.MovingCanvas at 960,
 and CanvasPanelSlot.LayoutData at 56 in 0.3.0.0. First-backend startup confirmed
 object access, reticle tracing, marker aspect correction, and fixed HUD placement
-running in 0.3.0.0; visual validation remains pending. Remaining compatibility fixes cover the
-shifted UI_Key/UI_Spell_CardSlot layouts and lowercase PostProcessComponent.settings.
+running in 0.3.0.0. Controller menu pointing and visible health/cooldown groups
+are confirmed; remaining visual regressions still need validation. Compatibility
+fixes also cover the shifted UI_Key/UI_Spell_CardSlot layouts, the renamed
+F_RefreshKey.bIsGamepad parameter, and lowercase PostProcessComponent.settings.
 Do not loosen Lua layout assertions to bypass this gate.
 
 | Game | PE timestamp | Image size | Object-array RVA | Name-pool RVA |
@@ -117,12 +119,17 @@ height can be tuned during later fights/objectives without restarting scripts.
 `libs/hud_margins.lua` uses a guarded native query for UI_Player_C (including its
 lobby subclass), then selects disjoint direct children of MovingCanvas:
 HB_Spells, HB_JokerCooldown, HB_Moneys, VerticalBox_PlayerHealths,
-HorizontalBox_1 (health/shield), and VerticalBox_0 (weapons/ammo). It never shifts
-MovingCanvas or nested inventory children. `libs/hud_safe_area.lua` clamps full
+HorizontalBox_1 (health/shield), and VerticalBox_0 (weapons/ammo). It also selects
+UI_Equipment_PlayerStats (level/currency) and VB_Lobby (corner hints) under the
+verified NamedSlot_216/CanvasPanel_86 chain. It never shifts MovingCanvas or
+individual inventory children. `libs/hud_safe_area.lua` clamps full
 group bounds using CanvasPanelSlot.LayoutData at 56 and the parent geometry's
 pixel basis. It does not feed corrected child positions back into placement.
 Only fixed anchors without rotation/shear are supported; other layouts stay
-native. Owned translations restore on menus/reset, and native animation changes
+native. Groups sharing a HUD root are then packed without overlap where space
+permits, prioritizing health, spells, cooldowns, and ammo before other panels.
+The measured seven-group layout fits inside 20% horizontal/30% vertical margins.
+Owned translations restore on menus/reset, and native animation changes
 become the new baseline. Margins accept 0–0.4; zero restores that axis. Legacy
 `audit.*_margin` keys alias the canonical `hud.*_margin` keys; canonical values win.
 
@@ -146,8 +153,9 @@ The HUD helper also keeps the dialogue's Next hint on Quest X. JoyToKey sends F
 for X, which can make the game select keyboard presentation during a conversation.
 `libs/dialogue_hint.lua` uses the existing tracked `UI_NpcTalk_C`, finds its
 `UI_Key_C` child in `HorizontalBox_NextKey`, and calls the native
-`F_RefreshKey(isGamepad=true)` only when its interaction hint switches away from
+`F_RefreshKey(true)` only when its interaction hint switches away from
 the gamepad icon. Shared `libs/interaction_key.lua` preserves Text_Hold visibility
+and validates either verified isGamepad/bIsGamepad parameter name at offset zero,
 and leaves unrelated or explicitly overridden actions alone. The separate
 `interaction_hints.lua` helper uses the same correction across native UI_Key_C
 widgets, including targeting and dropped-item contexts. `libs/live_widgets.lua`
@@ -206,6 +214,17 @@ intersection/input and SetCursorPos handling. Turning it off broke menu pointing
 The backend now sets ImGui MouseDrawCursor only for UEVR's own panel and omits
 the themed arrow draw call, suppressing graphics independently of input policy.
 The previous asset remains available. The new DLL requires a game restart.
+
+In 0.3.0.0 the game's software cursor was invisible in both desktop and VR,
+despite bShowMouseCursor=true; clicking briefly exposed it. CommonUI cursor cvars
+were already enabled. `libs/native_cursor.lua` draws a viewport copy of the native
+UI_Cursor_C asset during menus, leaving input policy and ray movement alone. Its
+internal canvas translates the image by 32 pixels, so centered viewport alignment
+is required; the user confirmed the cursor tip aligns with highlighted buttons.
+Viewport-local mouse coordinates must not have DPI scaling removed a second time.
+Only the owned copy is removed for gameplay, UEVR's panel, inactive headset,
+viewport changes, errors, and script reset. Native metadata and object identities
+are guarded; the older game with no cursor asset simply skips this helper.
 
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this

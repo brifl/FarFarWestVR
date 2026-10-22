@@ -7,8 +7,24 @@ local query=require('libs/live_widgets')(
 -- Disjoint groups only; moving a parent and one of its children would double-shift it.
 local direct={HB_Spells=true,HB_JokerCooldown=true,HB_Moneys=true,
     VerticalBox_PlayerHealths=true,HorizontalBox_1=true,VerticalBox_0=true}
+local nested={UI_Equipment_PlayerStats=true,VB_Lobby=true}
+local priority={HorizontalBox_1=1,HB_Spells=2,HB_JokerCooldown=3,VerticalBox_0=4,
+    UI_Equipment_PlayerStats=5,HB_Moneys=5,VerticalBox_PlayerHealths=6,VB_Lobby=7}
 local elapsed,entries,slate,layout,failed,next_bind,next_apply=0,{},nil,nil,false,0,0
 local rejected={}
+local function bind(child,root,canvas,ancestors)
+    local address=child:get_address()
+    if entries[address] or rejected[address] then return end
+    local ok,entry=pcall(safe.bind,child,slate,query.track,canvas:get_short_name())
+    if ok and entry then
+        entry.root,entry.ancestors=root,ancestors
+        entry.canvas=query.track(root.object:get_property('MovingCanvas'))
+        entries[address]=entry
+    elseif not ok then
+        rejected[address]=true
+        log.log_warn('[FarFarWest HUD margins] Group skipped: '..child:get_short_name()..': '..tostring(entry))
+    end
+end
 local function restore_all()
     for _,entry in pairs(entries) do pcall(safe.restore,entry,query.valid) end
     entries,rejected={},{};query.reset()
@@ -46,12 +62,17 @@ local function tick(engine,delta)
                     local n=canvas:GetChildrenCount();assert(n>=0 and n<=64,'Too many direct HUD groups')
                     for i=0,n-1 do
                         local child=canvas:GetChildAt(i);local name=child and child:get_short_name()
-                        if direct[name] and not entries[child:get_address()] and not rejected[child:get_address()] then
-                            local bound,entry=pcall(safe.bind,child,slate,query.track)
-                            if bound and entry then entry.root=root;entries[child:get_address()]=entry
-                            elseif not bound then
-                                rejected[child:get_address()]=true
-                                log.log_warn('[FarFarWest HUD margins] Group skipped: '..name..': '..tostring(entry))
+                        if direct[name] then bind(child,root,canvas) end
+                        if name=='NamedSlot_216' then
+                            local panel=child:GetChildAt(0)
+                            if panel and panel:get_short_name()=='CanvasPanel_86' then
+                                local count=panel:GetChildrenCount();assert(count<=16,'Unexpected lobby HUD groups')
+                                for j=0,count-1 do
+                                    local group=panel:GetChildAt(j)
+                                    if group and nested[group:get_short_name()] then
+                                        bind(group,root,panel,{query.track(panel),query.track(child),query.track(canvas)})
+                                    end
+                                end
                             end
                         end
                     end
@@ -60,21 +81,45 @@ local function tick(engine,delta)
         end
         end
         local h,v=tuning.get('hud.horizontal_margin'),tuning.get('hud.vertical_margin')
+        local plans={}
         for address,entry in pairs(entries) do
             local canvas=query.valid(entry.root) and entry.root.object:get_property('MovingCanvas')
-            if not canvas or canvas:get_address()~=entry.parent.address or not safe.valid(entry,query.valid) then
+            local valid=canvas and canvas:get_address()==entry.canvas.address and safe.valid(entry,query.valid)
+            if valid and entry.ancestors then
+                for i=1,#entry.ancestors-1 do
+                    local ref,next_ref=entry.ancestors[i],entry.ancestors[i+1]
+                    if not query.valid(ref) or not query.valid(next_ref) then valid=false;break end
+                    local parent=ref.object:GetParent()
+                    if not parent or parent:get_address()~=next_ref.address then valid=false;break end
+                end
+            end
+            if not valid then
                 pcall(safe.restore,entry,query.valid);entries[address]=nil
             else
                 local viewport=layout:GetViewportSize(entry.root.object)
                 assert(viewport and viewport.X>0 and viewport.Y>0,'Invalid HUD viewport')
-                local applied,reason=pcall(safe.apply,entry,viewport,h,v)
+                local visibility=entry.widget.object:get_property('Visibility')
+                local applied,reason=true,nil
+                if visibility~=1 and visibility~=2 then applied,reason=pcall(safe.plan,entry,viewport,h,v) end
                 if not applied then
                     pcall(safe.restore,entry,query.valid);entries[address]=nil;rejected[address]=true
                     log.log_warn('[FarFarWest HUD margins] Group stopped: '..entry.widget.name..': '..tostring(reason))
-                elseif reason and entry.reported~=h..':'..v then
-                    entry.reported=h..':'..v
-                    log.log_info(string.format('[FarFarWest HUD margins] %s inset H=%.2f V=%.2f.',entry.widget.name,h,v))
+                elseif reason then
+                    reason.group=entry.root.address;reason.priority=priority[entry.widget.name] or 8
+                    plans[#plans+1]=reason
                 end
+            end
+        end
+        safe.avoid_overlaps(plans,4)
+        for _,plan in ipairs(plans) do
+            local entry=plan.binding
+            local ok,err=pcall(safe.commit,plan)
+            if not ok then
+                pcall(safe.restore,entry,query.valid);entries[entry.widget.address]=nil;rejected[entry.widget.address]=true
+                log.log_warn('[FarFarWest HUD margins] Group stopped: '..entry.widget.name..': '..tostring(err))
+            elseif entry.reported~=h..':'..v then
+                entry.reported=h..':'..v
+                log.log_info(string.format('[FarFarWest HUD margins] %s inset H=%.2f V=%.2f.',entry.widget.name,h,v))
             end
         end
     end)
