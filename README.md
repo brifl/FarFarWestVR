@@ -10,11 +10,12 @@ controller aiming, readable menus, and world markers that stay where they belong
   and full-width menu presentation.
 - **Right-controller aiming:** aim smoothly with your controller while looking around
   independently. The reticle follows the firing target, including at different
-  ranges and when casting spells.
+  ranges and when casting spells. Adaptive stabilization has a live strength dial.
 - **Controller-operated menus:** point with the right controller and click with
   the trigger. Menus stay readable and stationary, with B handling pause/resume.
 - **Native menu cursor:** the game's arrow follows controller pointing, with a
-  visibility and hotspot correction. The earlier custom arrow is disabled.
+  visibility and hotspot correction, adjustable size, and corrected proportions.
+  Native cursor flashes are suppressed during gameplay, leaving the aim reticle.
 - **Movement and snap turning:** left-stick movement and 45-degree turns on the
   right stick.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
@@ -33,6 +34,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   menu presentation, with faster detection during loading transitions.
 - **Native spell controls:** left grip, right grip, and both grips cast the three
   spells while preserving the native shifted D-pad actions.
+- **Carried-item Drop on X:** the new Drop prompt uses X while holding a supported
+  item, dispatching the game's native Drop input without rebinding normal interaction.
 - **Possession-aware reticle:** aiming traces follow the current player after
   mounting and dismounting, avoiding the earlier stale-pawn freeze.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
@@ -82,7 +85,7 @@ These are the tested Quest button labels.
 | Shifted D-pad Down | Summon horse (native action) |
 | Shifted D-pad Up | Native Utility action |
 | Shifted D-pad Right | Map |
-| X | Interact; advance dialogue |
+| X | Interact; advance dialogue; drop a carried item with an active Drop prompt |
 | Y | Switch weapons |
 | B | Pause/resume |
 
@@ -103,12 +106,15 @@ reload during play, about once a second.
 | `boss_health_offset_y` | `0.15` | Lower boss health |
 | `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
 | `compass_offset_y` | `0.15` | Lower the compass and its markers together |
-| `scale_multiplier` | `0.80` | Fixed HUD size; lower makes groups smaller, `1.0` uses native size |
-| `aspect_correction` | `1` | Correct fixed HUD vertical stretch using the eye projection; `0` disables |
+| `[hud] scale_multiplier` | `0.85` | Fixed HUD size; lower makes groups smaller, `1.0` uses native size |
+| `[hud] aspect_correction` | `1` | Correct fixed HUD vertical stretch using the eye projection; `0` disables |
 | `left_margin` | `0.20` | Minimum inset from the left edge |
 | `right_margin` | `0.20` | Minimum inset from the right edge |
-| `top_margin` | `0.30` | Minimum inset from the top edge |
+| `top_margin` | `0.15` | Minimum inset from the top edge |
 | `bottom_margin` | `0.30` | Minimum inset from the bottom edge |
+| `[aim] stabilization` | `0.35` | `0` is unfiltered; `1` gives strongest steady-hand smoothing |
+| `[cursor] scale_multiplier` | `0.65` | Menu arrow size |
+| `[cursor] aspect_correction` | `1` | Correct menu arrow vertical stretch; `0` disables |
 
 A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
 fractions of viewport height: positive moves down, negative moves up, and `0`
@@ -124,6 +130,11 @@ Old `horizontal_margin`/`vertical_margin` settings still supply paired edges.
 Explicit edge values win, followed by old `[hud]` values, then old `[audit]` values.
 Invalid edits retain the previous settings. The saved world scale is
 `0.010000`, matching the tested setup; preserve personal runtime adjustments.
+
+Aiming stabilization slows small hand fluctuations and responds faster during
+deliberate sweeps. Increase it for steadier precision or reduce it for less lag.
+It filters the aiming direction before snap-turn offsets; head tracking and
+45-degree turns remain immediate. It does not filter the menu click coordinates.
 
 ## Development status
 

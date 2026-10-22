@@ -36,6 +36,8 @@ local screen_projection=require('libs/screen_widget_projection')
 local ui_shape=require('libs/ui_shape')
 local audit_registry=require('libs/ui_audit_registry')
 local rejected={}
+local fast_discovery
+local discovery_factory=require('libs/marker_discovery')
 local function info(s) functions.log_info("[FarFarWest markers] "..s) end
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
 local function active()
@@ -484,11 +486,13 @@ callbacks.camera = function(_,_,_,position,rotation,is_double)
     end)
 end
 
-callbacks.tick = function(_,delta)
+callbacks.tick = function(engine,delta)
     guarded(function()
         elapsed=elapsed+math.min(math.max(delta or 0,0),.1)
         if not active() then reset(); return end
         if not array then stage="verify widget API"; prepare() end
+        if not fast_discovery then fast_discovery=discovery_factory(component_class,consider) end
+        fast_discovery.tick(engine,delta)
         discover()
         for address,entry in pairs(entries) do
             stage="validate tracked icon"

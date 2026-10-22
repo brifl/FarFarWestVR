@@ -3,6 +3,8 @@
 -- The projected firing reticle and world markers use separate helpers.
 local vr = uevr.params.vr
 local functions = uevr.params.functions
+local tuning=require('libs/tuning')
+local stabilization=require('libs/aim_stabilization')()
 local marker = io.open("controller_aim_backend.txt", "rb")
 local supported = marker and marker:read("*a") == "ue5-camera-aim-pose-v1\n"
 if marker then marker:close() end
@@ -26,6 +28,8 @@ local tag_ok,tag = pcall(functions.get_tag)
 local native_supported = tag_ok and tag == "ffw-ue58-sdk-v1"
 local native_failed,native_reported = false,false
 local statics,controller_class,viewport_class
+local sample_time,filtered_yaw,filtered_pitch,last_controller
+local frame_delta=.011
 
 local function wrap(angle) return (angle + 180) % 360 - 180 end
 local function finite(value) return value == value and math.abs(value) < 1e8 end
@@ -94,10 +98,17 @@ end
 
 local function target_angles()
     local index=vr.get_right_controller_index()
-    if index<1 or index>=64 then return nil end
+    if index<1 or index>=64 then stabilization.reset();sample_time=nil;return nil end
+    if index~=last_controller then stabilization.reset();sample_time=nil;last_controller=index end
     vr.get_pose(index,position,hand_rotation)
     local yaw,pitch=angles(hand_rotation)
-    if yaw==nil then return nil end
+    if yaw==nil then stabilization.reset();sample_time=nil;return nil end
+    local amount=tuning.get('aim.stabilization')
+    if amount==0 or sample_time~=elapsed then
+        filtered_yaw,filtered_pitch=stabilization.step(yaw,pitch,frame_delta,amount)
+        sample_time=elapsed
+    end
+    yaw,pitch=filtered_yaw,filtered_pitch
     return wrap(anchor+yaw),math.max(-85,math.min(85,pitch))
 end
 
@@ -112,9 +123,11 @@ local function reset()
     anchor = nil
     camera_yaw, camera_pitch = nil, nil
     camera_time = -1
+    stabilization.reset();sample_time,filtered_yaw,filtered_pitch,last_controller=nil,nil,nil,nil
 end
 
 uevr.sdk.callbacks.on_pre_engine_tick(function(engine, delta)
+    frame_delta=math.max(delta or 0,0)
     elapsed = elapsed + math.min(math.max(delta or 0, 0), 0.1)
     if not gameplay() then reset(); snap_latched = true; return end
     vr.get_joystick_axis(vr.get_right_joystick_source(), stick)

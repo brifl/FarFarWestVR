@@ -12,6 +12,7 @@ state={yaw=0,pitch=0,stick=0,offset={x=0,y=0,z=0,w=1},camera={x=0,y=30,z=0},
     logs={},writes={},active=true,runtime=true,hmd=true,drawing=false,screen='false',
     tag='ffw-ue58-sdk-v1',ignored=false,pawn={},bad_parameters=false}
 farfarwest_gameplay_ready=true
+package.loaded['libs/tuning']={get=function(key) assert(key=='aim.stabilization');return state.stabilization or 0 end}
 local function log(s) table.insert(state.logs,s) end
 io.open=function(name)
     assert(name=='controller_aim_backend.txt')
@@ -98,6 +99,8 @@ function healthy() for _,s in ipairs(state.logs) do assert(not s:find('unavailab
 
 def run(name, test, setup=""):
     lua = LuaRuntime(unpack_returned_tuples=True)
+    lua.globals().script_path=str(ROOT/'scripts/?.lua')
+    lua.execute("package.path=script_path..';'..package.path")
     lua.execute(MOCK)
     lua.execute(setup)
     lua.execute((ROOT / "scripts/controller_aim.lua").read_text())
@@ -114,6 +117,23 @@ state.pitch=10;frame();near(state.camera.x,10)
 local i=input();assert(i.sThumbRX==0 and i.sThumbRY==0)
 assert(i.sThumbLX==333 and i.sThumbLY==444 and i.wButtons==0xffff)
 assert(i.bLeftTrigger==55 and i.bRightTrigger==66)
+""")
+run("stabilization reduces hand jitter, reloads live and preserves immediate snap turns", """
+state.stabilization=.8;warmup();local worst=0
+for i=1,100 do
+ state.yaw=i%2==0 and .3 or -.3;frame()
+ worst=math.max(worst,math.abs(state.camera.y-30))
+end
+assert(worst<.15)
+state.stabilization=0;state.yaw=15;frame();near(state.camera.y,45)
+state.yaw=0;frame();state.stabilization=1;state.stick=1;frame();near(state.camera.y,75)
+healthy()
+""")
+run("menu return clears stabilization history", """
+state.stabilization=1;warmup();state.yaw=30;frame();assert(state.camera.y<60)
+state.screen='true';frame();state.yaw=-80
+state.screen='false';frame();local anchor=state.camera.y
+frame();healthy();near(state.camera.y,-50)
 """)
 run("yaw wrap, pitch clamp and 45-degree snap latch stay intact", """
 warmup();state.yaw=170;frame();near(state.camera.y,-160)

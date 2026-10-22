@@ -2,6 +2,13 @@
 -- Pointer movement/clicks remain entirely with the existing controller-ray helper.
 return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
+local tuning=require('libs/tuning')
+local shape=require('libs/ui_shape')
+local projection=UEVR_Matrix4x4f.new()
+local query=require('libs/live_widgets')
+local cursor_queries={query('WidgetBlueprintGeneratedClass /Game/Interfaces/Cursors/UI_Cursor.UI_Cursor_C',64,.1),
+    query('WidgetBlueprintGeneratedClass /Game/Interfaces/Cursors/UI_Cursor_Hand.UI_Cursor_Hand_C',64,.1)}
+local hidden,elapsed={},0
 local array,library,layout,viewport_class,cursor_class
 local proxy,world,failed,reported=nil,nil,false,false
 local path='WidgetBlueprintGeneratedClass /Game/Interfaces/Cursors/UI_Cursor.UI_Cursor_C'
@@ -19,6 +26,28 @@ end
 local function cleanup()
     if valid(proxy) then proxy.object:RemoveFromParent() end
     proxy,world=nil,nil
+end
+local function restore_hidden()
+    for _,entry in pairs(hidden) do
+        if entry.query.valid(entry.ref) and entry.ref.object:get_property('RenderOpacity')==0 then
+            entry.ref.object:SetRenderOpacity(entry.opacity)
+        end
+    end
+    hidden={}
+end
+local function suppress_originals(engine)
+    for _,q in ipairs(cursor_queries) do
+        for address,ref in pairs(q.get(engine,elapsed)) do
+            if q.valid(ref) and (not proxy or address~=proxy.address) then
+                local opacity=ref.object:get_property('RenderOpacity')
+                assert(finite(opacity),'Invalid original cursor opacity')
+                local entry=hidden[address]
+                if not entry then entry={ref=ref,query=q,opacity=opacity};hidden[address]=entry end
+                if opacity~=0 then entry.opacity=opacity;ref.object:SetRenderOpacity(0) end
+            end
+        end
+    end
+    for address,entry in pairs(hidden) do if not entry.query.valid(entry.ref) then hidden[address]=nil end end
 end
 local function method(class,name,minimum,maximum)
     local fn=class:find_function(name)
@@ -40,20 +69,29 @@ local function prepare()
     library=assert(c:get_class_default_object())
     c=assert(api:find_uobject('Class /Script/UMG.WidgetLayoutLibrary'))
     method(c,'GetMousePositionOnViewport',24)
+    method(c,'GetViewportSize',24)
     layout=assert(c:get_class_default_object())
     c=assert(api:find_uobject('Class /Script/UMG.UserWidget'))
     for name,size in pairs({AddToViewport=4,RemoveFromParent=0,SetDesiredSizeInViewport=16,
-        SetAlignmentInViewport=16,ForceLayoutPrepass=0,GetDesiredSize=16,SetVisibility=1,SetRenderOpacity=4}) do
+        SetAlignmentInViewport=16,ForceLayoutPrepass=0,GetDesiredSize=16,SetVisibility=1,SetRenderOpacity=4,
+        SetRenderScale=16}) do
         method(c,name,size)
     end
     method(c,'SetPositionInViewport',17,32)
+    field(c,'RenderOpacity',224)
 end
-local function tick(engine)
+local function tick(engine,delta)
     if failed then return end
+    elapsed=elapsed+math.min(math.max(delta or 0,0),.1)
     local ok,err=pcall(function()
         if not engine or not vr.is_runtime_ready() or not vr.is_hmd_active()
-            or vr:get_mod_value('VR_2DScreenMode')~='true' or log.is_drawing_ui() then cleanup();return end
+            or log.is_drawing_ui() then cleanup();restore_hidden();return end
         if not library then prepare() end
+        if vr:get_mod_value('VR_2DScreenMode')~='true' then
+            cleanup()
+            if _G.farfarwest_gameplay_ready==true then suppress_originals(engine) else restore_hidden() end
+            return
+        end
         field(engine:get_class(),'GameViewport',3448)
         local viewport=engine:get_property('GameViewport')
         if not viewport then cleanup();return end
@@ -84,11 +122,25 @@ local function tick(engine)
         assert(position and finite(position.X) and finite(position.Y),'Invalid menu pointer position')
         -- These are viewport-local coordinates; applying DPI removal again misaligns the cursor.
         proxy.object:SetPositionInViewport(position,false)
+        local size=tuning.get('cursor.scale_multiplier')
+        local factor=1
+        if tuning.get('cursor.aspect_correction')==1 then
+            vr.get_ue_projection_matrix(0,projection)
+            local viewport_size=layout:GetViewportSize(viewport)
+            factor=shape.height_factor({[0]={[0]=projection:get(0,0)},[1]={[1]=projection:get(1,1)}},viewport_size.X,viewport_size.Y)
+        end
+        if factor then
+            local scale=proxy.object:GetDesiredSize();scale.X,scale.Y=size,size*factor
+            proxy.object:SetRenderScale(scale)
+        end
+        -- Suppress the game's software copies in both modes, including their click flashes.
+        -- Our corrected copy is the only menu arrow; gameplay keeps the firing reticle.
+        suppress_originals(engine)
     end)
     if not ok then
-        pcall(cleanup);failed=true
+        pcall(cleanup);pcall(restore_hidden);failed=true
         log.log_warn('[FarFarWest native cursor] Stopped safely: '..tostring(err))
     end
 end
-return {tick=tick,reset=cleanup}
+return {tick=tick,reset=function() cleanup();restore_hidden() end}
 end

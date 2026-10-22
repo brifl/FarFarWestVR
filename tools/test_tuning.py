@@ -280,6 +280,14 @@ for _,source in ipairs({'[hud]\nscale_multiplier=0','[hud]\naspect_correction=.5
  reload(source);near(tuning.get('hud.scale_multiplier'),.7);near(tuning.get('hud.bottom_margin'),.35)
 end
 ''')
+run('aim stabilization and cursor style reload within their supported ranges', r'''
+reload('[aim]\nstabilization=.6\n[cursor]\nscale_multiplier=.5\naspect_correction=0')
+near(tuning.get('aim.stabilization'),.6);near(tuning.get('cursor.scale_multiplier'),.5)
+near(tuning.get('cursor.aspect_correction'),0)
+for _,source in ipairs({'[aim]\nstabilization=1.1','[cursor]\naspect_correction=.5','[cursor]\nscale_multiplier=0'}) do
+ reload(source);near(tuning.get('aim.stabilization'),.6);near(tuning.get('cursor.scale_multiplier'),.5)
+end
+''')
 run('0.3.0.0 lowercase weather settings preserve grading and reset ownership', r'''
 state.lowercase_settings=true
 local feature=require('libs/contrast')()

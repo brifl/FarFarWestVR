@@ -15,6 +15,9 @@ local rules={
     ['hud.bottom_margin']={.15,0,.4},
     ['hud.scale_multiplier']={.80,.25,1.5},
     ['hud.aspect_correction']={1,0,1},
+    ['aim.stabilization']={.35,0,1},
+    ['cursor.scale_multiplier']={.65,.25,1.5},
+    ['cursor.aspect_correction']={1,0,1},
 }
 -- Explicit edges beat HUD axis pairs, which beat the older audit axis pairs.
 local aliases={
@@ -39,7 +42,8 @@ local function parse(source)
         if line~='' then
             local header=line:match('^%[([%w_]+)%]$')
             if header then
-                assert(header=='graphics' or header=='hud' or header=='audit','Unknown section: '..header)
+                assert(header=='graphics' or header=='hud' or header=='audit' or header=='aim'
+                    or header=='cursor','Unknown section: '..header)
                 section=header
             else
                 local name,text=line:match('^([%w_]+)%s*=%s*(.-)%s*$')
@@ -52,7 +56,7 @@ local function parse(source)
                     assert(rule,'Unknown setting: '..key)
                     assert(n and n==n and n>=rule[2] and n<=rule[3],
                         key..' must be between '..tostring(rule[2])..' and '..tostring(rule[3]))
-                    assert((key~='audit.auto_start' and key~='hud.aspect_correction') or n==0 or n==1,
+                    assert((key~='audit.auto_start' and not key:match('%.aspect_correction$')) or n==0 or n==1,
                         key..' must be 0 or 1')
                     if targets[1]>=(priorities[key] or 0) then
                         candidate[key]=n;priorities[key]=targets[1]

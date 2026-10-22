@@ -109,10 +109,10 @@ Keep script-reset recovery as an open issue rather than requiring repeated reset
 | hud | boss_health_offset_y | 0.15 | Preserved installed boss-bar offset. |
 | hud | mission_info_offset_y | 0.15 | Lower mission counters and timers by fifteen percent. |
 | hud | compass_offset_y | 0.15 | Lower the compass background and marker overlay together by fifteen percent. |
-| hud | scale_multiplier | 0.80 | Fixed HUD size, separate from projection-aspect correction. |
+| hud | scale_multiplier | 0.85 | Fixed HUD size, separate from projection-aspect correction. |
 | hud | aspect_correction | 1 | Correct fixed HUD vertical stretch using the active eye projection. |
 | hud | left_margin / right_margin | 0.20 / 0.20 | Independent horizontal edge insets for selected fixed HUD groups. |
-| hud | top_margin / bottom_margin | 0.30 / 0.30 | Independent vertical edge insets. |
+| hud | top_margin / bottom_margin | 0.15 / 0.30 | Independent vertical edge insets. |
 
 HUD offsets use the full viewport height: positive moves down, negative moves up,
 and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,
@@ -161,6 +161,15 @@ Marker discovery front-loads the initial and newly allocated objects within a
 two-millisecond scan budget. Known components are retained while their widgets
 load, and hidden markers are prepared before they become visible. This reduces
 the former multi-second scan delay without a blocking full-array sweep.
+`libs/marker_discovery.lua` also queries the verified ObjectPing, WorldIcon,
+TextGuide, and Player actor families every 50 ms, then gets their native widget
+components. This catches tags allocated into reused UObject slots without waiting
+for array-count growth or a background pass. Native metadata was measured:
+GetAllActorsOfClass is 32 bytes (world 0, class 8, output 16), and
+K2_GetComponentsByClass is 24 bytes (class 0, return 8). Queries are bounded to
+128 actors per family and 16 widget components per actor; a failed fast path
+leaves the existing array discovery active. Widget construction time remains
+outside the helper's control.
 
 Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
 horizontal/vertical pixel-to-eye scaling. The height factor is
@@ -226,6 +235,29 @@ is still queued. The projected crosshair is confirmed aligned at different
 ranges and with spells. The menu helper hides UEVR's extra mouse cursor in
 immersive gameplay and restores it for menus.
 Aiming and snap turns require a loaded gameplay level; menus cannot activate them.
+`libs/aim_stabilization.lua` filters controller yaw/pitch with a time-based
+exponential response, shortening its time constant as angular speed increases.
+`[aim] stabilization` accepts 0–1, starts at 0.35, and reloads live. Zero bypasses
+the filter. Filtering occurs before adding the world/snap anchor, with shortest
+yaw-wrap interpolation, one sample per engine tick, and resets across menus,
+tracking/controller changes, and long frame gaps. It does not change shot traces
+separately from aim, or smooth headset movement/menu input.
+
+The new carried pig advertises IA_Drop, bound separately from IA_Interact.
+`libs/carry_drop.lua` resolves the current pawn/items/equipped object on each tick,
+checks BP_Player.AC_PlayerItems at 1768, equipedItem at 208, UI_ItemContext at
+1120 and item.OwningPlayer at 736. Only a visible UI_DropItem_C context with a
+descendant IA_Drop key enables X. The native 0.3 event
+InpActEvt_IA_Drop_K2Node_EnhancedInputActionEvent_14 is 48 bytes (ActionValue 0,
+ElapsedTime 32, TriggeredTime 36, SourceAction 40). A fresh Quest AButtonLeft/X
+press calls that entry with a typed Boolean value from the native
+MakeInputActionValueOfType, preserving the game's permission/replication path.
+Only the hint's gamepadKeys presentation is temporarily set to IA_Interact for
+its X icon; its action and normal keyboard/X-to-Interact mapping stay intact.
+Hold presentation is preserved. Guns, menus, missing prompts, and held buttons
+across transitions do not invoke Drop. Unknown layouts stop this helper alone.
+The user confirmed the live pig test drops correctly and displays X; the permanent
+helper loads on a normal relaunch.
 
 Menu pointing now uses the right controller's ray intersection with the existing
 screen. Move/rotate the controller to move the pointer and use the right trigger
@@ -251,6 +283,13 @@ Viewport-local mouse coordinates must not have DPI scaling removed a second time
 Only the owned copy is removed for gameplay, UEVR's panel, inactive headset,
 viewport changes, errors, and script reset. Native metadata and object identities
 are guarded; the older game with no cursor asset simply skips this helper.
+Bounded native widget queries also hide the original UI_Cursor/UI_Cursor_Hand
+copies with owned opacity changes, restoring them when the helper is inactive.
+This prevents their occasional gameplay flashes without changing input flags.
+The menu copy uses live `[cursor] scale_multiplier` (initially 0.65) and
+`aspect_correction` (1), with the eye projection and viewport dimensions providing
+the same height correction used by other overlays. Scale changes preserve the
+centered hotspot. These additions still need a visual check after relaunch.
 
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this
