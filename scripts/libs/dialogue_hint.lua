@@ -2,6 +2,7 @@
 -- makes the game select a keyboard hint; action bindings and dialogue stay native.
 return function(valid)
 local api,log=uevr.api,uevr.params.functions
+local key_hint=require('libs/interaction_key')
 local panel_class,binding,failed,reported
 local function field(class,name,offset)
     local property=class:find_property(name)
@@ -61,14 +62,9 @@ local function update(source)
         if not binding then binding=bind(source,panel) end
         if not binding then return end
         local key=binding.key.object
-        local action=key:get_property('Key')
-        if not action or action:get_short_name()~='IA_Interact' then return end
-        if hidden(binding.image.object) or not hidden(binding.text.object) then
-            key:F_RefreshKey(true)
-            if not reported then
-                reported=true
-                log.log_info('[FarFarWest hints] Dialogue Next hint retains the Quest X icon.')
-            end
+        if key_hint.update(key) and not reported then
+            reported=true
+            log.log_info('[FarFarWest hints] Dialogue Next hint retains the Quest X icon.')
         end
     end)
     if not ok then

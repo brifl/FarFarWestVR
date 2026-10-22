@@ -68,23 +68,30 @@ If SSH is unavailable, write `start 3600` or `stop` to
 helpers, restart the game or use **Reset scripts** to load them. Play normally;
 there is no need to hold a particular screen open or reproduce each case separately.
 
-## Safe-area thresholds
+## HUD margins and capture thresholds
 
 In [data/tuning.ini](../data/tuning.ini):
 
 ```ini
+[hud]
+horizontal_margin = 0.20
+vertical_margin = 0.20
+
 [audit]
 auto_start = 1
-horizontal_margin = 0.10
-vertical_margin = 0.15
 ```
 
-These mean ten percent of viewport width at **each** horizontal edge and fifteen
-percent of height at **each** vertical edge. Numeric changes reload during play.
-They classify candidates in the capture; **they do not move widgets**. This first
-pass avoids shifting full-screen effects, reticles, world markers, and fixed HUD
-indiscriminately. The resulting parent paths and native field names let us choose
-appropriate HUD groups for a later shared positioning rule.
+These reserve twenty percent of viewport width/height at **each** edge. Numeric
+changes reload during play. The HUD placement helper moves selected fixed groups
+(health/shield, weapons/ammo, spells/cooldowns, party health, and currency) inside
+that rectangle during gameplay. Groups keep their internal layout and size;
+oversized groups are centered. Zero restores native placement on that axis.
+World markers, reticles, full-screen effects, and separately height-controlled
+panels are excluded. Menus/reset restore the helper's owned translations.
+
+The capture uses the same values to flag candidates. Earlier versions used
+`[audit]` margins only for capture classification; those keys remain aliases, but
+explicit `[hud]` values win. The read-only capture itself still changes no UI.
 
 ## What gets recorded
 

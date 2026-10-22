@@ -1,6 +1,6 @@
 # Far Far West VR backlog
 
-Updated October 21, 2026. Completed features and current controls are summarized
+Updated October 22, 2026. Completed features and current controls are summarized
 in the [README](README.md). Technical constraints and deployment details live in
 [DEVELOPMENT.md](docs/DEVELOPMENT.md); earlier troubleshooting remains in Git history.
 
@@ -18,9 +18,9 @@ Keep historical observations distinct from active problems and verified fixes.
 
 | Priority | Open work | Acceptance condition |
 | --- | --- | --- |
-| Next | Shared safe placement for fixed HUD | Configurable minimum horizontal/vertical margins bring health, ammo, weapons, and cooldown groups into view. Preserve group layout; exclude world markers, reticles, and full-screen effects. Current capture margins only identify candidates. |
-| Next | Extend marker stabilization to health bars | One adapter covers UI_Lifebar_C on the observed enemy, radioactive barrel, and boss-spawn object. Preserve native bar values, visibility, attachment offsets, moving targets, and collision roots. |
-| Next | Stabilize remaining interaction hints | Address the captured UI_Interact_C/IA_Interact F/X flip and related action-key contexts. Keep Quest X stable without changing bindings or hold progress; inspect literal embedded FText separately if reported. |
+| Validate next | Shared fixed-HUD margins | Implemented under `[hud]`, preserving the requested 20% margins. Confirm health, ammo, and cooldown groups move visibly and retain their layout through menus/level changes; zero restores native placement. Geometry/lifetime regressions pass; native visual validation pending. |
+| Validate next | Shared health-bar and dropped-card markers | Implemented for captured enemy, Cryptic Train, barrel, boss-spawn, and dropped Joker families. Confirm native values/content, moving attachment offsets, visibility, and target anchoring in combat. Socket/absolute attachments remain native. |
+| Validate next | Shared interaction hints | Implemented for action-bound IA_Interact keys, including targeting, dialogue, and dropped-item contexts. Confirm X stays stable and hold progress works. Literal embedded FText remains a separate discovery case. |
 | Ongoing | Additional marker/HUD/hint families | Use stable IDs and native relationships from monitoring; include other-player markers when encountered. Reuse shared projection/placement logic while preserving native content and edge behavior. |
 | Ongoing | Combat validation | Confirm boss-bar height and remaining combat HUD after shared placement; keep heights adjustable in tuning.ini. |
 

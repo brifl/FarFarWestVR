@@ -77,18 +77,32 @@ code still requires UEVR's **Reset scripts** or a normal game relaunch.
 | Section | Setting | Profile value | Meaning |
 | --- | --- | --- | --- |
 | graphics | saturation_multiplier | 0.95 | Five percent less saturation; 1.0 uses the native amount. |
-| graphics | contrast_multiplier | 1.10 | The accepted ten-percent increase; 1.0 uses the native amount. |
+| graphics | contrast_multiplier | 1.15 | Preserved installed preference; 1.0 uses the native amount. |
 | graphics | fog_density_multiplier | 0.20 | Current reduced-haze setting; 1.0 uses native density. |
 | hud | dialogue_offset_y | -0.10 | Raise conversation text by ten percent of viewport height. |
-| hud | boss_health_offset_y | 0.10 | Lower boss health by ten percent. |
+| hud | boss_health_offset_y | 0.15 | Preserved installed boss-bar offset. |
 | hud | mission_info_offset_y | 0.15 | Lower mission counters and timers by fifteen percent. |
 | hud | compass_offset_y | 0.15 | Lower the compass background and marker overlay together by fifteen percent. |
+| hud | horizontal_margin | 0.20 | Minimum horizontal inset for selected fixed HUD groups. |
+| hud | vertical_margin | 0.20 | Minimum vertical inset for selected fixed HUD groups. |
 
 HUD offsets use the full viewport height: positive moves down, negative moves up,
 and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,
 fog 0–1 and HUD offsets -0.5–0.5. Invalid edits retain the previous values.
 The boss-bar and mission-counter controls apply as those widgets appear; their
 height can be tuned during later fights/objectives without restarting scripts.
+
+`libs/hud_margins.lua` uses a guarded native query for UI_Player_C (including its
+lobby subclass), then selects disjoint direct children of MovingCanvas:
+HB_Spells, HB_JokerCooldown, HB_Moneys, VerticalBox_PlayerHealths,
+HorizontalBox_1 (health/shield), and VerticalBox_0 (weapons/ammo). It never shifts
+MovingCanvas or nested inventory children. `libs/hud_safe_area.lua` clamps full
+group bounds using CanvasPanelSlot.LayoutData at 56 and the parent geometry's
+pixel basis. It does not feed corrected child positions back into placement.
+Only fixed anchors without rotation/shear are supported; other layouts stay
+native. Owned translations restore on menus/reset, and native animation changes
+become the new baseline. Margins accept 0–0.4; zero restores that axis. Legacy
+`audit.*_margin` keys alias the canonical `hud.*_margin` keys; canonical values win.
 
 Marker discovery front-loads the initial and newly allocated objects within a
 two-millisecond scan budget. Known components are retained while their widgets
@@ -111,9 +125,13 @@ for X, which can make the game select keyboard presentation during a conversatio
 `libs/dialogue_hint.lua` uses the existing tracked `UI_NpcTalk_C`, finds its
 `UI_Key_C` child in `HorizontalBox_NextKey`, and calls the native
 `F_RefreshKey(isGamepad=true)` only when its interaction hint switches away from
-the gamepad icon. Widget identities and reflected layouts are checked before
-use. Dialogue text, action bindings and the already-correct targeting prompt
-retain their native behavior. No FText bridge or backend rebuild is required.
+the gamepad icon. Shared `libs/interaction_key.lua` preserves Text_Hold visibility
+and leaves unrelated or explicitly overridden actions alone. The separate
+`interaction_hints.lua` helper uses the same correction across native UI_Key_C
+widgets, including targeting and dropped-item contexts. `libs/live_widgets.lua`
+centralizes guarded native queries and compact-array lifetime checks for this
+helper and HUD margins. No UObjectHook discovery, FText bridge, binding changes,
+or backend rebuild is required.
 
 `scripts/spell_hints.lua` handles the joker vendor's three spell-slot rows. A
 guarded native query finds only `UI_Spell_CardSlot_C` widgets; their ID and
@@ -235,16 +253,23 @@ the automatic session ledger, and incremental collection across sessions;
 Use `python3 tools/ui_audit.py collect` at check-ins. Keep historical candidates
 separate from current coverage; absence in a later capture does not prove a fix.
 
-The first completed mission produced 2,884 IDs, 268 edge candidates, one visible
-IA_Interact keyboard-hint context, and three uncovered health-bar owner types,
-without errors or dropped records. Raw capture/status are archived on robot1-x in
-`ffw-tests/ui-census-20261021/` under the retained build checkout. The common marker
-is `/Game/Interfaces/UI_Lifebar.UI_Lifebar_C` with ProgressBar_Boss at 808; observed
-owners are BP_Enemy_Cryptic_Nuker_C, BP_RadioactiveBarrel_C and
-BP_GasBomb_BossSpawner_C. The F/X flip is UI_Interact_C's UI_Key bound to IA_Interact.
-Preserve native values, visibility, attachment offsets, and hold-progress semantics
-when adding shared fixes. Capture margins currently classify widgets; they do not
-reposition them.
+The October 22 collection contains four sessions, 6,227 distinct IDs, 509 edge
+candidates, seven uncovered marker families, and two visible IA_Interact keyboard
+contexts (targeting and dropped items). Historical observations remain in the
+generated report. Raw capture/status from the first completed mission are also
+archived on robot1-x in `ffw-tests/ui-census-20261021/` under the retained build
+checkout. Later interrupted sessions retain their last complete checkpoints.
+
+Shared marker adapters now cover UI_Lifebar_C (ProgressBar_Boss at 808) on the
+observed enemy, Cryptic Train, radioactive-barrel, and boss-spawn families, plus
+UI_JokerCard_InGame_C (Overlay_Transform at 840) on BP_Pickable_Joker_C. They track
+the native component's parent chain and transform its saved local offset through
+the current untouched parent, preserving live content and collision roots. Socket
+or absolute-location attachments are skipped. New attached entries are capped
+at 32 to reserve room for established markers, and hidden components release slots.
+These changes and the shared HUD/hint helpers have regression coverage; native
+geometry, combat behavior, and visual validation remain pending. Do not treat
+historical capture flags as a current failure or a verified fix.
 
 The earlier extraction stall remains unproven: train departure finished, but the
 view stayed at the station/island. Desktop showed the same scene; F8 showed a black

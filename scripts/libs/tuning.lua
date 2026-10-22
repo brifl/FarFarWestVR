@@ -9,9 +9,10 @@ local rules={
     ['hud.mission_info_offset_y']={.10,-.5,.5},
     ['hud.compass_offset_y']={.10,-.5,.5},
     ['audit.auto_start']={0,0,1},
-    ['audit.horizontal_margin']={.10,0,.4},
-    ['audit.vertical_margin']={.15,0,.4},
+    ['hud.horizontal_margin']={.10,0,.4},
+    ['hud.vertical_margin']={.15,0,.4},
 }
+local aliases={['audit.horizontal_margin']='hud.horizontal_margin',['audit.vertical_margin']='hud.vertical_margin'}
 local values,last_source,poll={},nil,0
 for key,rule in pairs(rules) do values[key]=rule[1] end
 local function log(level,message)
@@ -22,6 +23,7 @@ local function parse(source)
     local candidate={}
     for key,rule in pairs(rules) do candidate[key]=rule[1] end
     local section=''
+    local explicit={}
     for raw in (source..'\n'):gmatch('(.-)\n') do
         local line=raw:gsub('[;#].*$',''):match('^%s*(.-)%s*$')
         if line~='' then
@@ -32,7 +34,8 @@ local function parse(source)
             else
                 local name,text=line:match('^([%w_]+)%s*=%s*(.-)%s*$')
                 assert(name,'Expected setting=value: '..line)
-                local key=section..'.'..name
+                local raw_key=section..'.'..name
+                local key=aliases[raw_key] or raw_key
                 local rule=rules[key]
                 assert(rule,'Unknown setting: '..key)
                 local n=tonumber(text)
@@ -40,7 +43,8 @@ local function parse(source)
                     key..' must be between '..tostring(rule[2])..' and '..tostring(rule[3]))
                 assert(key~='audit.auto_start' or n==0 or n==1,
                     'audit.auto_start must be 0 or 1')
-                candidate[key]=n
+                if not aliases[raw_key] or not explicit[key] then candidate[key]=n end
+                if not aliases[raw_key] then explicit[key]=true end
             end
         end
     end
@@ -61,6 +65,7 @@ local function reload()
     log('log_info','Reloaded data/tuning.ini.')
 end
 function M.get(key)
+    key=aliases[key] or key
     assert(rules[key],'Unknown tuning key: '..tostring(key))
     return values[key]
 end

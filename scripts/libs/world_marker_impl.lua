@@ -26,6 +26,10 @@ local kinds = {
         world_label=true,target_field="Location",target_offset=864,label="object ping",
         parent_field="Scene",parent_offset=696,component_field="Widget",component_offset=688},
 }
+kinds.UI_Lifebar_C={field='ProgressBar_Boss',offset=808,world_label=true,attached=true,label='health bar',
+    owners={'^BP_Enemy_.*_C$','^BP_CrypticTrain_Section_.*_C$','^BP_RadioactiveBarrel_C$','^BP_GasBomb_BossSpawner_C$'}}
+kinds.UI_JokerCard_InGame_C={field='Overlay_Transform',offset=840,world_label=true,attached=true,
+    label='dropped Joker card',owner_class='^BP_Pickable_Joker_C$'}
 local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder",offset=816,
     world_label=true,label="mission guide"}
 local screen_projection=require('libs/screen_widget_projection')
@@ -52,6 +56,11 @@ local function valid(ref)
     local object = array:get_object(ref.index)
     return object and object:get_address()==ref.address and object:get_short_name()==ref.name
 end
+local function free_attachment(component)
+    local socket=component:get_property('AttachSocketName')
+    local name=socket and (type(socket)=='string' and socket or socket:to_string())
+    return (not name or name=='' or name=='None') and not component:get_property('bAbsoluteLocation')
+end
 local function component_valid(entry)
     if not valid(entry.component) or not valid(entry.source) or not valid(entry.owner) then return false end
     local widget = entry.component.object:get_property("Widget")
@@ -61,6 +70,18 @@ local function component_valid(entry)
         local parent=entry.component.object:get_property("AttachParent")
         local root=entry.parent.object:get_property("AttachParent")
         local owner_root=entry.owner.object:get_property("RootComponent")
+        if entry.kind.attached then
+            if not free_attachment(entry.component.object) then return false end
+            if not parent or parent:get_address()~=entry.parent.address
+                or not owner_root or owner_root:get_address()~=entry.root.address then return false end
+            for i,ref in ipairs(entry.chain) do
+                if not valid(ref) then return false end
+                local next_ref=entry.chain[i+1] or entry.root
+                local next_parent=ref.object:get_property('AttachParent')
+                if not next_parent or next_parent:get_address()~=next_ref.address then return false end
+            end
+            return true
+        end
         local owner_widget=entry.owner.object:get_property(entry.kind.component_field)
         local owner_parent=entry.owner.object:get_property(entry.kind.parent_field)
         return parent and parent:get_address()==entry.parent.address
@@ -167,7 +188,19 @@ local function bind_world_label(component,source,kind)
     -- Only reposition this visual child. Its separate actor remains the target.
     assert(parent and root and root:get_address()~=component:get_address(),
         "World label must be a child of its actor root")
-    if kind.parent_field then
+    local chain
+    if kind.attached then
+        assert(free_attachment(component),'Socket/absolute marker attachment needs a separate adapter')
+        chain={};local node=parent
+        while node:get_address()~=root:get_address() do
+            assert(#chain<8,'Marker attachment chain exceeds verified budget')
+            chain[#chain+1]=track(node)
+            local field=node:get_class():find_property('AttachParent')
+            assert(field and field:get_offset()==208,'Marker parent layout differs')
+            node=node:get_property('AttachParent')
+            assert(node,'Marker must attach beneath its owner root')
+        end
+    elseif kind.parent_field then
         for field,offset in pairs({[kind.parent_field]=kind.parent_offset,[kind.component_field]=kind.component_offset}) do
             local p=owner:get_class():find_property(field)
             assert(p and p:get_offset()==offset,"Ping actor layout differs: "..field)
@@ -191,7 +224,7 @@ local function bind_world_label(component,source,kind)
     end
     local relative=component:get_property("RelativeLocation")
     assert(finite(relative.X) and finite(relative.Y) and finite(relative.Z),"Invalid world-label attachment offset")
-    if not kind.parent_field then
+    if not kind.parent_field and not kind.attached then
         assert(math.abs(relative.X)<.001 and math.abs(relative.Y)<.001
             and math.abs(relative.Z)<.001,"Unexpected world-label attachment offset")
     end
@@ -203,6 +236,14 @@ local function bind_world_label(component,source,kind)
         local field=source:get_class():find_property(kind.target_field)
         assert(field and field:get_offset()==kind.target_offset,"World-label target layout differs")
     end
+    if kind.attached then
+        checked(parent:get_class(),'K2_GetComponentToWorld',96,96)
+        if not math_library then
+            local class
+            math_library,class=default_object('/Script/Engine.KismetMathLibrary')
+            checked(class,'TransformLocation',144,144)
+        end
+    end
     local player=source:GetOwningPlayer()
     assert(player,"World-label player unavailable")
     checked(component_class,"K2_SetWorldLocation",296,296)
@@ -213,7 +254,8 @@ local function bind_world_label(component,source,kind)
     assert(finite(opacity),"Invalid lobby-guide opacity")
     entries[component:get_address()]={component=track(component),source=track(source),
         owner=track(owner),player=track(player),kind=kind,opacity=opacity,hidden=true,
-        parent=kind.parent_field and track(parent) or nil,root=kind.parent_field and track(root) or nil,
+        parent=(kind.parent_field or kind.attached) and track(parent) or nil,
+        root=(kind.parent_field or kind.attached) and track(root) or nil,chain=chain,
         relative={X=relative.X,Y=relative.Y,Z=relative.Z},moved=false}
     entry_count=entry_count+1
     info("Tracking live "..(kind.label or "lobby guide").."; original text retained, actor unchanged.")
@@ -258,9 +300,22 @@ local function inspect_component(component)
     if not kind then return end
     local owner_class=outer:get_class():get_short_name()
     if widget_name=="UI_Guide_C" and owner_class:match(mission_guide.owner_class) then kind=mission_guide end
-    if kind.owner_class then
+    if kind.owners then
+        local supported=false
+        for _,pattern in ipairs(kind.owners) do if owner_class:match(pattern) then supported=true;break end end
+        if not supported then return end
+    elseif kind.owner_class then
         if not owner_class:match(kind.owner_class) then return end
     elseif not owner_name:match(kind.owner) then return end
+    if kind.attached then
+        local visibility=source:get_property('Visibility')
+        local owner=component:GetOwner()
+        if not owner or not component:get_property('bVisible') or owner:get_property('bHidden')
+            or visibility==1 or visibility==2 then return end
+        local count=0
+        for _,entry in pairs(entries) do if entry.kind.attached then count=count+1 end end
+        if count>=32 then return end -- Keep capacity for established guides/prompts/pings.
+    end
     stage="read marker component visibility"
     -- The typed bool getter throws on this backend; reflected reads work for
     -- both the component's bVisible and the actor's bHidden bitfields.
@@ -405,7 +460,7 @@ local function discover()
         local object=array:get_object(index)
         if recent_index then recent_index=recent_index-1 else scan_index=scan_index-1 end
         local name=object and object:get_short_name()
-        if (name=="Widget" or name=="WidgetInteract") and object:is_a(component_class) then
+        if (name=="Widget" or name=="WidgetInteract" or name=="LifebarWidget") and object:is_a(component_class) then
             consider(object)
         end
         if deadline and i%32==0 and clock()>=deadline then return end
@@ -437,7 +492,9 @@ callbacks.tick = function(_,delta)
         discover()
         for address,entry in pairs(entries) do
             stage="validate tracked icon"
-            if not component_valid(entry) or (entry.proxy and not valid(entry.proxy)) then
+            if not component_valid(entry) or (entry.proxy and not valid(entry.proxy))
+                or (entry.kind.attached and (not entry.component.object:get_property('bVisible')
+                    or entry.owner.object:get_property('bHidden'))) then
                 restore(entry); entries[address]=nil; entry_count=entry_count-1
             else
                 if not entry.audit_registered then
@@ -483,7 +540,11 @@ callbacks.tick = function(_,delta)
                             end
                         elseif entry.kind.world_label then
                             stage="reproject live mission label"
-                            place_world_label(entry,pixel)
+                            local success,err=pcall(place_world_label,entry,pixel)
+                            if not success then
+                                pcall(restore,entry);entries[address]=nil;entry_count=entry_count-1;rejected[address]=true
+                                functions.log_warn('[FarFarWest markers] Live label stopped safely: '..tostring(err))
+                            end
                         else
                             if elapsed>=entry.style_time then
                                 local source_icon=entry.source.object:get_property(entry.kind.image)
@@ -519,7 +580,7 @@ callbacks.tick = function(_,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendors, lobby/mission guides, objectives, object pings and interaction prompts use headset projection.")
+info("Helper loaded; vendors, lobby/mission guides, objectives, object pings, health bars, dropped cards and interaction prompts use headset projection.")
 
 return callbacks
 end

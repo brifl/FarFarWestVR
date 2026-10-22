@@ -43,11 +43,11 @@ function fog:SetFogDensity(n) self.density=n end
 local sizes={SetRenderTranslation=16,GetCachedGeometry=80,GetLocalSize=96,
     LocalToViewport=128,GetViewportSize=24,GetChildrenCount=4,GetChildAt=16,F_RefreshKey=1}
 local function widget_class(name)
-    return {get_short_name=function() return name end,
+    return {get_short_name=function() return name end,get_address=function() return name end,
         find_property=function(_,field) return {get_offset=function()
             local offsets={RenderTransform=144,TextBlock_Text=832,Text_Title=816,
                 TextBlock_Seconds=816,ProgressBar_Boss=840,Image_Compass=1008,Overlay_Pings=944,
-                HorizontalBox_NextKey=856,Key=856,Image_GamepadIcon=848,Text_Key=832}
+                HorizontalBox_NextKey=856,Key=856,gamepadKeys=864,Text_Hold=840,Image_GamepadIcon=848,Text_Key=832}
             return offsets[field] end} end,
         find_function=function(_,fn) return {get_properties_size=function() return sizes[fn] end,
             get_child_properties=function() return nil end,
@@ -64,7 +64,7 @@ function make_hud(index,kind,name)
     function o:get_property(n)
         assert(not self.dead,'Accessed a collected widget')
         if n=='Visibility' then return self.visibility or 0 end
-        if n=='HorizontalBox_NextKey' then return self.children[n] end
+        if n=='HorizontalBox_NextKey' or n=='gamepadKeys' or n=='Text_Hold' then return self.children[n] end
         if self.children[n] then return self.children[n] end
         assert(n=='RenderTransform')
         return {Translation=self.translation,Scale={X=1,Y=1},Shear={X=0,Y=0},Angle=0}
@@ -252,4 +252,13 @@ near(state.hud.translation.Y,11)
 reload('[hud]\ncompass_offset_y=.15');feature.tick(nil,.016);healthy()
 near(image.translation.Y,11+1440*.15/2);near(overlay.translation.Y,image.translation.Y)
 feature.reset();near(image.translation.Y,11);near(overlay.translation.Y,11)
+''')
+
+run('real HUD margins accept legacy audit keys but canonical values win regardless of section order', r'''
+reload('[audit]\nhorizontal_margin=.2\nvertical_margin=.2')
+near(tuning.get('hud.horizontal_margin'),.2);near(tuning.get('audit.vertical_margin'),.2)
+reload('[hud]\nhorizontal_margin=.25\n[audit]\nhorizontal_margin=.2')
+near(tuning.get('hud.horizontal_margin'),.25)
+reload('[audit]\nhorizontal_margin=.2\n[hud]\nhorizontal_margin=.3')
+near(tuning.get('audit.horizontal_margin'),.3)
 ''')

@@ -31,7 +31,7 @@ local function class(name)
     return {get_short_name=function() return name end,find_property=function(_,n)
         local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=name=='component' and 1800 or 688,Image_Icon=808,Image_Aura=824,
             UI_Key=816,OwningActor=912,Location=state.family=='UI_ObjectPing_C' and 864 or 872,
-            InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208}
+            InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208,ProgressBar_Boss=808,Overlay_Transform=840}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
@@ -41,6 +41,12 @@ local root=object({},'Billboard')
 local scene=object({parent=root},'Scene')
 function scene:get_class() return class('SceneComponent') end
 function scene:get_property(n) assert(n=='AttachParent');return self.parent end
+function root:get_class() return class('SceneComponent') end
+function root:get_property(n) assert(n=='AttachParent');return nil end
+function root:K2_GetComponentToWorld()
+    return {location=state.parent_location or state.world,rotation=state.parent_rotation or 0,
+        scale=state.parent_scale or {X=1,Y=1,Z=1}}
+end
 function scene:K2_GetComponentToWorld()
     return {location=state.parent_location or state.world,rotation=state.parent_rotation or 0,
         scale=state.parent_scale or {X=1,Y=1,Z=1}}
@@ -92,6 +98,7 @@ function source:get_property(n)
         Angle=0,Shear={X=0,Y=0}} end
     if n=='OwningActor' then return state.wrong_actor and root or actor end
     if n=='Location' then return state.objective_location or state.world end
+    if n=='ProgressBar_Boss' or n=='Overlay_Transform' then return self.icon end
     assert(n==(state.family=='UI_Guide_C' and 'Image_Aura' or state.family=='UI_ObjectPing_C' and 'Image_Logo' or 'Image_Icon'));return self.icon
 end
 function source:SetRenderScale(v) assert(v.typed);self.scale={X=v.X,Y=v.Y} end
@@ -100,7 +107,7 @@ function source:GetDesiredSize() return {X=64,Y=32,typed=true} end
 function source.icon:get_property(n) return {name=n} end
 local component=object({visible=true,relative={X=0,Y=0,Z=0}},'Widget')
 local component_name=component.get_short_name
-function component:get_short_name() return state.family=='UI_Interact_C' and 'WidgetInteract' or component_name(self) end
+function component:get_short_name() return state.family=='UI_Lifebar_C' and 'LifebarWidget' or state.family=='UI_Interact_C' and 'WidgetInteract' or component_name(self) end
 function component:get_class() return component_class end
 function component:is_a(c) return c==component_class end
 function component:get_outer() return {get_short_name=function()
@@ -111,6 +118,8 @@ function component:get_outer() return {get_short_name=function()
 function component:GetOwner() return actor end
 function component:GetAttachParent() return state.is_root and component or state.nested_parent and scene or root end
 function component:get_property(n)
+    if n=='AttachSocketName' then return state.socket or 'None' end
+    if n=='bAbsoluteLocation' then return state.absolute or false end
     if n=='Widget' then return not state.no_widget and source or nil
     elseif n=='WidgetClass' then return source:get_class()
     elseif n=='bVisible' then return self.visible
@@ -439,3 +448,32 @@ local array=uevr.api:get_uobject_array();local get=array.get_object
 array.get_object=function(self,i) state.reads=state.reads+1;return get(self,i) end
 os.clock=function() state.mock_clock=state.mock_clock+.001;return state.mock_clock end
 """)
+
+
+for owner in ['BP_Enemy_Cryptic_Nuker_C', 'BP_RadioactiveBarrel_C', 'BP_GasBomb_BossSpawner_C',
+              'BP_CrypticTrain_Section_Cart_C', 'BP_CrypticTrain_Section_Loco_C', 'BP_Enemy_Cryptic_Saloon_Spirit_C']:
+    run('health-bar family follows target with native height: '+owner, r'''
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+near(state.display.X,1000);near(state.display.Y,436)
+state.parent_location={X=1200,Y=200,Z=50};state.aim=170;frame();healthy()
+near(state.display.X,1000+200000/1200);near(state.display.Y,500-89000/1200)
+state.component.visible=false;frame();healthy();assert(state.restored and state.source.opacity==.7)
+feature.reset();near(state.component.relative.Z,128)
+''', "state.family='UI_Lifebar_C';state.owner_class="+repr(owner)+";state.component.relative={X=0,Y=0,Z=128}")
+
+run('health bar validates the attachment chain and keeps nested native offsets', r'''
+frame();frame();healthy();near(state.display.Y,436)
+state.scene.parent=nil;local moves=state.moves;frame();healthy();assert(state.moves==moves)
+''', "state.family='UI_Lifebar_C';state.owner_class='BP_Enemy_Ordinary_C';state.nested_parent=true;state.component.relative={X=0,Y=0,Z=128}")
+
+run('dropped Joker card preserves live text and follows its scene attachment', r'''
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+near(state.display.Y,504)
+state.source.label='Rare Joker';state.parent_location={X=1000,Y=200,Z=0};state.aim=160
+frame();healthy();near(state.display.X,1200);assert(state.source.label=='Rare Joker')
+feature.reset();near(state.component.relative.Z,-8)
+''', "state.family='UI_JokerCard_InGame_C';state.owner_class='BP_Pickable_Joker_C';state.nested_parent=true;state.component.relative={X=0,Y=0,Z=-8}")
+
+run('socket-mounted or absolute-location bars are left native', r'''
+frame();frame();healthy();assert(state.moves==0 and state.source.opacity==.7)
+''', "state.family='UI_Lifebar_C';state.owner_class='BP_Enemy_Ordinary_C';state.socket='Head'")
