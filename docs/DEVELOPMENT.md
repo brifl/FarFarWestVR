@@ -285,11 +285,13 @@ viewport changes, errors, and script reset. Native metadata and object identitie
 are guarded; the older game with no cursor asset simply skips this helper.
 Bounded native widget queries also hide the original UI_Cursor/UI_Cursor_Hand
 copies with owned opacity changes, restoring them when the helper is inactive.
-This prevents their occasional gameplay flashes without changing input flags.
-The menu copy uses live `[cursor] scale_multiplier` (initially 0.65) and
-`aspect_correction` (1), with the eye projection and viewport dimensions providing
-the same height correction used by other overlays. Scale changes preserve the
-centered hotspot. These additions still need a visual check after relaunch.
+This targets gameplay flashes without changing input flags; the remaining
+elongated gameplay cursor needs a live reproduction to identify its actual path.
+The menu copy uses live `[cursor] scale_multiplier` (1.0) and
+`aspect_correction` (0). The user confirmed its menu proportions were already
+correct; applying the immersive eye-projection correction squashed it in screen
+mode. Keep that correction off by default and inspect the gameplay variant
+separately. Scale changes preserve the centered hotspot.
 
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this

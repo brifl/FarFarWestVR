@@ -14,8 +14,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Controller-operated menus:** point with the right controller and click with
   the trigger. Menus stay readable and stationary, with B handling pause/resume.
 - **Native menu cursor:** the game's arrow follows controller pointing, with a
-  visibility and hotspot correction, adjustable size, and corrected proportions.
-  Native cursor flashes are suppressed during gameplay, leaving the aim reticle.
+  visibility and hotspot correction and adjustable size. The earlier custom arrow
+  is disabled.
 - **Movement and snap turning:** left-stick movement and 45-degree turns on the
   right stick.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
@@ -113,8 +113,8 @@ reload during play, about once a second.
 | `top_margin` | `0.15` | Minimum inset from the top edge |
 | `bottom_margin` | `0.30` | Minimum inset from the bottom edge |
 | `[aim] stabilization` | `0.35` | `0` is unfiltered; `1` gives strongest steady-hand smoothing |
-| `[cursor] scale_multiplier` | `0.65` | Menu arrow size |
-| `[cursor] aspect_correction` | `1` | Correct menu arrow vertical stretch; `0` disables |
+| `[cursor] scale_multiplier` | `1.0` | Menu arrow size; `1.0` preserves its native size |
+| `[cursor] aspect_correction` | `0` | Optional projection correction; leave off to preserve normal menu proportions |
 
 A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
 fractions of viewport height: positive moves down, negative moves up, and `0`

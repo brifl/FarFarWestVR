@@ -16,8 +16,8 @@ local rules={
     ['hud.scale_multiplier']={.80,.25,1.5},
     ['hud.aspect_correction']={1,0,1},
     ['aim.stabilization']={.35,0,1},
-    ['cursor.scale_multiplier']={.65,.25,1.5},
-    ['cursor.aspect_correction']={1,0,1},
+    ['cursor.scale_multiplier']={1,.25,1.5},
+    ['cursor.aspect_correction']={0,0,1},
 }
 -- Explicit edges beat HUD axis pairs, which beat the older audit axis pairs.
 local aliases={

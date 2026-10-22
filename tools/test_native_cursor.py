@@ -7,8 +7,8 @@ MOCK = r'''
 state={objects={},next=1,created=0,removed=0,logs={},screen=true,active=true}
 farfarwest_gameplay_ready=true
 package.loaded['libs/tuning']={get=function(key)
- if key=='cursor.scale_multiplier' then return state.scale or .65 end
- assert(key=='cursor.aspect_correction');return state.aspect or 1
+ if key=='cursor.scale_multiplier' then return state.scale or 1 end
+ assert(key=='cursor.aspect_correction');return state.aspect or 0
 end}
 UEVR_Matrix4x4f={new=function() return {get=function(_,c) return c==0 and 1 or 1.15 end} end}
 local methods={Create=32,GetMousePositionOnViewport=24,AddToViewport=4,RemoveFromParent=0,
@@ -135,8 +135,10 @@ state.panel=true;tick();assert(state.original.opacity==1)
 state.panel=false;tick();assert(state.original.opacity==0)
 state.original.dead=true;state.objects[state.original.index]=nil;feature.reset();healthy()
 ''')
-run('menu arrow size and aspect correction reload around the same hotspot', '''
+run('menu keeps native proportions by default; optional style reload preserves its hotspot', '''
 tick();healthy();local o=state.cursor
+assert(o.scale.X==1 and o.scale.Y==1)
+state.scale=.65;state.aspect=1;tick();healthy()
 assert(math.abs(o.scale.X-.65)<.000001 and math.abs(o.scale.Y-.65*.646875)<.000001)
 state.scale=.5;state.aspect=0;tick();healthy()
 assert(o.scale.X==.5 and o.scale.Y==.5 and o.align.X==.5 and o.position.X==777.25)

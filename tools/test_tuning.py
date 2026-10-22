@@ -281,6 +281,8 @@ for _,source in ipairs({'[hud]\nscale_multiplier=0','[hud]\naspect_correction=.5
 end
 ''')
 run('aim stabilization and cursor style reload within their supported ranges', r'''
+reload('[cursor]')
+near(tuning.get('cursor.scale_multiplier'),1);near(tuning.get('cursor.aspect_correction'),0)
 reload('[aim]\nstabilization=.6\n[cursor]\nscale_multiplier=.5\naspect_correction=0')
 near(tuning.get('aim.stabilization'),.6);near(tuning.get('cursor.scale_multiplier'),.5)
 near(tuning.get('cursor.aspect_correction'),0)
