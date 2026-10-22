@@ -61,8 +61,8 @@ workflow and compatibility details.
 
 Package the profile files as `FarFarWest-Win64-Shipping.zip` and import them into
 UEVR, or update an existing profile checkout with `git pull`. After updating Lua
-helpers, use **UEVR → Main → Reset scripts** or restart the game. Keep the game
-window focused for menu input.
+helpers, restart the game; live script resets can disrupt a running session.
+Keep the game window focused for menu input.
 
 ## Controls
 

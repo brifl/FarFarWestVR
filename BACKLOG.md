@@ -59,12 +59,14 @@ Use the retained isolated backend only if inspection proves a native change nece
 | Watch for recurrence | Extraction station/island stall | A later full mission/extraction succeeded. If repeated, capture current game/sequence/pawn state before restarting; no extraction-specific fix is proven. See development notes for saved observations. |
 | Low | Train cinematic viewpoint below the train | Compare with normal 2D behavior before changing camera offsets; preserve headset look. The readable mission preview is already complete. |
 | Polish | Remaining initialization delay | Distinguish widget creation from discovery latency; use targeted native queries or bounded preparation where supported. Mission-card detection and earlier marker initialization are already improved. |
+| Low; use relaunches meanwhile | Script-reset recovery | The user reports Reset scripts commonly breaks the running session. Diagnose separately; use normal relaunches for helper-code updates. Numeric tuning still reloads live. |
 | Low | Narrow heat-distortion workaround | Identify the offending material if worthwhile and check damage/status effects. Current workaround disables all custom post-process materials; the temporal-AA experiment remains inactive. |
 | Low; coordinate with hands design | Simplify input layers | Investigate RemapControls' repeated shift warning and overlapping synthetic/native input. Confirm any still-unclear A, Utility, and left-stick-click semantics before rebinding. Preserve working spells, pause, movement, snap turns, menus, and shifted D-pad actions. |
 
 ## Working rules
 
 - Preserve personal runtime/tuning preferences and the accepted stereo/menu baseline.
+- Use normal game relaunches for helper-code updates; script reset is unreliable.
 - Validate current object identities and possession before native access. The
   earlier horse-dismount stale-pawn issue is fixed; keep its lifetime discipline.
 - Native SDK world lookup and implicit UObjectHook discovery are not prerequisites

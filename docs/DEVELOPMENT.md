@@ -95,8 +95,10 @@ deployment tooling and artifact hashes, not those private sources.
 
 Personal tuning is in [data/tuning.ini](../data/tuning.ini). On robot1-x, edit
 `C:\Users\brian\AppData\Roaming\UnrealVRMod\FarFarWest-Win64-Shipping\data\tuning.ini`.
-Numeric edits reload while playing, about once a second. Installing new helper
-code still requires UEVR's **Reset scripts** or a normal game relaunch.
+Numeric edits reload while playing, about once a second. After installing new
+helper code, use a normal game relaunch. The user reports that **Reset scripts**
+commonly breaks the current session; do not use it as the routine update workflow.
+Keep script-reset recovery as an open issue rather than requiring repeated resets.
 
 | Section | Setting | Profile value | Meaning |
 | --- | --- | --- | --- |
@@ -327,7 +329,7 @@ flags based on those observations. The separate stale-pawn dismount fix is accep
 Optional live marker override `data/world_markers_dev.lua` is polled by the stable
 loader; normal play needs no override. New factories must clean up the old one and
 avoid adding duplicate callbacks. Remove temporary overrides after validation and
-use Reset scripts/relaunch to verify the normal committed path. Profile `log.txt`
+relaunch the game to verify the normal committed path. Profile `log.txt`
 can be noisy; read bounded recent slices or start from a recorded byte offset.
 
 Earlier troubleshooting chronology and completed work remain in Git history.
