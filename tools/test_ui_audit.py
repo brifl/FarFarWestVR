@@ -26,7 +26,8 @@ end
 local sizes={GetParent=8,GetCachedGeometry=80,GetChildrenCount=4,GetChildAt=16,
     IsInViewport=1,GetAllWidgetsOfClass=40,GetLocalSize=96,LocalToViewport=128,GetViewportSize=24}
 local offsets={Slot=48,WidgetTree=704,Widget=1800,Space=1512,GameViewport=3448,
-    Key=856,gamepadKeys=864,Image_GamepadIcon=848,Text_Key=832}
+    Key=856,gamepadKeys=864,Image_GamepadIcon=848,Text_Key=832,Text_Hold=840}
+state.offsets=offsets
 local classes={}
 function class(name,super)
     local c={name=name,super=super}
@@ -183,6 +184,13 @@ def inspect_capture(lua):
 
 
 run('edge HUD, unknown marker owner and action-bound F hints are cataloged', '''
+start();tick(100);stop();healthy()
+''', inspect_capture)
+
+run('0.3.0.0 hints use the shared schema without aborting the capture', '''
+for _,name in ipairs({'Key','gamepadKeys','Image_GamepadIcon','Text_Key','Text_Hold'}) do
+ state.offsets[name]=state.offsets[name]-16
+end
 start();tick(100);stop();healthy()
 ''', inspect_capture)
 

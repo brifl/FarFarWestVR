@@ -162,6 +162,8 @@ widgets, including targeting and dropped-item contexts. `libs/live_widgets.lua`
 centralizes guarded native queries and compact-array lifetime checks for this
 helper and HUD margins. No UObjectHook discovery, FText bridge, binding changes,
 or backend rebuild is required.
+The read-only UI audit uses the same hint-layout guard; its former hardcoded
+0.2 offsets caused captures in 0.3.0.0 to stop at the 64-error budget.
 
 `scripts/spell_hints.lua` handles the joker vendor's three spell-slot rows. A
 guarded native query finds only `UI_Spell_CardSlot_C` widgets; their ID and

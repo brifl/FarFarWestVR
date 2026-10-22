@@ -3,6 +3,7 @@ return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
 local catalog=require('libs/ui_audit_catalog')
 local registry=require('libs/ui_audit_registry')
+local hint_layout=require('libs/hint_layout')
 local tuning=require('libs/tuning')
 local array,classes,library,slate,layout
 local prepared=false
@@ -274,7 +275,7 @@ local function sample(ref,viewport)
         placed=c:get_property('bVisible') and not owner:get_property('bHidden')
     end
     if class_name=='UI_Key_C' then
-        for name,offset in pairs({Key=856,gamepadKeys=864,Image_GamepadIcon=848,Text_Key=832}) do field(class,name,offset) end
+        hint_layout(class)
         local action=o:get_property('Key');local override=o:get_property('gamepadKeys')
         data.action=action and action:get_short_name() or ''
         local text,image=o:get_property('Text_Key'),o:get_property('Image_GamepadIcon')
