@@ -102,7 +102,7 @@ reload during play, about once a second.
 | `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
 | `compass_offset_y` | `0.15` | Lower the compass and its markers together |
 | `horizontal_margin` | `0.20` | Minimum inset at each horizontal edge for fixed HUD groups |
-| `vertical_margin` | `0.20` | Minimum inset at each vertical edge for fixed HUD groups |
+| `vertical_margin` | `0.30` | Minimum inset at each vertical edge for fixed HUD groups; headset test pending |
 
 A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
 fractions of viewport height: positive moves down, negative moves up, and `0`

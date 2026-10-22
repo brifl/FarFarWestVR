@@ -46,8 +46,11 @@ helpers because the backend deliberately rejected an unvalidated executable.
 The retained SDK source now selects an explicit compact-array address per build;
 unknown executables still fail closed. Read-only process inspection verified
 object identities, names, chunk-boundary indices, UI_Player.MovingCanvas at 960,
-and CanvasPanelSlot.LayoutData at 56 in 0.3.0.0. Startup/visual validation of the
-new backend is pending. Do not loosen Lua layout assertions to bypass this gate.
+and CanvasPanelSlot.LayoutData at 56 in 0.3.0.0. First-backend startup confirmed
+object access, reticle tracing, marker aspect correction, and fixed HUD placement
+running in 0.3.0.0; visual validation remains pending. Remaining compatibility fixes cover the
+shifted UI_Key/UI_Spell_CardSlot layouts and lowercase PostProcessComponent.settings.
+Do not loosen Lua layout assertions to bypass this gate.
 
 | Game | PE timestamp | Image size | Object-array RVA | Name-pool RVA |
 | --- | --- | --- | --- | --- |
@@ -103,7 +106,7 @@ code still requires UEVR's **Reset scripts** or a normal game relaunch.
 | hud | mission_info_offset_y | 0.15 | Lower mission counters and timers by fifteen percent. |
 | hud | compass_offset_y | 0.15 | Lower the compass background and marker overlay together by fifteen percent. |
 | hud | horizontal_margin | 0.20 | Minimum horizontal inset for selected fixed HUD groups. |
-| hud | vertical_margin | 0.20 | Minimum vertical inset for selected fixed HUD groups. |
+| hud | vertical_margin | 0.30 | Larger vertical inset under headset evaluation. |
 
 HUD offsets use the full viewport height: positive moves down, negative moves up,
 and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,
@@ -197,11 +200,12 @@ gameplay snap turns keep their native stick input. This requires the latest
 isolated backend below and is confirmed working. The game window must have
 focus. Menu placement, B pause/resume and gameplay aiming are preserved.
 
-The Fear Fear West release supplies a native menu cursor. `pause_screen.lua`
-now keeps FrameworkConfig_AlwaysShowCursor false during menus, gameplay, and
-reset, disabling our forced/themed cursor while preserving UEVR's own panel
-cursor and the existing controller pointer input. The previous themed arrow
-asset and native drawing code remain available but inactive under this policy.
+The Fear Fear West release supplies a native menu cursor. Preserve the menu
+helper's FrameworkConfig_AlwaysShowCursor policy: it also controls overlay
+intersection/input and SetCursorPos handling. Turning it off broke menu pointing.
+The backend now sets ImGui MouseDrawCursor only for UEVR's own panel and omits
+the themed arrow draw call, suppressing graphics independently of input policy.
+The previous asset remains available. The new DLL requires a game restart.
 
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this

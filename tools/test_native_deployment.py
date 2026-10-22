@@ -18,11 +18,14 @@ class NativeDeploymentTests(unittest.TestCase):
         self.build.mkdir()
         self.old_dll, self.old_pdb = b'previous-themed-backend', b'previous-themed-symbols'
         self.new_dll, self.new_pdb = b'new-ffw-ue58-sdk-v1-backend', b'new-symbols'
+        self.update_dll, self.update_pdb = b'first-update-backend', b'first-update-symbols'
         sha = lambda data: hashlib.sha256(data).hexdigest()
         patched = patch.multiple(deployment, require_closed=lambda: None,
                                  BASELINE_SHA=sha(b'baseline'),
                                  THEMED_CURSOR_BUILD_SHA=sha(self.old_dll),
                                  THEMED_CURSOR_PDB_SHA=sha(self.old_pdb),
+                                 FIRST_UPDATE_BUILD_SHA=sha(self.update_dll),
+                                 FIRST_UPDATE_PDB_SHA=sha(self.update_pdb),
                                  BUILD_SHA=sha(self.new_dll), PDB_SHA=sha(self.new_pdb))
         patched.start()
         self.addCleanup(patched.stop)
@@ -56,6 +59,14 @@ class NativeDeploymentTests(unittest.TestCase):
             self.deploy()
         self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(), self.old_dll)
         self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(), self.old_pdb)
+
+    def test_first_update_build_upgrades_with_its_own_paired_backup(self):
+        (self.runtime/'UEVRBackend.dll').write_bytes(self.update_dll)
+        (self.runtime/'UEVRBackend.pdb').write_bytes(self.update_pdb)
+        self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(), self.new_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.dll.before-native-game-cursor.bak').read_bytes(), self.update_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.pdb.before-native-game-cursor.bak').read_bytes(), self.update_pdb)
 
     def test_mismatched_build_symbols_are_rejected_before_runtime_writes(self):
         (self.build/'UEVRBackend.pdb').write_bytes(b'unrelated symbols')

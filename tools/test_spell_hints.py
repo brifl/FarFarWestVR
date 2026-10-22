@@ -5,13 +5,14 @@ from lupa import LuaRuntime
 ROOT = Path(__file__).resolve().parents[1]
 MOCK = r'''
 state={objects={},next=1,slots={},logs={},imports=0,writes=0}
-local offsets={ID=888,actionKey=944,HorizontalBox_Keys=856,Image_GamepadIcon=848,Text_Key=832,
+local offsets={ID=888,actionKey=944,HorizontalBox_Keys=856,Image_GamepadIcon=848,Text_Key=832,Key=856,gamepadKeys=864,Text_Hold=840,
     Visibility=221,GameViewport=3448}
 local methods={GetAllWidgetsOfClass={40,{WorldContextObject=0,FoundWidgets=8,WidgetClass=24,TopLevelOnly=32}},
     ImportFileAsTexture2D={32,{WorldContextObject=0,Filename=8,ReturnValue=24}},
     SetBrushFromTexture={16,{Texture=0,bMatchSize=8}},SetDesiredSizeOverride={16,{DesiredSize=0}},
     GetDesiredSize={16,{}},SetVisibility={1,{}},GetChildrenCount={4,{}},GetChildAt={16,{}}}
 local function field(offset) return {get_offset=function() return offset end} end
+state.offsets=offsets
 local function class(name,default)
     return {get_short_name=function() return name end,get_class_default_object=function() return default end,
         find_property=function(_,n) return field(state.bad_layout and 0 or offsets[n]) end,
@@ -144,4 +145,11 @@ run('unexpected native layouts stop before writing UI', '''
 state.bad_layout=true;frames(40)
 assert(state.imports==0 and state.writes==0 and #state.logs==1)
 assert(state.logs[1]:find('stopped safely',1,true))
+''')
+run('0.3.0.0 slot and key layouts retain grip labels and action bindings', '''
+state.offsets.ID=896;state.offsets.actionKey=952
+for _,name in ipairs({'Key','gamepadKeys','Image_GamepadIcon','Text_Key','Text_Hold'}) do state.offsets[name]=state.offsets[name]-16 end
+frames();healthy();assert(state.imports==3)
+assert(state.slots[3].props.actionKey.name=='IA_SpellC')
+assert(state.slots[3].props.HorizontalBox_Keys.children[1].props.Text_Key.visibility==1)
 ''')

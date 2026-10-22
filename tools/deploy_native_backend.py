@@ -18,8 +18,10 @@ MENU_POINTER_BUILD_SHA = '6aa7868a2dd745f5d6a8a34865d3866d5d95ffac924bed09e75d6e
 MENU_POINTER_PDB_SHA = 'efa1bad0f7d0a3c494c7abed53e712b7615b5c6e94858bc5cbac16a72e4006fd'
 THEMED_CURSOR_BUILD_SHA = '98cb830717c2b0e942b456271dfee30987b25e90ad75164c5cd4119879804249'
 THEMED_CURSOR_PDB_SHA = '18d13de0b607d46f6c5a9cc5fcab44de24cd23b11a6a93bd680c67b2e9fb05cb'
-BUILD_SHA = '0a60a4fc4c7781794207f61a253e4a313f34f885ffb98004cf81a50724a1ab5e'
-PDB_SHA = '75c7b1d88362cdd514fd6b3db89ea4e432c53cc029bbeeb1fbc52066611dfd81'
+FIRST_UPDATE_BUILD_SHA = '0a60a4fc4c7781794207f61a253e4a313f34f885ffb98004cf81a50724a1ab5e'
+FIRST_UPDATE_PDB_SHA = '75c7b1d88362cdd514fd6b3db89ea4e432c53cc029bbeeb1fbc52066611dfd81'
+BUILD_SHA = 'db624486a6f2baf528c41acab28f8d03d1e9b9f4d0e57cc0cde5ff370cc0b9ef'
+PDB_SHA = 'e1dfb86b5147eb29b6c6e174c9e532c34d6e8c9a1c44406fa6d55da2dfb28877'
 POWERSHELL = '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
 
 
@@ -62,15 +64,17 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
     pointer_pdb = runtime/'UEVRBackend.pdb.before-themed-cursor.bak'
     themed_dll = runtime/'UEVRBackend.dll.before-fear-fear-west.bak'
     themed_pdb = runtime/'UEVRBackend.pdb.before-fear-fear-west.bak'
+    update_dll = runtime/'UEVRBackend.dll.before-native-game-cursor.bak'
+    update_pdb = runtime/'UEVRBackend.pdb.before-native-game-cursor.bak'
     current = digest(dll)
-    if current not in (BASELINE_SHA, PREVIOUS_BUILD_SHA, MENU_POINTER_BUILD_SHA, THEMED_CURSOR_BUILD_SHA, BUILD_SHA):
+    if current not in (BASELINE_SHA, PREVIOUS_BUILD_SHA, MENU_POINTER_BUILD_SHA, THEMED_CURSOR_BUILD_SHA, FIRST_UPDATE_BUILD_SHA, BUILD_SHA):
         raise SystemExit('Runtime differs from the verified baseline/build; nothing changed.')
     if old_dll.exists() and digest(old_dll) != BASELINE_SHA:
         raise SystemExit('Native backend backup differs from the baseline; nothing changed.')
     if restore:
         if not old_dll.is_file() or not old_pdb.is_file():
             raise SystemExit('Native backend backups are missing; nothing changed.')
-        if digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, PDB_SHA):
+        if digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, FIRST_UPDATE_PDB_SHA, PDB_SHA):
             raise SystemExit('Runtime symbols changed; nothing changed.')
         if current != BASELINE_SHA:
             atomic_copy(old_dll, dll)
@@ -88,10 +92,11 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
         raise SystemExit('The installed build has no complete baseline backup; nothing changed.')
     expected_symbols = {PREVIOUS_BUILD_SHA: PREVIOUS_PDB_SHA,
                         MENU_POINTER_BUILD_SHA: MENU_POINTER_PDB_SHA,
-                        THEMED_CURSOR_BUILD_SHA: THEMED_CURSOR_PDB_SHA, BUILD_SHA: PDB_SHA}
+                        THEMED_CURSOR_BUILD_SHA: THEMED_CURSOR_PDB_SHA,
+                        FIRST_UPDATE_BUILD_SHA: FIRST_UPDATE_PDB_SHA, BUILD_SHA: PDB_SHA}
     if current in expected_symbols and digest(pdb) != expected_symbols[current]:
         raise SystemExit('Runtime symbols do not match the installed build; nothing changed.')
-    if old_pdb.exists() and digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, PDB_SHA):
+    if old_pdb.exists() and digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, FIRST_UPDATE_PDB_SHA, PDB_SHA):
         raise SystemExit('Runtime symbols differ from the baseline/build; nothing changed.')
     if previous_dll.exists() and digest(previous_dll) != PREVIOUS_BUILD_SHA:
         raise SystemExit('Previous source-build backup changed; nothing changed.')
@@ -105,6 +110,10 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
         raise SystemExit('Pre-update themed-cursor backup changed; nothing changed.')
     if themed_pdb.exists() and digest(themed_pdb) != THEMED_CURSOR_PDB_SHA:
         raise SystemExit('Pre-update themed-cursor symbols backup changed; nothing changed.')
+    if update_dll.exists() and digest(update_dll) != FIRST_UPDATE_BUILD_SHA:
+        raise SystemExit('First 0.3.0.0 backend backup changed; nothing changed.')
+    if update_pdb.exists() and digest(update_pdb) != FIRST_UPDATE_PDB_SHA:
+        raise SystemExit('First 0.3.0.0 symbols backup changed; nothing changed.')
     if not old_dll.exists():
         shutil.copyfile(dll, old_dll)
     if not old_pdb.exists():
@@ -124,7 +133,13 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
             shutil.copyfile(dll, themed_dll)
         if not themed_pdb.exists():
             shutil.copyfile(pdb, themed_pdb)
-    rollback_pdb = (themed_pdb if current == THEMED_CURSOR_BUILD_SHA else
+    if current == FIRST_UPDATE_BUILD_SHA:
+        if not update_dll.exists():
+            shutil.copyfile(dll, update_dll)
+        if not update_pdb.exists():
+            shutil.copyfile(pdb, update_pdb)
+    rollback_pdb = (update_pdb if current == FIRST_UPDATE_BUILD_SHA else
+                    themed_pdb if current == THEMED_CURSOR_BUILD_SHA else
                     pointer_pdb if current == MENU_POINTER_BUILD_SHA else
                     previous_pdb if current == PREVIOUS_BUILD_SHA else old_pdb)
     try:

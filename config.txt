@@ -1,5 +1,5 @@
 FrameworkConfig_AdvancedMode=true
-FrameworkConfig_AlwaysShowCursor=false
+FrameworkConfig_AlwaysShowCursor=true
 FrameworkConfig_EnableL3R3Toggle=true
 FrameworkConfig_FontSize=16
 FrameworkConfig_ImGuiTheme=0

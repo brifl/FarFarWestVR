@@ -16,7 +16,9 @@ function reload(source)
     for i=1,11 do tuning.tick(nil,.1) end
 end
 local function log(message) state.logs[#state.logs+1]=message end
-local post_class={find_property=function() return {} end}
+local post_class={find_property=function(_,name)
+    if name==(state.lowercase_settings and 'settings' or 'Settings') then return {} end
+end}
 local fog_class={find_property=function() return {get_offset=function() return 592 end} end}
 function fog_class:find_function(name)
     assert(name=='SetFogDensity')
@@ -32,7 +34,7 @@ local settings={ColorContrast={X=1.2,Y=1.2,Z=1.2,W=1},bOverride_ColorContrast=tr
 local post={get_address=function() return 4096 end,get_short_name=function() return 'postprocess' end,
     is_a=function(_,c) return c==post_class end,get_outer=function() return owner end}
 function post:get_property(name)
-    if name=='Settings' then return settings elseif name=='BlendWeight' then return 1 end
+    if name==(state.lowercase_settings and 'settings' or 'Settings') then return settings elseif name=='BlendWeight' then return 1 end
     assert(name=='bEnabled' or name=='bUnbound');return true
 end
 local fog={density=.02,get_address=function() return 8192 end,
@@ -261,4 +263,12 @@ reload('[hud]\nhorizontal_margin=.25\n[audit]\nhorizontal_margin=.2')
 near(tuning.get('hud.horizontal_margin'),.25)
 reload('[audit]\nhorizontal_margin=.2\n[hud]\nhorizontal_margin=.3')
 near(tuning.get('audit.horizontal_margin'),.3)
+''')
+run('0.3.0.0 lowercase weather settings preserve grading and reset ownership', r'''
+state.lowercase_settings=true
+local feature=require('libs/contrast')()
+for i=1,120 do feature.tick(nil,.016) end;healthy()
+near(state.settings.ColorContrast.W,1.1);near(state.settings.ColorSaturation.W,.95)
+feature.reset();near(state.settings.ColorContrast.W,1)
+assert(not state.settings.bOverride_ColorSaturation)
 ''')

@@ -2,6 +2,7 @@
 -- Native slot selection, action mappings, spell cards and cooldown HUD stay intact.
 local source=package.searchpath('libs/spell_slot_hints',package.path)
 local root=source and source:gsub('\\','/'):match('^(.*)/scripts/libs/spell_slot_hints%.lua$')
+local check_layout=require('libs/hint_layout')
 return function(asset_directory)
 local api,log=uevr.api,uevr.params.functions
 local assets=asset_directory or (root and root..'/assets/control_hints/')
@@ -77,7 +78,7 @@ local function discover(viewport)
         local class=api:find_uobject('WidgetBlueprintGeneratedClass /Game/Interfaces/Spells/UI_Spell_CardSlot.UI_Spell_CardSlot_C')
         if not class then return end
         assert(class:get_short_name()=='UI_Spell_CardSlot_C','Unexpected spell-slot class')
-        field(class,'ID',888);field(class,'actionKey',944);field(class,'HorizontalBox_Keys',856)
+        check_layout(class)
         slot_class=track(class)
     end
     local found={}
@@ -110,7 +111,7 @@ local function update(entry,viewport)
             if first then
                 first=false
                 local class=key:get_class()
-                field(class,'Image_GamepadIcon',848);field(class,'Text_Key',832)
+                check_layout(class)
                 local image,text=key:get_property('Image_GamepadIcon'),key:get_property('Text_Key')
                 if not image or not text then return end
                 assert(image:get_class():get_short_name()=='Image' and text:get_class():get_short_name()=='TextBlock',

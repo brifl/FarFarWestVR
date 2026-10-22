@@ -47,6 +47,7 @@ function apply(h,v) return safe.apply(binding,state.viewport,h or .2,v or .2) en
 KEY = r'''
 state={refreshes=0}
 local offsets={Key=856,gamepadKeys=864,Image_GamepadIcon=848,Text_Key=832,Text_Hold=840}
+state.offsets=offsets
 local function class(name)
  return {get_short_name=function() return name end,get_address=function() return name end,
  find_property=function(_,n) return {get_offset=function() return n=='isGamepad' and 0 or offsets[n] end} end,
@@ -133,6 +134,14 @@ run('unrelated and explicitly overridden actions keep native labels', KEY, r'''
 state.action='IA_SpellA';assert(not hint.update(state.key))
 state.action='IA_Interact';state.override='IA_Other';assert(not hint.update(state.key))
 state.override=nil;state.key.visibility=2;assert(not hint.update(state.key));assert(state.refreshes==0)
+''')
+run('0.3.0.0 key layout keeps X and native hold presentation', KEY, r'''
+for name,value in pairs(state.offsets) do state.offsets[name]=value-16 end
+assert(hint.update(state.key));assert(state.refreshes==1 and state.hold.visibility==3)
+''')
+run('mixed unverified key layouts stop before changing hint presentation', KEY, r'''
+state.offsets.Image_GamepadIcon=832
+assert(not pcall(hint.update,state.key));assert(state.refreshes==0)
 ''')
 
 QUERY = r'''

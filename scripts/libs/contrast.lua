@@ -2,7 +2,7 @@
 return function()
 local api,vr,functions=uevr.api,uevr.params.vr,uevr.params.functions
 local tuning=require('libs/tuning')
-local array,class,scan_index
+local array,class,scan_index,settings_field
 local entries,elapsed,next_scan={},0,0
 local stopped=false
 local specs={
@@ -35,7 +35,7 @@ local function restore_channel(settings,c)
 end
 local function restore(entry)
     if not valid(entry) then return end
-    local settings=entry.object:get_property('Settings')
+    local settings=entry.object:get_property(settings_field)
     for _,c in ipairs(entry.channels) do restore_channel(settings,c) end
 end
 local function reset()
@@ -47,7 +47,11 @@ local function prepare()
     assert(array and array.get_objects_offset()==0 and array.get_item_distance()==24,
         'Compact object array unavailable')
     class=api:find_uobject('Class /Script/Engine.PostProcessComponent')
-    assert(class and class:find_property('Settings'),'Post-process settings unavailable')
+    assert(class,'Post-process component unavailable')
+    -- The 0.3.0.0 reflection name is lowercase; vector/flag checks still gate writes.
+    settings_field=class:find_property('Settings') and 'Settings'
+        or class:find_property('settings') and 'settings'
+    assert(settings_field,'Post-process settings unavailable')
 end
 local function discover()
     if elapsed<next_scan then return end
@@ -64,7 +68,7 @@ local function discover()
                 and owner:get_class():get_short_name():match('^BP_BlendableAtmosphere_')
                 and object:get_property('bEnabled') and object:get_property('bUnbound')
                 and object:get_property('BlendWeight')>0 then
-                local settings=object:get_property('Settings')
+                local settings=object:get_property(settings_field)
                 local entry={object=object,index=index,address=object:get_address(),
                     name=object:get_short_name(),channels={}}
                 for _,spec in ipairs(specs) do
@@ -109,7 +113,7 @@ local function tick(_,delta)
             count=count+1;assert(count<=16,'Unexpected number of weather post-process components')
             if not valid(entry) then entries[address]=nil
             else
-                local settings=entry.object:get_property('Settings')
+                local settings=entry.object:get_property(settings_field)
                 for _,c in ipairs(entry.channels) do apply(settings,c) end
             end
         end

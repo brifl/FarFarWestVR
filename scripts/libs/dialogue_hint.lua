@@ -3,6 +3,7 @@
 return function(valid)
 local api,log=uevr.api,uevr.params.functions
 local key_hint=require('libs/interaction_key')
+local check_layout=require('libs/hint_layout')
 local panel_class,binding,failed,reported
 local function field(class,name,offset)
     local property=class:find_property(name)
@@ -33,7 +34,7 @@ local function bind(source,panel)
         local key=panel:GetChildAt(i)
         if key and key:get_class():get_short_name()=='UI_Key_C' then
             local class=key:get_class()
-            for name,offset in pairs({Key=856,Image_GamepadIcon=848,Text_Key=832}) do field(class,name,offset) end
+            check_layout(class)
             local fn=class:find_function('F_RefreshKey')
             assert(fn and fn:get_properties_size()==1,'Unexpected hint refresh function')
             field(fn,'isGamepad',0)

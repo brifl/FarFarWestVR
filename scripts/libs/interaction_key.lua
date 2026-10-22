@@ -1,5 +1,6 @@
 -- Change presentation only: Quest X emits the native F/Interact action.
 local M={}
+local check_layout=require('libs/hint_layout')
 local checked={}
 local function field(class,name,offset)
     local p=class:find_property(name)
@@ -14,9 +15,7 @@ function M.update(key)
     if hidden(key) then return false end
     local address=class:get_address()
     if not checked[address] then
-        for name,offset in pairs({Key=856,gamepadKeys=864,Image_GamepadIcon=848,Text_Key=832,Text_Hold=840}) do
-            field(class,name,offset)
-        end
+        check_layout(class)
         local fn=class:find_function('F_RefreshKey')
         assert(fn and fn:get_properties_size()==1,'Unexpected interaction refresh parameters')
         field(fn,'isGamepad',0);checked[address]=true

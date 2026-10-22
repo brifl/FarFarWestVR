@@ -29,15 +29,13 @@
      m_wants_device_object_cleanup = true;
  }
  
-@@ -1134,6 +1141,11 @@
+@@ -1134,6 +1141,8 @@
      }
  
-     ImGui::GetIO().MouseDrawCursor = m_draw_ui || FrameworkConfig::get()->is_always_show_cursor();
-+    // Only replace the game-menu cursor. Keep UEVR's panel and gameplay policy.
-+    if (!m_draw_ui && FrameworkConfig::get()->is_always_show_cursor()
-+        && VR::get()->is_using_2d_screen() && g_ffw_menu_cursor.draw()) {
-+        ImGui::GetIO().MouseDrawCursor = false;
-+    }
+-    ImGui::GetIO().MouseDrawCursor = m_draw_ui || FrameworkConfig::get()->is_always_show_cursor();
++    // Keep the forced-cursor input/intersection policy for controller pointing.
++    // The game draws its own cursor; only UEVR's panel needs an ImGui graphic.
++    ImGui::GetIO().MouseDrawCursor = m_draw_ui;
      ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange; // causes bugs with the cursor
  
      if (!m_draw_ui) {
