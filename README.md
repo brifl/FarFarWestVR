@@ -49,8 +49,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
   and editable contrast and saturation multipliers.
 - **Live tuning:** adjust graphics multipliers and HUD heights during play.
-- **Earlier marker initialization:** prepare markers as a level loads to reduce
-  the delay before stabilization.
+- **Faster marker stabilization:** prepare markers as a level loads and promptly
+  discover newly placed tags, reducing the delay before stabilization.
 - **UI monitoring across play sessions:** optional automatic capture preserves
   widget IDs, positions, marker coverage, and input-hint observations in a
   cumulative findings document.

@@ -170,6 +170,8 @@ K2_GetComponentsByClass is 24 bytes (class 0, return 8). Queries are bounded to
 128 actors per family and 16 widget components per actor; a failed fast path
 leaves the existing array discovery active. Widget construction time remains
 outside the helper's control.
+After deploying this fast path in 3533d6a, the user could no longer reproduce
+the new-tag stabilization delay. This item is closed unless the delay recurs.
 
 Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
 horizontal/vertical pixel-to-eye scaling. The height factor is
@@ -242,6 +244,8 @@ the filter. Filtering occurs before adding the world/snap anchor, with shortest
 yaw-wrap interpolation, one sample per engine tick, and resets across menus,
 tracking/controller changes, and long frame gaps. It does not change shot traces
 separately from aim, or smooth headset movement/menu input.
+The user confirmed aiming stabilization looks good; the accepted strength remains
+0.35, adjustable during play.
 
 The new carried pig advertises IA_Drop, bound separately from IA_Interact.
 `libs/carry_drop.lua` resolves the current pawn/items/equipped object on each tick,
