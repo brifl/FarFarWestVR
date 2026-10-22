@@ -197,12 +197,11 @@ gameplay snap turns keep their native stick input. This requires the latest
 isolated backend below and is confirmed working. The game window must have
 focus. Menu placement, B pause/resume and gameplay aiming are preserved.
 
-Game menus use the supplied themed arrow in [assets/menu_cursor.png](../assets/menu_cursor.png).
-Its top-left tip is the click hotspot; it displays at 48 pixels high in a 1440p
-view and scales with the viewport. The UEVR panel retains its standard cursor,
-and immersive gameplay keeps the menu cursor hidden. The isolated backend loads
-the PNG into its existing font texture; a missing image falls back to the standard
-cursor. Changes to the image load on the next game launch.
+The Fear Fear West release supplies a native menu cursor. `pause_screen.lua`
+now keeps FrameworkConfig_AlwaysShowCursor false during menus, gameplay, and
+reset, disabling our forced/themed cursor while preserving UEVR's own panel
+cursor and the existing controller pointer input. The previous themed arrow
+asset and native drawing code remain available but inactive under this policy.
 
 The isolated backend now uses a source build with the modern UE5.8 object
 layout and the accepted rendering/aim compatibility fixes. After pulling this

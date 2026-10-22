@@ -13,7 +13,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   ranges and when casting spells.
 - **Controller-operated menus:** point with the right controller and click with
   the trigger. Menus stay readable and stationary, with B handling pause/resume.
-- **Themed menu cursor:** a custom arrow with a precise tip hotspot.
+- **Native menu cursor:** the game's cursor handles menus; the earlier custom
+  arrow is disabled for the Fear Fear West release.
 - **Movement and snap turning:** left-stick movement and 45-degree turns on the
   right stick.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
