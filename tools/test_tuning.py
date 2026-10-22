@@ -138,12 +138,12 @@ run('INI reload, comments, defaults and invalid-file preservation', r'''
 near(tuning.get('graphics.saturation_multiplier'),.95)
 near(tuning.get('hud.dialogue_offset_y'),-.10)
 near(tuning.get('audit.auto_start'),0)
-near(tuning.get('audit.horizontal_margin'),.10)
-near(tuning.get('audit.vertical_margin'),.15)
+near(tuning.get('hud.left_margin'),.10)
+near(tuning.get('hud.bottom_margin'),.15)
 reload('[graphics]\nsaturation_multiplier = 0.9 ; comment\n[hud]\nboss_health_offset_y=0.12\n[audit]\nauto_start=1\nhorizontal_margin=.12\nvertical_margin=.18\n')
 near(tuning.get('audit.auto_start'),1)
-near(tuning.get('audit.horizontal_margin'),.12)
-near(tuning.get('audit.vertical_margin'),.18)
+near(tuning.get('hud.right_margin'),.12)
+near(tuning.get('hud.top_margin'),.18)
 near(tuning.get('graphics.saturation_multiplier'),.9)
 near(tuning.get('graphics.contrast_multiplier'),1.1)
 near(tuning.get('hud.boss_health_offset_y'),.12)
@@ -256,13 +256,29 @@ near(image.translation.Y,11+1440*.15/2);near(overlay.translation.Y,image.transla
 feature.reset();near(image.translation.Y,11);near(overlay.translation.Y,11)
 ''')
 
-run('real HUD margins accept legacy audit keys but canonical values win regardless of section order', r'''
+run('four edges override legacy axis pairs independently of section order', r'''
 reload('[audit]\nhorizontal_margin=.2\nvertical_margin=.2')
-near(tuning.get('hud.horizontal_margin'),.2);near(tuning.get('audit.vertical_margin'),.2)
+near(tuning.get('hud.left_margin'),.2);near(tuning.get('hud.right_margin'),.2)
+near(tuning.get('hud.top_margin'),.2);near(tuning.get('hud.bottom_margin'),.2)
 reload('[hud]\nhorizontal_margin=.25\n[audit]\nhorizontal_margin=.2')
-near(tuning.get('hud.horizontal_margin'),.25)
+near(tuning.get('hud.left_margin'),.25);near(tuning.get('hud.right_margin'),.25)
 reload('[audit]\nhorizontal_margin=.2\n[hud]\nhorizontal_margin=.3')
-near(tuning.get('audit.horizontal_margin'),.3)
+near(tuning.get('hud.left_margin'),.3);near(tuning.get('hud.right_margin'),.3)
+for _,source in ipairs({
+ '[hud]\nleft_margin=.05\ntop_margin=.12\nhorizontal_margin=.2\nvertical_margin=.3\n[audit]\nvertical_margin=.1',
+ '[audit]\nvertical_margin=.1\n[hud]\nhorizontal_margin=.2\nvertical_margin=.3\nleft_margin=.05\ntop_margin=.12'}) do
+ reload(source)
+ near(tuning.get('hud.left_margin'),.05);near(tuning.get('hud.right_margin'),.2)
+ near(tuning.get('hud.top_margin'),.12);near(tuning.get('hud.bottom_margin'),.3)
+end
+''')
+run('HUD size, aspect switch and independent margins reload with invalid-file preservation', r'''
+reload('[hud]\nscale_multiplier=.7\naspect_correction=0\nleft_margin=.05\nright_margin=.15\ntop_margin=.1\nbottom_margin=.35')
+near(tuning.get('hud.scale_multiplier'),.7);near(tuning.get('hud.aspect_correction'),0)
+near(tuning.get('hud.left_margin'),.05);near(tuning.get('hud.bottom_margin'),.35)
+for _,source in ipairs({'[hud]\nscale_multiplier=0','[hud]\naspect_correction=.5','[hud]\nright_margin=.5'}) do
+ reload(source);near(tuning.get('hud.scale_multiplier'),.7);near(tuning.get('hud.bottom_margin'),.35)
+end
 ''')
 run('0.3.0.0 lowercase weather settings preserve grading and reset ownership', r'''
 state.lowercase_settings=true

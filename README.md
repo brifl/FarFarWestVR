@@ -38,8 +38,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
   for the compass, mission counters/timers, and boss health bar. Minimum edge
   margins bring fixed health, shield, ammo, spell/cooldown, party, currency,
-  and level groups into view without shrinking their contents, with overlap
-  avoidance for groups sharing the same HUD.
+  and level groups into view. Fixed HUD groups have adjustable size, eye-aspect
+  correction, four independent edge margins, and overlap avoidance.
 - **Additional marker families:** shared projection adapters for enemy/object
   health bars and dropped Joker cards preserve native content and attachment offsets.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
@@ -102,18 +102,26 @@ reload during play, about once a second.
 | `boss_health_offset_y` | `0.15` | Lower boss health |
 | `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
 | `compass_offset_y` | `0.15` | Lower the compass and its markers together |
-| `horizontal_margin` | `0.20` | Minimum inset at each horizontal edge for fixed HUD groups |
-| `vertical_margin` | `0.30` | Minimum inset at each vertical edge for fixed HUD groups; headset test pending |
+| `scale_multiplier` | `0.80` | Fixed HUD size; lower makes groups smaller, `1.0` uses native size |
+| `aspect_correction` | `1` | Correct fixed HUD vertical stretch using the eye projection; `0` disables |
+| `left_margin` | `0.20` | Minimum inset from the left edge |
+| `right_margin` | `0.20` | Minimum inset from the right edge |
+| `top_margin` | `0.30` | Minimum inset from the top edge |
+| `bottom_margin` | `0.30` | Minimum inset from the bottom edge |
 
 A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
 fractions of viewport height: positive moves down, negative moves up, and `0`
 restores the original position. For example, `0.10` moves a panel down by ten
-percent. The two margins belong in `[hud]` and use full viewport width/height;
-`0.20` reserves twenty percent at each edge. Groups move intact; a group too large
-to fit is centered without being resized. Zero restores native placement on that
-axis. Reticles, world markers, full-screen effects, and the separate height-controlled
-panels are excluded. Legacy margins under `[audit]` remain compatible, but `[hud]`
-values take precedence. Invalid edits retain the previous settings. The saved world scale is
+percent. Size, aspect correction, and margins belong in `[hud]` and reload live.
+Size accepts `0.25`–`1.50`; aspect correction is independent of size. Each margin
+accepts `0`–`0.40` of full viewport width/height: `0.20` reserves twenty percent
+at that edge. Zero adds no inset; setting both margins on an axis to zero restores
+native placement on that axis. Placement and overlap avoidance use the resized
+bounds; a group still too large to fit is centered. Reticles, world markers,
+full-screen effects, and separate height-controlled panels are excluded.
+Old `horizontal_margin`/`vertical_margin` settings still supply paired edges.
+Explicit edge values win, followed by old `[hud]` values, then old `[audit]` values.
+Invalid edits retain the previous settings. The saved world scale is
 `0.010000`, matching the tested setup; preserve personal runtime adjustments.
 
 ## Development status

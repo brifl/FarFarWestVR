@@ -115,8 +115,9 @@ uevr={api={get_uobject_array=function() return array end,find_uobject=function(_
     params={vr={is_runtime_ready=function() return true end},functions={log_info=log,log_warn=log}}}
 package.loaded['libs/tuning']={get=function(key)
     if key=='audit.auto_start' then return state.auto_start or 0 end
-    if key=='audit.horizontal_margin' then return .1 end
-    assert(key=='audit.vertical_margin');return .15
+    if state.margins and state.margins[key] then return state.margins[key] end
+    if key=='hud.left_margin' or key=='hud.right_margin' then return .1 end
+    assert(key=='hud.top_margin' or key=='hud.bottom_margin');return .15
 end}
 function tick(n,dt) for _=1,n do feature.tick(state.engine,dt or .1) end end
 function start(n) state.files['ui_audit_command.txt']='start '..(n or 3600);tick(11) end
@@ -193,6 +194,24 @@ for _,name in ipairs({'Key','gamepadKeys','Image_GamepadIcon','Text_Key','Text_H
 end
 start();tick(100);stop();healthy()
 ''', inspect_capture)
+
+
+def check_edges(lua):
+    rows, _, errors = report.load_capture(capture(lua))
+    assert not errors, errors
+    for name in ('EdgeLeft', 'EdgeRight', 'EdgeTop', 'EdgeBottom'):
+        row = next(r for r in rows.values() if r['path'].endswith(name))
+        assert row['edge_samples'] > 0, name
+
+
+run('audit flags candidates against each independently configured edge', '''
+state.margins={['hud.left_margin']=.05,['hud.right_margin']=.2,['hud.top_margin']=.25,['hud.bottom_margin']=.35}
+for name,bounds in pairs({EdgeLeft={.04,.4,.1,.5},EdgeRight={.83,.4,.88,.5},
+ EdgeTop={.4,.2,.5,.24},EdgeBottom={.4,.66,.5,.7}}) do
+ local o=attach(state.panel,object(state.health:get_class(),name));o.bounds=bounds
+end
+start();tick(100);stop();healthy()
+''', check_edges)
 
 def assert_completed(lua):
     assert report.load_capture(capture(lua))[1]['end']['reason'] == 'completed'

@@ -1,10 +1,16 @@
 -- Clamp fixed canvas groups using native layout, never our previous rendered position.
 local M={}
 local function finite(n) return type(n)=='number' and n==n and math.abs(n)<1e8 end
-function M.shift(low,high,margin,extent)
-    if high-low>extent-2*margin then return extent/2-(low+high)/2 end
-    if low<margin then return margin-low end
-    if high>extent-margin then return extent-margin-high end
+local function same(a,b) return math.abs(a.X-b.X)<.001 and math.abs(a.Y-b.Y)<.001 end
+local function copy(v) return {X=v.X,Y=v.Y} end
+local function set_scale(widget,value)
+    local typed=widget:GetDesiredSize();typed.X,typed.Y=value.X,value.Y
+    widget:SetRenderScale(typed)
+end
+function M.shift(low,high,minimum,maximum)
+    if high-low>maximum-minimum then return (minimum+maximum-low-high)/2 end
+    if low<minimum then return minimum-low end
+    if high>maximum then return maximum-high end
     return 0
 end
 function M.bind(widget,slate,track,parent_name)
@@ -16,33 +22,39 @@ function M.bind(widget,slate,track,parent_name)
     if not parent or parent:get_short_name()~=(parent_name or 'MovingCanvas') then return end
     local transform=widget:get_property('RenderTransform')
     return {widget=track(widget),slot=track(slot),parent=track(parent),slate=slate,
-        original={X=transform.Translation.X,Y=transform.Translation.Y}}
+        original=copy(transform.Translation),original_scale=copy(transform.Scale)}
 end
 function M.valid(b,valid)
     if not valid(b.widget) or not valid(b.slot) or not valid(b.parent) then return false end
     local slot=b.widget.object:get_property('Slot');local parent=b.slot.object:get_property('Parent')
     return slot and slot:get_address()==b.slot.address and parent and parent:get_address()==b.parent.address
 end
-function M.restore(b,valid)
-    if b.last and valid(b.widget) then
-        local o=b.widget.object;local t=o:get_property('RenderTransform').Translation
-        if math.abs(t.X-b.last.X)<.001 and math.abs(t.Y-b.last.Y)<.001 then o:SetRenderTranslation(b.original) end
-        b.last=nil
-    end
+local function restore(b)
+    local o=b.widget.object;local t=o:get_property('RenderTransform')
+    if b.last and same(t.Translation,b.last) then o:SetRenderTranslation(b.original) end
+    if b.last_scale and same(t.Scale,b.last_scale) then set_scale(o,b.original_scale) end
+    b.last,b.last_scale=nil,nil
 end
-function M.plan(b,viewport,horizontal,vertical)
+function M.restore(b,valid)
+    if (b.last or b.last_scale) and valid(b.widget) then restore(b) end
+end
+function M.plan(b,viewport,margins,multiplier,height_factor)
     local widget,parent,slate=b.widget.object,b.parent.object,b.slate
     local transform=widget:get_property('RenderTransform')
     assert(math.abs(transform.Angle)<.001 and math.abs(transform.Shear.X)<.001 and math.abs(transform.Shear.Y)<.001,
         'Rotated/sheared HUD group requires separate layout')
     local t=transform.Translation
-    if not b.last or math.abs(t.X-b.last.X)>.001 or math.abs(t.Y-b.last.Y)>.001 then
-        b.original={X=t.X,Y=t.Y} -- Respect a new game-owned animation/offset baseline.
+    if not b.last or not same(t,b.last) then
+        b.original=copy(t) -- Respect a new game-owned animation/offset baseline.
     end
+    if not b.last_scale or not same(transform.Scale,b.last_scale) then b.original_scale=copy(transform.Scale) end
+    multiplier,height_factor=multiplier or 1,height_factor or 1
+    local scale={X=b.original_scale.X*multiplier,Y=b.original_scale.Y*multiplier*height_factor}
+    assert(finite(scale.X) and finite(scale.Y),'Invalid HUD scale')
     local layout=b.slot.object:get_property('LayoutData')
     local a=layout.Anchors
     if math.abs(a.Minimum.X-a.Maximum.X)>.00001 or math.abs(a.Minimum.Y-a.Maximum.Y)>.00001 then
-        if b.last then widget:SetRenderTranslation(b.original);b.last=nil end
+        if b.last or b.last_scale then restore(b) end
         return false
     end
     local geometry=parent:GetCachedGeometry()
@@ -61,21 +73,23 @@ function M.plan(b,viewport,horizontal,vertical)
     local y=parent_size.Y*a.Minimum.Y+layout.Offsets.Top-layout.Alignment.Y*size.Y+b.original.Y
     local left,top,right,bottom=math.huge,math.huge,-math.huge,-math.huge
     for _,point in ipairs({{0,0},{size.X,0},{0,size.Y},{size.X,size.Y}}) do
-        local lx=x+pivot.X*size.X+(point[1]-pivot.X*size.X)*transform.Scale.X
-        local ly=y+pivot.Y*size.Y+(point[2]-pivot.Y*size.Y)*transform.Scale.Y
+        local lx=x+pivot.X*size.X+(point[1]-pivot.X*size.X)*scale.X
+        local ly=y+pivot.Y*size.Y+(point[2]-pivot.Y*size.Y)*scale.Y
         local sx,sy=p0.X+xx*lx+xy*ly,p0.Y+yx*lx+yy*ly
         assert(finite(sx) and finite(sy),'Invalid HUD layout bounds')
         left,top,right,bottom=math.min(left,sx),math.min(top,sy),math.max(right,sx),math.max(bottom,sy)
     end
-    local dx=horizontal==0 and 0 or M.shift(left,right,horizontal*viewport.X,viewport.X)
-    local dy=vertical==0 and 0 or M.shift(top,bottom,vertical*viewport.Y,viewport.Y)
+    local min_x,max_x=margins.left*viewport.X,(1-margins.right)*viewport.X
+    local min_y,max_y=margins.top*viewport.Y,(1-margins.bottom)*viewport.Y
+    local horizontal,vertical=margins.left~=0 or margins.right~=0,margins.top~=0 or margins.bottom~=0
+    local dx=horizontal and M.shift(left,right,min_x,max_x) or 0
+    local dy=vertical and M.shift(top,bottom,min_y,max_y) or 0
     return {binding=b,left=left+dx,top=top+dy,right=right+dx,bottom=bottom+dy,
         native={left=left,top=top,right=right,bottom=bottom},dx=dx,dy=dy,
         xx=xx,xy=xy,yx=yx,yy=yy,determinant=determinant,
-        min_x=horizontal*viewport.X,max_x=(1-horizontal)*viewport.X,
-        min_y=vertical*viewport.Y,max_y=(1-vertical)*viewport.Y,
-        width=viewport.X,height=viewport.Y,enabled=horizontal~=0 or vertical~=0,
-        horizontal=horizontal~=0,vertical=vertical~=0}
+        min_x=min_x,max_x=max_x,min_y=min_y,max_y=max_y,scale=scale,height_factor=height_factor,
+        width=viewport.X,height=viewport.Y,enabled=horizontal or vertical,
+        horizontal=horizontal,vertical=vertical}
 end
 local function overlaps(a,b,gap)
     return a.left<b.right+gap and a.right>b.left-gap and a.top<b.bottom+gap and a.bottom>b.top-gap
@@ -127,14 +141,16 @@ function M.commit(p)
     local target={X=b.original.X+(p.yy*p.dx-p.xy*p.dy)/p.determinant,
         Y=b.original.Y+(-p.yx*p.dx+p.xx*p.dy)/p.determinant}
     assert(finite(target.X) and finite(target.Y),'Invalid HUD margin translation')
+    b.last_scale=p.scale -- Cleanup owns partially completed native scale writes.
+    if not same(widget:get_property('RenderTransform').Scale,p.scale) then set_scale(widget,p.scale) end
     if not b.last or math.abs(target.X-t.X)>.001 or math.abs(target.Y-t.Y)>.001 then
         widget:SetRenderTranslation(target)
     end
     b.last=target
     return true
 end
-function M.apply(b,viewport,horizontal,vertical)
-    local p=M.plan(b,viewport,horizontal,vertical)
+function M.apply(b,viewport,margins,multiplier,height_factor)
+    local p=M.plan(b,viewport,margins,multiplier,height_factor)
     return p and M.commit(p) or false
 end
 return M

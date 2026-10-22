@@ -109,8 +109,10 @@ Keep script-reset recovery as an open issue rather than requiring repeated reset
 | hud | boss_health_offset_y | 0.15 | Preserved installed boss-bar offset. |
 | hud | mission_info_offset_y | 0.15 | Lower mission counters and timers by fifteen percent. |
 | hud | compass_offset_y | 0.15 | Lower the compass background and marker overlay together by fifteen percent. |
-| hud | horizontal_margin | 0.20 | Minimum horizontal inset for selected fixed HUD groups. |
-| hud | vertical_margin | 0.30 | Larger vertical inset under headset evaluation. |
+| hud | scale_multiplier | 0.80 | Fixed HUD size, separate from projection-aspect correction. |
+| hud | aspect_correction | 1 | Correct fixed HUD vertical stretch using the active eye projection. |
+| hud | left_margin / right_margin | 0.20 / 0.20 | Independent horizontal edge insets for selected fixed HUD groups. |
+| hud | top_margin / bottom_margin | 0.30 / 0.30 | Independent vertical edge insets. |
 
 HUD offsets use the full viewport height: positive moves down, negative moves up,
 and zero restores the original position. Saturation accepts 0–2, contrast 0.5–2,
@@ -127,13 +129,22 @@ verified NamedSlot_216/CanvasPanel_86 chain. It never shifts MovingCanvas or
 individual inventory children. `libs/hud_safe_area.lua` clamps full
 group bounds using CanvasPanelSlot.LayoutData at 56 and the parent geometry's
 pixel basis. It does not feed corrected child positions back into placement.
+The stereo callback caches only eye projection values; the engine tick uses
+`ui_shape.height_factor` for aspect correction. Each group's native scale is
+multiplied by scale_multiplier on X and scale_multiplier * height_factor on Y,
+with its existing pivot preserved. Bounds and packing use these planned scales
+before native writes. This fixes the newly visible fixed HUD's stretch without
+scaling reticles, markers, or full-screen effects a second time.
 Only fixed anchors without rotation/shear are supported; other layouts stay
 native. Groups sharing a HUD root are then packed without overlap where space
 permits, prioritizing health, spells, cooldowns, and ammo before other panels.
 The measured seven-group layout fits inside 20% horizontal/30% vertical margins.
-Owned translations restore on menus/reset, and native animation changes
-become the new baseline. Margins accept 0–0.4; zero restores that axis. Legacy
-`audit.*_margin` keys alias the canonical `hud.*_margin` keys; canonical values win.
+Owned scale and translation restore independently on menus/reset; native animation
+changes become the new baseline. Size accepts 0.25–1.50, aspect correction is 0/1,
+and margins accept 0–0.4. Both edges at zero restore native placement on that axis;
+size/aspect remain independent. Explicit HUD edges override legacy HUD axis pairs,
+which override legacy audit axis pairs, regardless of INI ordering. Monitoring
+records and flags the same four edge margins. Numeric edits reload live.
 
 Marker discovery front-loads the initial and newly allocated objects within a
 two-millisecond scan budget. Known components are retained while their widgets

@@ -2,6 +2,9 @@ return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
 local tuning=require('libs/tuning')
 local safe=require('libs/hud_safe_area')
+local shape=require('libs/ui_shape')
+local projection=UEVR_Matrix4x4f.new()
+local eye,projection_error
 local query=require('libs/live_widgets')(
     'WidgetBlueprintGeneratedClass /Game/Interfaces/UI_Player.UI_Player_C',8,.25)
 -- Disjoint groups only; moving a parent and one of its children would double-shift it.
@@ -34,7 +37,7 @@ local function tick(engine,delta)
     local ok,err=pcall(function()
         elapsed=elapsed+math.min(math.max(delta or 0,0),.1)
         if not vr.is_runtime_ready() or not vr.is_hmd_active() or _G.farfarwest_gameplay_ready~=true then
-            restore_all();return
+            restore_all();eye=nil;return
         end
         if elapsed<next_apply then return end
         next_apply=elapsed+.1
@@ -44,7 +47,7 @@ local function tick(engine,delta)
             for name in pairs({GetLocalSize=true,LocalToViewport=true}) do assert(c:find_function(name),'Missing HUD geometry '..name) end
             slate=assert(c:get_class_default_object())
             local widget=assert(api:find_uobject('Class /Script/UMG.Widget'))
-            for name,size in pairs({SetRenderTranslation=16,GetParent=8}) do
+            for name,size in pairs({SetRenderTranslation=16,SetRenderScale=16,GetDesiredSize=16,GetParent=8}) do
                 local fn=widget:find_function(name);assert(fn and fn:get_properties_size()==size,'Unexpected HUD method '..name)
             end
             local viewport=assert(api:find_uobject('Class /Script/UMG.WidgetLayoutLibrary'))
@@ -80,7 +83,11 @@ local function tick(engine,delta)
             end
         end
         end
-        local h,v=tuning.get('hud.horizontal_margin'),tuning.get('hud.vertical_margin')
+        local margins={left=tuning.get('hud.left_margin'),right=tuning.get('hud.right_margin'),
+            top=tuning.get('hud.top_margin'),bottom=tuning.get('hud.bottom_margin')}
+        local multiplier=tuning.get('hud.scale_multiplier')
+        local correct_aspect=tuning.get('hud.aspect_correction')==1
+        if correct_aspect and not eye then return end
         local plans={}
         for address,entry in pairs(entries) do
             local canvas=query.valid(entry.root) and entry.root.object:get_property('MovingCanvas')
@@ -98,9 +105,14 @@ local function tick(engine,delta)
             else
                 local viewport=layout:GetViewportSize(entry.root.object)
                 assert(viewport and viewport.X>0 and viewport.Y>0,'Invalid HUD viewport')
+                local factor=1
+                if correct_aspect then factor=shape.height_factor(eye,viewport.X,viewport.Y) end
+                if not factor then return end -- Wait for a usable stereo projection.
                 local visibility=entry.widget.object:get_property('Visibility')
                 local applied,reason=true,nil
-                if visibility~=1 and visibility~=2 then applied,reason=pcall(safe.plan,entry,viewport,h,v) end
+                if visibility~=1 and visibility~=2 then
+                    applied,reason=pcall(safe.plan,entry,viewport,margins,multiplier,factor)
+                end
                 if not applied then
                     pcall(safe.restore,entry,query.valid);entries[address]=nil;rejected[address]=true
                     log.log_warn('[FarFarWest HUD margins] Group stopped: '..entry.widget.name..': '..tostring(reason))
@@ -117,9 +129,15 @@ local function tick(engine,delta)
             if not ok then
                 pcall(safe.restore,entry,query.valid);entries[entry.widget.address]=nil;rejected[entry.widget.address]=true
                 log.log_warn('[FarFarWest HUD margins] Group stopped: '..entry.widget.name..': '..tostring(err))
-            elseif entry.reported~=h..':'..v then
-                entry.reported=h..':'..v
-                log.log_info(string.format('[FarFarWest HUD margins] %s inset H=%.2f V=%.2f.',entry.widget.name,h,v))
+            else
+                local signature=string.format('%.3f:%.3f:%.3f:%.3f:%.3f:%.3f',
+                    margins.left,margins.right,margins.top,margins.bottom,multiplier,plan.height_factor)
+                if entry.reported~=signature then
+                    entry.reported=signature
+                    log.log_info(string.format('[FarFarWest HUD margins] %s inset L/R/T/B=%.2f/%.2f/%.2f/%.2f; scale %.2f; height factor %.5f.',
+                        entry.widget.name,margins.left,margins.right,margins.top,margins.bottom,multiplier,
+                        plan.height_factor))
+                end
             end
         end
     end)
@@ -128,5 +146,21 @@ local function tick(engine,delta)
         log.log_warn('[FarFarWest HUD margins] Stopped safely: '..tostring(err))
     end
 end
-return {tick=tick,reset=restore_all}
+local function camera()
+    if failed or not vr.is_runtime_ready() or not vr.is_hmd_active() or _G.farfarwest_gameplay_ready~=true then
+        eye=nil;return
+    end
+    local ok,err=pcall(function()
+        vr.get_ue_projection_matrix(-1,projection)
+        eye={[0]={[0]=projection:get(0,0)},[1]={[1]=projection:get(1,1)}}
+    end)
+    if not ok then
+        eye=nil
+        if not projection_error then
+            projection_error=true
+            log.log_warn('[FarFarWest HUD margins] Waiting for eye projection: '..tostring(err))
+        end
+    end
+end
+return {tick=tick,camera=camera,reset=function() restore_all();eye=nil end}
 end

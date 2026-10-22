@@ -27,11 +27,14 @@ widget.translation={X=0,Y=0};widget.scale={X=1,Y=1};widget.size={X=160,Y=100}
 function widget:get_property(n)
  assert(not self.dead)
  if n=='Slot' then return slot end
+ if n=='Visibility' then return state.visibility or 4 end
  if n=='RenderTransformPivot' then return {X=.5,Y=.5} end
  assert(n=='RenderTransform');return {Translation=self.translation,Scale=self.scale,Angle=0,Shear={X=0,Y=0}}
 end
 function widget:GetCachedGeometry() return self end
 function widget:SetRenderTranslation(p) assert(not self.dead);state.writes=state.writes+1;self.translation={X=p.X,Y=p.Y} end
+function widget:GetDesiredSize() assert(not self.dead);return {_typed=true,X=self.size.X,Y=self.size.Y} end
+function widget:SetRenderScale(p) assert(not self.dead and p._typed);state.writes=state.writes+1;self.scale={X=p.X,Y=p.Y} end
 local slate={}
 function slate:GetLocalSize(g) if g==canvas then return {X=1280,Y=720} end;assert(g==widget);return widget.size end
 function slate:LocalToViewport(context,g,p,pixel)
@@ -39,9 +42,10 @@ function slate:LocalToViewport(context,g,p,pixel)
  pixel.result={X=(state.parent_x or 0)+2*p.X,Y=(state.parent_y or 0)+2*p.Y}
 end
 safe=require('libs/hud_safe_area')
-state.widget,state.slot,state.canvas=widget,slot,canvas
+state.widget,state.slot,state.canvas,state.make_object=widget,slot,canvas,object
 binding=safe.bind(widget,slate,track)
-function apply(h,v) return safe.apply(binding,state.viewport,h or .2,v or .2) end
+function edges(h,v) return {left=h,right=h,top=v,bottom=v} end
+function apply(h,v) return safe.apply(binding,state.viewport,edges(h or .2,v or .2),state.multiplier,state.factor) end
 '''
 
 KEY = r'''
@@ -123,15 +127,98 @@ state.objects[3]=nil;state.widget.dead=true;local writes=state.writes
 safe.restore(binding,valid);assert(state.writes==writes)
 ''')
 run('oversized groups center without shrinking text', GEOMETRY, r'''
-near(safe.shift(10,910,200,1000),40)
-near(safe.shift(210,790,200,1000),0)
+near(safe.shift(10,910,200,800),40)
+near(safe.shift(210,790,200,800),0)
 ''')
 run('nested lobby groups use their verified parent canvas without reparenting', GEOMETRY, r'''
 state.canvas.name='CanvasPanel_86'
 local nested=safe.bind(state.widget,binding.slate,track,'CanvasPanel_86')
-assert(nested and safe.apply(nested,state.viewport,.2,.3))
+assert(nested and safe.apply(nested,state.viewport,edges(.2,.3)))
 near(state.widget.translation.X,236);near(state.widget.translation.Y,-196)
 safe.restore(nested,valid);near(state.widget.translation.X,0);near(state.widget.translation.Y,0)
+''')
+run('asymmetric edges independently clamp native bottom-right and top-left groups', GEOMETRY, r'''
+local m={left=.05,right=.30,top=.10,bottom=.35}
+local a=state.slot.layout.Anchors;a.Minimum.X=1;a.Maximum.X=1
+state.slot.layout.Alignment.X=1;state.slot.layout.Offsets.Left=-20
+assert(safe.apply(binding,state.viewport,m))
+near(state.widget.translation.X,-364);near(state.widget.translation.Y,-232)
+a.Minimum={X=0,Y=0};a.Maximum={X=0,Y=0}
+state.slot.layout.Alignment={X=0,Y=0};state.slot.layout.Offsets={Left=20,Top=20}
+assert(safe.apply(binding,state.viewport,m))
+near(state.widget.translation.X,44);near(state.widget.translation.Y,52)
+''')
+run('size and aspect correction use resized bounds without accumulating over frames', GEOMETRY, r'''
+state.multiplier=.8;state.factor=.65
+local prior
+for i=1,1000 do
+ local p=safe.plan(binding,state.viewport,edges(.2,.3),state.multiplier,state.factor)
+ near(p.right-p.left,256);near(p.bottom-p.top,104)
+ assert(p.left>=512 and p.right<=2048 and p.top>=432 and p.bottom<=1008)
+ assert(safe.commit(p));near(state.widget.scale.X,.8);near(state.widget.scale.Y,.52)
+ local current=state.writes;if prior then assert(current==prior) end;prior=current
+end
+state.multiplier=1;state.factor=1;assert(apply(0,0))
+near(state.widget.scale.X,1);near(state.widget.scale.Y,1)
+near(state.widget.translation.X,0);near(state.widget.translation.Y,0)
+''')
+run('scale ownership restores native animation values and skips destroyed widgets', GEOMETRY, r'''
+state.multiplier=.8;state.factor=.65;assert(apply())
+state.widget.scale={X=1.2,Y=.9};assert(apply())
+near(state.widget.scale.X,.96);near(state.widget.scale.Y,.468)
+safe.restore(binding,valid);near(state.widget.scale.X,1.2);near(state.widget.scale.Y,.9)
+assert(apply());state.widget.scale={X=1.1,Y=.7};safe.restore(binding,valid)
+near(state.widget.scale.X,1.1);near(state.widget.scale.Y,.7)
+assert(apply());state.objects[3]=nil;state.widget.dead=true
+local writes=state.writes;safe.restore(binding,valid);assert(state.writes==writes)
+''')
+run('stretched replacement layouts release both scale and translation ownership', GEOMETRY, r'''
+state.multiplier=.8;state.factor=.65;assert(apply())
+state.slot.layout.Anchors.Maximum.X=1;assert(not apply())
+near(state.widget.translation.X,0);near(state.widget.translation.Y,0)
+near(state.widget.scale.X,1);near(state.widget.scale.Y,1)
+''')
+run('HUD coordinator waits for projection, reloads size and restores on menu transitions', GEOMETRY, r'''
+local root=state.make_object(4,'UI_Player_C')
+function root:get_class() return {find_property=function(_,n)
+ assert(n=='MovingCanvas');return {get_offset=function() return 960 end} end} end
+function root:get_property(n) assert(n=='MovingCanvas');return state.canvas end
+function state.canvas:GetChildrenCount() return 1 end
+function state.canvas:GetChildAt(i) assert(i==0);return state.widget end
+package.loaded['libs/live_widgets']=function()
+ return {track=track,valid=valid,get=function() return {track(root)} end,reset=function() end}
+end
+state.settings={['hud.left_margin']=.05,['hud.right_margin']=.2,['hud.top_margin']=.25,
+ ['hud.bottom_margin']=.35,['hud.scale_multiplier']=.8,['hud.aspect_correction']=1}
+package.loaded['libs/tuning']={get=function(n) return assert(state.settings[n],n) end}
+UEVR_Matrix4x4f={new=function() return {get=function(_,c) return c==0 and 1 or (state.fy or 1.15) end} end}
+local sizes={SetRenderTranslation=16,SetRenderScale=16,GetDesiredSize=16,GetParent=8,GetViewportSize=24}
+local function cls(default)
+ return {get_class_default_object=function() return default end,
+  find_function=function(_,n) return {get_properties_size=function() return assert(sizes[n],n) end} end}
+end
+state.logs={}
+local function log(s) state.logs[#state.logs+1]=s end
+uevr={api={find_uobject=function(_,path)
+ if path=='Class /Script/UMG.SlateBlueprintLibrary' then return cls(binding.slate) end
+ if path=='Class /Script/UMG.Widget' then return cls() end
+ assert(path=='Class /Script/UMG.WidgetLayoutLibrary')
+ return cls({GetViewportSize=function() return state.viewport end})
+end},params={vr={is_runtime_ready=function() return true end,is_hmd_active=function() return true end,
+ get_ue_projection_matrix=function(eye,m) assert(eye==-1 and m) end},functions={log_info=log,log_warn=log}}}
+_G.farfarwest_gameplay_ready=true
+local feature=require('libs/hud_margins')()
+feature.tick({},.1);near(state.widget.scale.X,1)
+feature.camera();feature.tick({},.1)
+for _,s in ipairs(state.logs) do assert(not s:find('Stopped',1,true),s) end
+near(state.widget.scale.X,.8);near(state.widget.scale.Y,.5175)
+state.settings['hud.scale_multiplier']=.6;feature.tick({},.1)
+near(state.widget.scale.X,.6);near(state.widget.scale.Y,.388125)
+state.fy=0;feature.camera();feature.tick({},.1);near(state.widget.scale.Y,.388125)
+state.settings['hud.aspect_correction']=0;feature.tick({},.1);near(state.widget.scale.Y,.6)
+_G.farfarwest_gameplay_ready=false;feature.tick({},.1)
+near(state.widget.scale.X,1);near(state.widget.scale.Y,1);near(state.widget.translation.Y,0)
+for _,s in ipairs(state.logs) do assert(not s:find('Stopped',1,true),s) end
 ''')
 run('measured HUD groups pack inside margins without ammo/cooldown overlap or drift', GEOMETRY, r'''
 local function plan(name,priority,native,box)

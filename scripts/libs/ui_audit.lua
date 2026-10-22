@@ -117,7 +117,8 @@ local function start(seconds)
     poll,next_query,next_flush,next_status,scan_index,next_scan=0,0,30,10,0,0
     errors,scans,max_tick_ms,queue_dropped=0,0,0,0
     store.event({type='start',version=1,duration=duration,
-        horizontal_margin=tuning.get('audit.horizontal_margin'),vertical_margin=tuning.get('audit.vertical_margin'),
+        left_margin=tuning.get('hud.left_margin'),right_margin=tuning.get('hud.right_margin'),
+        top_margin=tuning.get('hud.top_margin'),bottom_margin=tuning.get('hud.bottom_margin'),
         text_access='Action bindings and key-widget modes; arbitrary FText strings unavailable',
         bounds='Normalized viewport bounds; these are diagnostic margins, not a headset visibility measurement'})
     assert(file:flush());command('active '..output);status('active');session_note('started')
@@ -292,8 +293,8 @@ local function sample(ref,viewport)
         end
         data.x0,data.y0,data.x1,data.y1=bounds(o,viewport)
         if data.x0 then
-            local h,v=tuning.get('audit.horizontal_margin'),tuning.get('audit.vertical_margin')
-            data.edge=data.x0<h or data.x1>1-h or data.y0<v or data.y1>1-v
+            data.edge=data.x0<tuning.get('hud.left_margin') or data.x1>1-tuning.get('hud.right_margin')
+                or data.y0<tuning.get('hud.top_margin') or data.y1>1-tuning.get('hud.bottom_margin')
             local area=(data.x1-data.x0)*(data.y1-data.y0)
             if data.edge and area<.4 and not panel and not coverage then data.flag=data.flag or 'edge_hud_candidate' end
         end
