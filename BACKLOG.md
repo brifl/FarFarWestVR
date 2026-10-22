@@ -19,11 +19,42 @@ Keep historical observations distinct from active problems and verified fixes.
 | Priority | Open work | Acceptance condition |
 | --- | --- | --- |
 | Validate first | Fear Fear West 0.3.0.0 compatibility | Guarded backend and updated key/slot/grading layouts are deployed. Startup confirms SDK access, reticle/marker projection, and grading; controller menu pointing is confirmed. The native cursor copy is visible and its centered hotspot aligns. Recheck remaining visuals and hints through normal play. |
-| Validate next | Shared fixed-HUD margins | Health and cooldowns are visible with 30% vertical/20% horizontal margins. Level/currency and lobby hints now participate; packing separates overlapping selected groups where space permits. Confirm ammo/cooldown separation and readability through menus/level changes; zero restores native placement. |
+| Validate next | Shared fixed-HUD margins | The user can now see the HUD elements with 30% vertical/20% horizontal margins. Level/currency and lobby hints participate; packing separates overlapping selected groups where space permits. Confirm ammo/cooldown separation through menus/level changes; zero restores native placement. Proportions and size remain a separate open issue below. |
+| Fix next | Fixed-HUD proportions and size | Newly visible HUD elements are elongated and too large. Measure their geometry, reuse projection-aware aspect correction where appropriate, and expose an independent size multiplier in tuning.ini. Preserve margins, packing, content, and attachment points; avoid applying correction twice to existing reticles/markers. |
 | Validate next | Shared health-bar and dropped-card markers | Implemented for captured enemy, Cryptic Train, barrel, boss-spawn, and dropped Joker families. Confirm native values/content, moving attachment offsets, visibility, and target anchoring in combat. Socket/absolute attachments remain native. |
 | Validate next | Shared interaction hints | Implemented for action-bound IA_Interact keys, including targeting, dialogue, and dropped-item contexts. Confirm X stays stable and hold progress works. Literal embedded FText remains a separate discovery case. |
 | Ongoing | Additional marker/HUD/hint families | Use stable IDs and native relationships from monitoring; include other-player markers when encountered. Reuse shared projection/placement logic while preserving native content and edge behavior. |
 | Ongoing | Combat validation | Confirm boss-bar height and remaining combat HUD after shared placement; keep heights adjustable in tuning.ini. |
+
+## Additional gesture controls
+
+**Design/backlog only.** The newly visible right-side hint panel lists
+**Emote, Battlecry, Melee, and Challenges**. The user reports these actions are
+not reachable with the current VR controls. Add access to all four and update
+their hints to match the eventual VR bindings.
+
+Proposed activation: bring the **right controller near the head**, then use the
+**right thumbstick's four directions** as an additional directional layer,
+similar to the existing left-controller head gesture. Direction assignments are
+still undecided; identify each native action/binding before choosing mappings.
+
+- Check whether UEVR supports an independent right-hand layer alongside the
+  existing left-hand gesture; use a shared Lua input router if necessary.
+- Preserve right-stick snap turning and tagging outside the gesture. While the
+  gesture is active, consume its directions and gate the Lua snap-turn path so
+  selecting an action cannot also turn the view.
+- Trigger once per deliberate deflection; require neutral before rearming, use
+  separate enter/exit thresholds, and cancel on menus or tracking loss.
+- Keep the left-hand shifted D-pad, horse/map/utility/photo actions, aiming,
+  spells, and menu pointing usable. Verify native press/hold/release behavior
+  for each new action and avoid duplicate synthetic/native input.
+- Make the experimental layer switchable while testing. It can be implemented
+  independently of loose hands; later physical emote/melee gestures remain
+  separate work.
+
+Acceptance: all four actions are reachable with stable matching hints, no
+accidental snap turns or repeated actions, and normal controls return cleanly
+when the controller leaves the head area or the layer is disabled.
 
 ## Loose hands and tracked weapons
 
