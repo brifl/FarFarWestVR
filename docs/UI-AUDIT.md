@@ -123,6 +123,12 @@ The widget asset paths and map names are diagnostic metadata.
 Discovery is incremental (up to 16 widgets and 256 UObject entries per engine
 tick, with a soft 0.75 ms Lua work budget). Native calls and checkpoint writes may
 exceed that soft budget; the status file reports the largest observed active tick.
+Viewport roots seed nested widget traversal, and discovered WidgetComponents
+explicitly seed their screen/world widgets. The native query no longer includes
+every retained UserWidget: that broad query stopped capture 16 after seven minutes
+when it exceeded 1,024 results. The query budget stays unchanged. Collect retains
+per-session status files so a known failed capture stays identified in history;
+new failures also write explicit error/end records when the output remains writable.
 The capture stops after 3,600 seconds of engine time or at 16 MiB, with caps of
 4,096 catalog IDs, 8,192 queued widgets, 2,048 component associations, and 512 class
 schemas. Capture 15 reached the ID limit before every late multiplayer family

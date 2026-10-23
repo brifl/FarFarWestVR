@@ -137,6 +137,7 @@ def run(name, code):
 run('INI reload, comments, defaults and invalid-file preservation', r'''
 near(tuning.get('graphics.saturation_multiplier'),.95)
 near(tuning.get('hud.dialogue_offset_y'),-.10)
+near(tuning.get('hud.boss_health_scale_multiplier'),.85)
 near(tuning.get('audit.auto_start'),0)
 near(tuning.get('hud.left_margin'),.10)
 near(tuning.get('hud.bottom_margin'),.15)
@@ -279,6 +280,12 @@ near(tuning.get('hud.left_margin'),.05);near(tuning.get('hud.bottom_margin'),.35
 for _,source in ipairs({'[hud]\nscale_multiplier=0','[hud]\naspect_correction=.5','[hud]\nright_margin=.5'}) do
  reload(source);near(tuning.get('hud.scale_multiplier'),.7);near(tuning.get('hud.bottom_margin'),.35)
 end
+''')
+run('boss size tuning is independent of its offset and fixed HUD size', r'''
+reload('[hud]\nboss_health_scale_multiplier=.7\nboss_health_offset_y=.15\nscale_multiplier=.85')
+near(tuning.get('hud.boss_health_scale_multiplier'),.7)
+near(tuning.get('hud.boss_health_offset_y'),.15);near(tuning.get('hud.scale_multiplier'),.85)
+reload('[hud]\nboss_health_scale_multiplier=0');near(tuning.get('hud.boss_health_scale_multiplier'),.7)
 ''')
 run('aim stabilization and cursor style reload within their supported ranges', r'''
 reload('[cursor]')

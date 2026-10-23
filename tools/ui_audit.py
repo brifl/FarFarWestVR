@@ -99,6 +99,15 @@ def merge_captures(paths, archive):
         rows, meta, errors = load_capture(path.read_text(encoding='utf-8'))
         session = path.relative_to(archive).with_suffix('').as_posix()
         end = meta.get('end', {})
+        # Earlier helpers closed on an outer error without writing an end record.
+        # Preserve the matching status alongside its session so later collections
+        # cannot turn that known failure back into an unexplained interruption.
+        status_path = path.with_suffix('.status.json')
+        if not end and status_path.exists():
+            status = json.loads(status_path.read_text())
+            if status.get('file') == path.name and status.get('state') in ('error', 'completed', 'stopped', 'size limit'):
+                end = dict(reason=status['state'], elapsed=status.get('elapsed', 0),
+                           errors=status.get('errors', 0), dropped=status.get('dropped'))
         sessions.append({'id': session, 'widgets': len(rows),
                          'reason': end.get('reason', 'unfinished; last checkpoint'),
                          'elapsed': end.get('elapsed', max((r.get('last', 0) for r in rows.values()), default=0)),
@@ -257,6 +266,12 @@ sys.stdout.buffer.write(output.getvalue())
                 raise ValueError('Oversized capture: ' + name)
             tmp = (dest / name).with_suffix('.tmp')
             tmp.write_bytes(z.read(info));tmp.replace(dest / name)
+    status_path = dest / 'ui_audit_status.json'
+    if status_path.exists():
+        status = json.loads(status_path.read_text())
+        name = status.get('file', '')
+        if re.fullmatch(r'ui-audit-[0-9]+\.jsonl', name) and (dest / name).exists():
+            (dest / name).with_suffix('.status.json').write_text(json.dumps(status, indent=2)+'\n')
     return write_history(archive, document)
 
 

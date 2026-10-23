@@ -8,11 +8,12 @@ local query=require('libs/live_widgets')
 local specs={
  {path='/Game/Interfaces/UI_Player.UI_Player_C',children={Image_Compass=1008,Overlay_Pings=944}},
  {path='/Game/Interfaces/UI_NpcTalk.UI_NpcTalk_C',field='TextBlock_Text',offset=832},
- {path='/Game/Interfaces/Boss/UI_Lifebar_Boss.UI_Lifebar_Boss_C',field='ProgressBar_Boss',offset=840},
+ {path='/Game/Interfaces/Boss/UI_Lifebar_Boss.UI_Lifebar_Boss_C',field='ProgressBar_Boss',offset=840,
+  scale_key='hud.boss_health_scale_multiplier',anchor={X=.5,Y=0}},
  {path='/Game/Interfaces/UI_Counter.UI_Counter_C',field='Text_Title',offset=816},
  {path='/Game/Interfaces/UI_Timer.UI_Timer_C',field='TextBlock_Seconds',offset=816},
 }
-for _,s in ipairs(specs) do s.query=query('WidgetBlueprintGeneratedClass '..s.path,16,.5) end
+for _,s in ipairs(specs) do s.query=query('WidgetBlueprintGeneratedClass '..s.path,16,.5,true) end
 local projection=UEVR_Matrix4x4f.new()
 local eye,layout,elapsed,entries,failed=nil,nil,0,{},false
 local rejected={}
@@ -36,7 +37,8 @@ local function bind(o,root,s,name)
  local t=o:get_property('RenderTransform')
  assert(math.abs(t.Angle)<.001 and math.abs(t.Shear.X)<.001 and math.abs(t.Shear.Y)<.001,
   'Rotated/sheared overlay requires its own calibration')
- entries[address]={ref=s.query.track(o),root=root,query=s.query,field=name,binding=shape.bind(o)}
+ entries[address]={ref=s.query.track(o),root=root,query=s.query,field=name,
+  scale_key=s.scale_key,binding=shape.bind(o,s.anchor)}
 end
 local function tick(engine,delta)
  if failed then return end
@@ -53,9 +55,11 @@ local function tick(engine,delta)
    end
    field(c,'RenderTransform',144);field(c,'RenderTransformPivot',200)
   end
+  local present={}
   for _,s in ipairs(specs) do
    for _,root in pairs(s.query.get(engine,elapsed)) do
     if s.query.valid(root) and not rejected[root.address] then
+     present[root.address]=true
      local bound,reason=pcall(function()
       local o=root.object
       if s.children then
@@ -80,17 +84,18 @@ local function tick(engine,delta)
    end
   end
   for address,entry in pairs(entries) do
-   local valid=entry.query.valid(entry.ref) and entry.query.valid(entry.root)
+   local valid=present[entry.root.address] and entry.query.valid(entry.ref) and entry.query.valid(entry.root)
    if valid and entry.field then
     local child=entry.root.object:get_property(entry.field)
     valid=child and child:get_address()==address
    elseif valid then valid=not entry.ref.object:GetParent() end
    if not valid then pcall(restore,entry);entries[address]=nil
-   elseif tuning.get('hud.aspect_correction')==0 then shape.restore(entry.binding)
+   elseif tuning.get('hud.aspect_correction')==0 then
+    shape.apply(entry.binding,1,entry.scale_key and tuning.get(entry.scale_key) or 1)
    elseif eye then
     local viewport=layout:GetViewportSize(entry.root.object)
     local factor=viewport and shape.height_factor(eye,viewport.X,viewport.Y)
-    if shape.apply(entry.binding,factor) and not entry.reported then
+    if shape.apply(entry.binding,factor,entry.scale_key and tuning.get(entry.scale_key) or 1) and not entry.reported then
      entry.reported=true;log.log_info('[FarFarWest HUD shape] Corrected '..entry.ref.name..' while preserving native placement.')
     end
    end

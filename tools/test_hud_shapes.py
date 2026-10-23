@@ -30,11 +30,15 @@ function make(name,sx,sy)
 end
 local function ref(o) return {object=o,index=o.index,address=o:get_address(),name=o.name} end
 local function valid(r) return r and state.objects[r.index]==r.object end
-package.loaded['libs/live_widgets']=function(path)
+package.loaded['libs/live_widgets']=function(path,limit,interval,top)
+ assert(top==true,'HUD shapes must query viewport roots, not retained widget instances')
  return {get=function() local out={};for _,o in ipairs(state.roots[path] or {}) do out[#out+1]=ref(o) end;return out end,
  valid=valid,track=ref,reset=function() end}
 end
-package.loaded['libs/tuning']={get=function(n) assert(n=='hud.aspect_correction');return state.aspect end}
+package.loaded['libs/tuning']={get=function(n)
+ if n=='hud.boss_health_scale_multiplier' then return state.boss_scale or .85 end
+ assert(n=='hud.aspect_correction');return state.aspect
+end}
 state.player=make('UI_Player_C');state.image=make('Image_Compass',.8,.8);state.pings=make('Overlay_Pings')
 state.player.props.Image_Compass=state.image;state.player.props.Overlay_Pings=state.pings
 state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/UI_Player.UI_Player_C']={state.player}
@@ -44,6 +48,7 @@ for _,path in ipairs({'/Game/Interfaces/UI_NpcTalk.UI_NpcTalk_C','/Game/Interfac
  local o=make(path,1.2,1.2);state.panels[#state.panels+1]=o
  state.roots['WidgetBlueprintGeneratedClass '..path]={o}
 end
+state.panels[2].scale={X=1,Y=1}
 UEVR_Matrix4x4f={new=function() return {get=function(_,c) return c==0 and 1 or 1.15 end} end}
 local function log(s) state.logs[#state.logs+1]=s end
 local methods={GetDesiredSize=16,SetRenderScale=16,SetRenderTransformPivot=16,GetParent=8,GetViewportSize=24}
@@ -77,7 +82,8 @@ assert(state.image.translation.Y==4 and state.pings.translation.Y==4)
 ''')
 run('dialogue, boss, counters and timers share shape correction; nested HUD groups are excluded', '''
 state.panels[4].parent=state.player;frame();healthy()
-for i=1,3 do near(state.panels[i].scale.Y,1.2*.646875) end
+near(state.panels[1].scale.Y,1.2*.646875);near(state.panels[2].scale.Y,.85*.646875)
+near(state.panels[3].scale.Y,1.2*.646875)
 near(state.panels[4].scale.Y,1.2)
 ''')
 run('game-driven scale baselines remain animated and never compound', '''
@@ -104,6 +110,26 @@ state.bad=false;frame();near(state.image.scale.Y,.8)
 ''')
 run('one unsupported panel does not disable compass or other verified HUD families', '''
 state.bad_field='ProgressBar_Boss';frame();healthy()
-near(state.panels[2].scale.Y,1.2);near(state.panels[1].scale.Y,1.2*.646875)
+near(state.panels[2].scale.Y,1);near(state.panels[1].scale.Y,1.2*.646875)
 near(state.pings.scale.Y,.646875)
+''')
+run('boss canvas scales about top center without adding a screen-center displacement', '''
+local boss=state.panels[2]
+frame();healthy();near(boss.pivot.X,.5);near(boss.pivot.Y,0)
+near(boss.scale.X,.85);near(boss.scale.Y,.85*.646875)
+local height=1440;local bar_y=.13*height
+-- The existing offset helper adds 15% once. Scaling must add no pivot displacement.
+local function displayed() return (bar_y-boss.pivot.Y*height)*boss.scale.Y+boss.pivot.Y*height+.15*height end
+near(displayed(),(.13*.85*.646875+.15)*height)
+assert(displayed()<height*.25)
+for i=1,100 do frame() end;healthy();assert(displayed()<height*.25)
+state.boss_scale=.7;frame();near(boss.scale.X,.7);near(boss.scale.Y,.7*.646875)
+state.aspect=0;frame();near(boss.scale.Y,.7)
+state.boss_scale=1;frame();near(boss.scale.Y,1);near(boss.pivot.Y,.5)
+feature.reset();near(boss.scale.X,1);near(boss.pivot.Y,.5)
+''')
+run('removed viewport panels release owned shapes without waiting for a world change', '''
+frame();local boss=state.panels[2]
+state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/Boss/UI_Lifebar_Boss.UI_Lifebar_Boss_C']={}
+frame();healthy();near(boss.scale.X,1);near(boss.pivot.Y,.5)
 ''')

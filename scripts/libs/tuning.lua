@@ -6,6 +6,7 @@ local rules={
     ['graphics.fog_density_multiplier']={0,0,1},
     ['hud.dialogue_offset_y']={-.10,-.5,.5},
     ['hud.boss_health_offset_y']={.08,-.5,.5},
+    ['hud.boss_health_scale_multiplier']={.85,.25,1.5},
     ['hud.mission_info_offset_y']={.10,-.5,.5},
     ['hud.compass_offset_y']={.10,-.5,.5},
     ['audit.auto_start']={0,0,1},

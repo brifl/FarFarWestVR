@@ -47,7 +47,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Possession-aware reticle:** aiming traces follow the current player after
   mounting and dismounting, avoiding the earlier stale-pawn freeze.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
-  for the compass, mission counters/timers, and boss health bar. Minimum edge
+  for the compass, mission counters/timers, and boss health bar, plus independent
+  boss-bar size with scaling anchored at the top of the screen. Minimum edge
   margins bring fixed health, shield, ammo, spell/cooldown, party, currency,
   and level groups into view. Fixed HUD groups have adjustable size, eye-aspect
   correction, four independent edge margins, and overlap avoidance. Gameplay
@@ -112,6 +113,7 @@ reload during play, about once a second.
 | `fog_density_multiplier` | `0.20` | Reduce primary distance haze to twenty percent |
 | `dialogue_offset_y` | `-0.10` | Raise conversation text |
 | `boss_health_offset_y` | `0.15` | Lower boss health |
+| `boss_health_scale_multiplier` | `0.85` | Boss overlay size; independent of fixed HUD size |
 | `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
 | `compass_offset_y` | `0.15` | Lower the compass and its markers together |
 | `[hud] scale_multiplier` | `0.85` | Fixed HUD size; lower makes groups smaller, `1.0` uses native size |

@@ -96,9 +96,9 @@ local viewport=object(vpclass);local engine=object(class('Engine'));engine.props
 state.engine=engine
 local lib=class('WidgetBlueprintLibrary')
 lib.cdo={GetAllWidgetsOfClass=function(_,context,found,kind,top)
-    assert(context==viewport and kind==u and top==false)
+    assert(context==viewport and kind==u and top==true)
     state.query_count=state.query_count+1
-    for _,o in ipairs(state.found) do found[#found+1]=o end
+    for _,o in ipairs(state.found) do if o:IsInViewport() then found[#found+1]=o end end
 end}
 local slate=class('SlateBlueprintLibrary')
 slate.cdo={GetLocalSize=function() return {X=100,Y=100} end}
@@ -216,6 +216,23 @@ start();tick(100);stop();healthy()
 def assert_completed(lua):
     assert report.load_capture(capture(lua))[1]['end']['reason'] == 'completed'
 
+
+run('retained menu instances do not exhaust query budget; component markers are still recorded', '''
+for i=1,1100 do state.found[#state.found+1]=object(class('RetainedMenu'),'RetainedMenu_'..i) end
+start();tick(200);stop();healthy()
+''', inspect_capture)
+
+def check_root_budget_error(lua):
+    _, meta, errors = report.load_capture(capture(lua))
+    assert meta['end']['reason'] == 'error' and meta['end']['errors'] == 1
+    assert any('query exceeds budget' in message for message in errors)
+
+run('a genuine viewport-root budget failure is saved as an explicit capture error', '''
+state.found={}
+for i=1,1025 do local o=object(class('ViewportMenu'),'ViewportMenu_'..i);o.in_viewport=true;state.found[i]=o end
+start();tick(20)
+assert(state.files['ui_audit_command.txt']=='error\\n')
+''', check_root_budget_error)
 
 run('automatic stop is one-shot and never restarts itself', '''
 start(10);tick(250);healthy()
@@ -357,6 +374,17 @@ with TemporaryDirectory() as d:
     assert 'new fix' in text and 'Missing from a later session does not mean fixed' in text
 print('PASS cumulative report deduplicates revisions and repeat collection across sessions')
 print('PASS interrupted sessions retain findings and later coverage does not erase history')
+
+with TemporaryDirectory() as d:
+    archive = Path(d)
+    source = archive / 'ui-audit-000016.jsonl'
+    source.write_text('{"type":"start"}\n')
+    source.with_suffix('.status.json').write_text(json.dumps(dict(
+        file=source.name, state='error', elapsed=421.8, errors=0, dropped=17101)))
+    _, sessions = report.merge_captures([source], archive)
+    assert sessions[0]['ended'] and sessions[0]['reason'] == 'error'
+    assert sessions[0]['elapsed'] == 421.8 and sessions[0]['dropped'] == 17101
+print('PASS per-session status preserves an older capture failure with no end record')
 
 with TemporaryDirectory() as d:
     root = Path(d)

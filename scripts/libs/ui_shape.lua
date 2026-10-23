@@ -46,9 +46,11 @@ function M.restore(binding)
         and not same(binding.pivot,binding.anchor) then pivot(widget,binding.pivot) end
     binding.written=false
 end
-function M.apply(binding,factor)
+function M.apply(binding,factor,multiplier)
     if not binding or binding.disabled then return false end
-    if not finite(factor) or factor<.1 or factor>10 then M.restore(binding);return false end
+    multiplier=multiplier or 1
+    if not finite(factor) or factor<.1 or factor>10
+        or not finite(multiplier) or multiplier<=0 or multiplier>10 then M.restore(binding);return false end
     local widget=binding.widget
     local current=widget:get_property('RenderTransform').Scale
     local current_pivot=widget:get_property('RenderTransformPivot')
@@ -58,8 +60,8 @@ function M.apply(binding,factor)
         -- Respect game-driven transform changes instead of moving its attachment.
         M.restore(binding);binding.disabled=true;return false
     end
-    if near(factor,1) then M.restore(binding);return true end
-    local target={X=binding.scale.X,Y=binding.scale.Y*factor}
+    if near(factor,1) and near(multiplier,1) then M.restore(binding);return true end
+    local target={X=binding.scale.X*multiplier,Y=binding.scale.Y*factor*multiplier}
     binding.applied=target;binding.written=true -- Cleanup owns partial setter failure.
     if not same(current_pivot,binding.anchor) then pivot(widget,binding.anchor) end
     if not same(current,target) then scale(widget,target) end

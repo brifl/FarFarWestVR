@@ -180,12 +180,17 @@ local function enqueue(o)
 end
 local function discover(viewport)
     local found={}
-    library:GetAllWidgetsOfClass(viewport,found,classes.UserWidget,false)
+    library:GetAllWidgetsOfClass(viewport,found,classes.UserWidget,true)
     assert(#found<=1024,'Audit user-widget query exceeds budget')
     queue,head,visited={},1,{}
     for _,o in ipairs(found) do
         local ref=track(o)
         if ref then enqueue(o) end
+    end
+    -- Screen/world component widgets are not viewport roots. Seed them explicitly
+    -- rather than enumerating every retained UserWidget in a long-running session.
+    for _,link in pairs(links) do
+        if valid(link.source) then enqueue(link.source.object) end
     end
     scans=scans+1;next_query=elapsed+3
 end
@@ -212,6 +217,7 @@ local function components(deadline)
                 if c and s and a and (links[s.address] or link_count<2048) then
                     if not links[s.address] then link_count=link_count+1 end
                     links[s.address]={component=c,source=s,owner=a}
+                    enqueue(source)
                 end
             end
         end
@@ -367,7 +373,16 @@ local function tick(engine,delta)
     if not ok then
         log.log_warn('[FarFarWest audit] Stopped safely: '..tostring(err))
         active=false
-        if file then pcall(file.flush,file);pcall(file.close,file);file=nil end
+        errors=errors+1
+        if file then
+            pcall(function()
+                local stats=store.stats()
+                store.event({type='error',message=tostring(err)})
+                store.event({type='end',reason='error',elapsed=elapsed,errors=errors,
+                    records=stats.records,dropped=stats.dropped,bytes=stats.bytes})
+            end)
+            pcall(file.flush,file);pcall(file.close,file);file=nil
+        end
         pcall(function() if store then status('error') end;command('error') end)
         queue,visited,links,schemas={}, {}, {}, {}
     end

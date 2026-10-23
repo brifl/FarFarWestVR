@@ -393,7 +393,7 @@ state.target=obj('UI_Key_C');state.viewport_class={}
 state.viewport=obj('Viewport');state.engine=obj('Engine',{GameViewport=state.viewport})
 state.key=obj('UI_Key_1')
 local lib={GetAllWidgetsOfClass=function(_,world,found,class,top)
- assert(world==state.engine.props.GameViewport and class==state.target and top==false)
+ assert(world==state.engine.props.GameViewport and class==state.target and top==(state.top_only or false))
  state.queries=state.queries+1
  if state.objects[state.key.index] then found[1]=state.key end
 end}
@@ -426,4 +426,9 @@ run('native query waits for a late-loaded class without enabling UObjectHook', Q
 state.loaded=false;assert(next(query.get(state.engine,0))==nil)
 state.loaded=true;assert(next(query.get(state.engine,.3)))
 assert(state.queries==1)
+''')
+run('viewport-only queries opt in while nested key queries keep their original scope', QUERY, r'''
+state.top_only=true
+query=require('libs/live_widgets')('WidgetBlueprintGeneratedClass /Test/UI_Key.UI_Key_C',8,.25,true)
+assert(next(query.get(state.engine,0)))
 ''')

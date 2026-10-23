@@ -107,6 +107,7 @@ Keep script-reset recovery as an open issue rather than requiring repeated reset
 | graphics | fog_density_multiplier | 0.20 | Current reduced-haze setting; 1.0 uses native density. |
 | hud | dialogue_offset_y | -0.10 | Raise conversation text by ten percent of viewport height. |
 | hud | boss_health_offset_y | 0.15 | Preserved installed boss-bar offset. |
+| hud | boss_health_scale_multiplier | 0.85 | Independent boss overlay size, anchored at top center. |
 | hud | mission_info_offset_y | 0.15 | Lower mission counters and timers by fifteen percent. |
 | hud | compass_offset_y | 0.15 | Lower the compass background and marker overlay together by fifteen percent. |
 | hud | scale_multiplier | 0.85 | Fixed HUD size, separate from projection-aspect correction. |
@@ -189,7 +190,8 @@ rejected by the old anchor guard. The shape correction now binds its unit-scale
 WidgetTree.RootWidget, verified as VerticalBox_0, around the same bottom anchor.
 This preserves the outer animation and the screen-projection translation. Missing
 content waits for construction; a replaced/destroyed content root is validated
-before reuse or restoration. Multiplayer appearance still needs user verification.
+before reuse or restoration. The user confirmed the multiplayer proportion fixes
+passed validation on October 23; boss size/placement needed the follow-up below.
 
 `libs/hud_shapes.lua` supplies the same immersive eye-aspect correction to compass
 background/glyph siblings, top-level NPC dialogue, boss health, and mission
@@ -200,6 +202,17 @@ avoid compounding an already-corrected HUD group. The existing
 and reset restore owned transforms. An unsupported panel is isolated from other
 families. Border_110 and the mirrored Grid_Tweaks also join fixed-HUD margins,
 using native bounds and retaining native horizontal mirroring.
+
+The boss UserWidget covers the full viewport (the earlier capture measured its
+root at 0..1 while its actual bar sat near the top). Scaling this full canvas
+around the default center pivot added a downward displacement of approximately
+17.7 percent of viewport height at the measured 0.64684 factor, in addition to
+the explicit 0.15 boss offset. Edge margins were not involved. Its correction
+now anchors at top center and uses independent `boss_health_scale_multiplier`
+(0.85, range 0.25–1.5), preserving the existing height control. The shared shape
+helper accepts an optional size multiplier without changing existing two-argument
+reticle/marker callers. HUD shape discovery now queries viewport roots only and
+releases removed panels; nested-key/cursor queries retain their existing scope.
 
 Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
 horizontal/vertical pixel-to-eye scaling. The height factor is
@@ -413,12 +426,18 @@ the automatic session ledger, and incremental collection across sessions;
 Use `python3 tools/ui_audit.py collect` at check-ins. Keep historical candidates
 separate from current coverage; absence in a later capture does not prove a fix.
 
-The updated October 22 collection contains 15 sessions and 8,915 distinct IDs.
+The October 23 collection contains 16 sessions and 9,051 distinct IDs.
 Capture 15 reached 4,096 IDs with skipped observations; its late multiplayer
 coverage is incomplete. The catalog now reserves 1,024 slots for late screen-marker
 roots, visible hints, and gameplay edge candidates while keeping the same total
 record/byte budgets. New end records preserve skipped-observation counts. Historical
-observations remain in the generated report. Raw capture/status from the first completed mission are also
+observations remain in the generated report. Capture 16 then stopped at 421.8
+seconds when the all-UserWidget query exceeded 1,024 results. Its later missions
+were not captured. Discovery now queries viewport roots and explicitly enqueues
+world/component widget sources, still traversing nested widgets and keeping the
+same native/queue/time budgets. Errors write an end record when possible; Collect
+preserves each session's matching status sidecar, including older failures that
+had no end record. Raw capture/status from the first completed mission are also
 archived on robot1-x in `ffw-tests/ui-census-20261021/` under the retained build
 checkout. Later interrupted sessions retain their last complete checkpoints.
 

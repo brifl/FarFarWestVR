@@ -1,5 +1,5 @@
 -- Guarded native discovery in the callback engine's current world.
-return function(path,limit,interval)
+return function(path,limit,interval,top_only)
 local api=uevr.api
 local array,library,viewport_class,class
 local entries,next_query,world={},0,nil
@@ -45,7 +45,7 @@ local function get(engine,time)
         if not c then return entries end
         class=track(c)
     end
-    local found={};library:GetAllWidgetsOfClass(viewport,found,class.object,false)
+    local found={};library:GetAllWidgetsOfClass(viewport,found,class.object,top_only==true)
     assert(#found<=limit,'Native widget query exceeds its budget')
     local next_entries={}
     for _,o in ipairs(found) do
