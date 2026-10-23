@@ -551,3 +551,8 @@ feature.reset();near(state.component.relative.Z,-8)
 run('socket-mounted or absolute-location bars are left native', r'''
 frame();frame();healthy();assert(state.moves==0 and state.source.opacity==.7)
 ''', "state.family='UI_Lifebar_C';state.owner_class='BP_Enemy_Ordinary_C';state.socket='Head'")
+
+run('native counts above the old probe limit do not disable marker helpers', '''
+state.next=286344
+frame();healthy()
+''')

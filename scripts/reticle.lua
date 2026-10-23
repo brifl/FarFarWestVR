@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 -- Move the game's existing crosshair to the firing camera's traced target.
 -- Object access is restricted to the source-built, guarded UE5.8 backend.
 local vr, functions, api = uevr.params.vr, uevr.params.functions, uevr.api
@@ -138,8 +139,7 @@ end
 
 local function bind_image()
     if elapsed<next_scan then return end
-    local count = array:get_object_count()
-    assert(count>0 and count<=250000, "Object count outside the probe budget")
+    local count=object_count(array)
     if scan_index==nil or scan_index>=count then scan_index=count-1 end
     for _=1,256 do
         if scan_index<0 then scan_index=nil; next_scan=elapsed+1; return end

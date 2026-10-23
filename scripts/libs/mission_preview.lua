@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 -- The game's mission-loading card outlives the engine's loading-screen log.
 -- Query that card directly; the menu helper owns presentation and cleanup.
 return function()
@@ -28,8 +29,7 @@ local function prepare()
     library=class:get_class_default_object();assert(library,'Widget query library unavailable')
 end
 local function track(object)
-    local count=array:get_object_count()
-    assert(count>0 and count<=250000,'Object count outside the verified budget')
+    local count=object_count(array)
     local index=object:read_dword(12)
     assert(index<count,'Widget query returned an invalid index')
     local current=array:get_object(index)

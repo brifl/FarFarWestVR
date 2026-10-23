@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 return function()
 -- Reproject screen-space world markers through the rendered eye.
 -- Preserve live labels, distances and interaction state in their original widgets.
@@ -462,8 +463,7 @@ local function discover()
         end
     end
     stage='scan object array'
-    local count=array:get_object_count()
-    assert(count>0 and count<=250000,"Object count outside the verified budget")
+    local count=object_count(array)
     if observed_count and count>observed_count then
         recent_min=recent_min and math.min(recent_min,observed_count) or observed_count
         recent_index=count-1

@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 -- Replace only the vendor's spell-slot key row with Quest grip labels.
 -- Native slot selection, action mappings, spell cards and cooldown HUD stay intact.
 local source=package.searchpath('libs/spell_slot_hints',package.path)
@@ -24,8 +25,7 @@ local function method(class,name,size,fields)
     for name,offset in pairs(fields or {}) do field(fn,name,offset) end
 end
 local function track(object)
-    local count=array:get_object_count()
-    assert(count>0 and count<=250000,'Object count outside the verified budget')
+    local count=object_count(array)
     local index=object:read_dword(12)
     assert(index<count,'Invalid spell hint object index')
     local current=array:get_object(index)

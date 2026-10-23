@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 -- Read-only UI census. Each script load can start its own bounded capture.
 return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
@@ -195,8 +196,7 @@ local function discover(viewport)
     scans=scans+1;next_query=elapsed+3
 end
 local function components(deadline)
-    local count=array:get_object_count()
-    assert(count>0 and count<=250000,'Audit object count exceeds verified budget')
+    local count=object_count(array)
     if elapsed<next_scan then return end
     for i=1,256 do
         if scan_index>=count then

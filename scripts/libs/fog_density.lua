@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 -- The tested ambient haze control. Keep other fog systems and scene settings.
 return function()
 local api,vr,functions=uevr.api,uevr.params.vr,uevr.params.functions
@@ -38,8 +39,7 @@ local function prepare()
 end
 local function discover()
     if elapsed<next_scan then return end
-    local count=array:get_object_count()
-    assert(count>0 and count<=250000,"Object count exceeds verified budget")
+    local count=object_count(array)
     if scan_index==nil or scan_index>=count then scan_index=count-1 end
     for _=1,512 do
         if scan_index<0 then scan_index=nil;next_scan=elapsed+1;return end

@@ -129,6 +129,9 @@ every retained UserWidget: that broad query stopped capture 16 after seven minut
 when it exceeded 1,024 results. The query budget stays unchanged. Collect retains
 per-session status files so a known failed capture stays identified in history;
 new failures also write explicit error/end records when the output remains writable.
+The native object-array count is validated as a positive int32 separately from
+per-frame work limits; the old 250,000-slot probe guard stopped capture 17 and
+other helpers during a long session. Native slot counts are not live-widget counts.
 The capture stops after 3,600 seconds of engine time or at 16 MiB, with caps of
 4,096 catalog IDs, 8,192 queued widgets, 2,048 component associations, and 512 class
 schemas. Capture 15 reached the ID limit before every late multiplayer family

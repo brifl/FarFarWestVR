@@ -233,6 +233,19 @@ helper accepts an optional size multiplier without changing existing two-argumen
 reticle/marker callers. HUD shape discovery now queries viewport roots only and
 releases removed panels; nested-key/cursor queries retain their existing scope.
 
+On October 23 at 02:57, multiple helpers permanently stopped as the game
+passed the old 250,000-slot object-array guard. A read-only probe reported
+286,344 slots with the expected compact-array metadata (offset 0, stride 24).
+`libs/object_count.lua` now validates the native SDK signed-int32 count separately
+from discovery work limits; it performs no scan. All former 250,000 guards use
+this shared validator. Per-tick scans, deadlines, native-query result limits,
+reference identity checks, and class/function-layout guards are retained.
+Previously stopped instances need a normal relaunch to load the change.
+A bounded census found roughly 190,000 Niagara components among 312,000 objects,
+with only a handful of cursor/prompt widgets. This rules out a large current
+overlay buildup, not every possible cause of effect retention. Attribution of
+the repeated particle systems remains separate from the count-guard repair.
+
 Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
 horizontal/vertical pixel-to-eye scaling. The height factor is
 `abs(projection[1][1]) * viewport_height / (abs(projection[0][0]) * viewport_width)`;

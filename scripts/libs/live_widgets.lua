@@ -1,11 +1,11 @@
+local object_count=require('libs/object_count')
 -- Guarded native discovery in the callback engine's current world.
 return function(path,limit,interval,top_only)
 local api=uevr.api
 local array,library,viewport_class,class
 local entries,next_query,world={},0,nil
 local function count()
-    local n=array:get_object_count()
-    assert(n>0 and n<=250000,'Widget query object count exceeds verified budget')
+    local n=object_count(array)
     return n
 end
 local function field(c,name,offset)

@@ -1,3 +1,4 @@
+local object_count=require('libs/object_count')
 -- Draw the game's cursor asset in the viewport when CommonUI hides its cursor layer.
 -- Pointer movement/clicks remain entirely with the existing controller-ray helper.
 return function()
@@ -18,8 +19,8 @@ local function valid(ref)
     return o and o:get_address()==ref.address and o:get_short_name()==ref.name
 end
 local function track(o)
-    local index=o:read_dword(12);local count=array:get_object_count()
-    assert(count>0 and count<=250000 and index>=0 and index<count,'Cursor object exceeds verified array')
+    local index=o:read_dword(12);local count=object_count(array)
+    assert(index>=0 and index<count,'Cursor object exceeds verified array')
     local ref={object=o,index=index,address=o:get_address(),name=o:get_short_name()}
     assert(valid(ref),'Cursor object identity mismatch');return ref
 end

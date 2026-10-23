@@ -291,7 +291,7 @@ assert(state.hud.props.Visibility==0 and state.health.bounds[2]==.94)
 ''')
 
 run('component discovery and widget traversal remain bounded on a large array', '''
-state.object_count=250000;start();local before=state.reads;feature.tick(state.engine,.016)
+state.object_count=286344;start();local before=state.reads;feature.tick(state.engine,.016)
 assert(state.reads-before<1000);tick(10);stop();healthy()
 ''')
 
