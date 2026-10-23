@@ -18,6 +18,7 @@ local rules={
     ['aim.stabilization']={.35,0,1},
     ['cursor.scale_multiplier']={1,.25,1.5},
     ['cursor.aspect_correction']={0,0,1},
+    ['horse.steering_exponent']={2,1,4},
 }
 -- Explicit edges beat HUD axis pairs, which beat the older audit axis pairs.
 local aliases={
@@ -43,7 +44,7 @@ local function parse(source)
             local header=line:match('^%[([%w_]+)%]$')
             if header then
                 assert(header=='graphics' or header=='hud' or header=='audit' or header=='aim'
-                    or header=='cursor','Unknown section: '..header)
+                    or header=='cursor' or header=='horse','Unknown section: '..header)
                 section=header
             else
                 local name,text=line:match('^([%w_]+)%s*=%s*(.-)%s*$')

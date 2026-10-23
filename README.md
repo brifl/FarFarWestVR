@@ -18,6 +18,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   is disabled.
 - **Movement and snap turning:** left-stick movement and 45-degree turns on the
   right stick.
+- **Adjustable horse steering:** a mounted-only left-stick response curve gives
+  finer steering near center while preserving full steering at the edge.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
   mission guides follow their world locations independently of controller aim.
 - **Stable teammate markers:** player nameplates follow the other player while
@@ -117,6 +119,7 @@ reload during play, about once a second.
 | `[aim] stabilization` | `0.35` | `0` is unfiltered; `1` gives strongest steady-hand smoothing |
 | `[cursor] scale_multiplier` | `1.0` | Menu arrow size; `1.0` preserves its native size |
 | `[cursor] aspect_correction` | `0` | Optional projection correction; leave off to preserve normal menu proportions |
+| `[horse] steering_exponent` | `2.0` | Soften small left-stick steering movements while mounted; `1.0` restores native response |
 
 A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
 fractions of viewport height: positive moves down, negative moves up, and `0`
@@ -137,6 +140,13 @@ Aiming stabilization slows small hand fluctuations and responds faster during
 deliberate sweeps. Increase it for steadier precision or reduce it for less lag.
 It filters the aiming direction before snap-turn offsets; head tracking and
 45-degree turns remain immediate. It does not filter the menu click coordinates.
+
+Horse steering accepts an exponent from `1.0` to `4.0` and reloads during play.
+Higher values give gentler steering near center; at `2.0`, half-stick horizontal
+input becomes quarter-strength. Full left/right input stays full strength. Only
+mounted left-stick horizontal input changes; walking, forward/back input, buttons,
+and right-stick snap turning keep their existing behavior. The curve adds no
+time-based smoothing or delay.
 
 ## Development status
 

@@ -290,6 +290,14 @@ for _,source in ipairs({'[aim]\nstabilization=1.1','[cursor]\naspect_correction=
  reload(source);near(tuning.get('aim.stabilization'),.6);near(tuning.get('cursor.scale_multiplier'),.5)
 end
 ''')
+run('horse steering exponent reloads live and rejects unsupported values', r'''
+near(tuning.get('horse.steering_exponent'),2)
+reload('[horse]\nsteering_exponent=1.5');near(tuning.get('horse.steering_exponent'),1.5)
+for _,source in ipairs({'[horse]\nsteering_exponent=.9','[horse]\nsteering_exponent=4.1'}) do
+ reload(source);near(tuning.get('horse.steering_exponent'),1.5)
+end
+reload('[horse]\nsteering_exponent=1');near(tuning.get('horse.steering_exponent'),1)
+''')
 run('0.3.0.0 lowercase weather settings preserve grading and reset ownership', r'''
 state.lowercase_settings=true
 local feature=require('libs/contrast')()

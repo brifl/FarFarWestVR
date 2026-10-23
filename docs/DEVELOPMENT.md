@@ -258,6 +258,19 @@ separately from aim, or smooth headset movement/menu input.
 The user confirmed aiming stabilization looks good; the accepted strength remains
 0.35, adjustable during play.
 
+`libs/horse_steering.lua` shapes only sThumbLX while the local player possesses
+`/Game/Mounts/BP_Mount.BP_Mount_C`. Live metadata verified isLocallyMounted at
+2016 and Controller at 728; the current controller's Pawn is at 744. Possession
+is resolved through the callback viewport on every game tick. The XInput callback
+uses only a mounted-state snapshot and rechecks VR/menu/input gates, never native
+pawn references. Dismount and possession changes clear the mounted state; unknown
+layouts disable only this helper. Its signed power curve uses normalized
+horizontal input raised to `[horse] steering_exponent` (1–4, initially 2), with
+separate positive/negative integer endpoints so full lock remains exact. Exponent
+1 bypasses the change. No other axis/button or native horse/camera property is
+written, and no temporal filter is added. A live mounted test is awaiting the
+user's assessment of steering feel.
+
 The new carried pig advertises IA_Drop, bound separately from IA_Interact.
 `libs/carry_drop.lua` resolves the current pawn/items/equipped object on each tick,
 checks BP_Player.AC_PlayerItems at 1768, equipedItem at 208, UI_ItemContext at
