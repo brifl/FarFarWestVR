@@ -93,7 +93,7 @@ These are the tested Quest button labels.
 | Shifted D-pad Left | Native photo mode |
 | Shifted D-pad Down | Summon horse (native action) |
 | Shifted D-pad Up | Native Utility action |
-| Shifted D-pad Right | Map |
+| Shifted D-pad Right | Map (native View/Back button) |
 | X | Interact; advance dialogue; drop a carried item with an active Drop prompt |
 | Y | Switch weapons |
 | B | Pause/resume |

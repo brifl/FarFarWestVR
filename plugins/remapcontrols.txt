@@ -33,6 +33,8 @@
 #######################################################################
 R3=7
 L3=12
+# Shifted Right opens the map with the native View/Back action.
+DPAD_RIGHT=6
 
 
 
