@@ -7,6 +7,7 @@ local query=require('libs/live_widgets')(
 local key_hint=require('libs/interaction_key')
 local array,statics,value_library,interact,button
 local elapsed,latched,failed,hint=0,true,false,nil
+local unsupported_pawns={}
 local event='InpActEvt_IA_Drop_K2Node_EnhancedInputActionEvent_14'
 local function field(c,n,offset)
     local p=c:find_property(n);assert(p and p:get_offset()==offset,'Unexpected carry field '..n)
@@ -78,7 +79,18 @@ local function tick(engine,delta)
         local pawn=pc:get_property('Pawn');if not pawn then restore_hint();return end
         local ac_field=pawn:get_class():find_property('AC_PlayerItems')
         if not ac_field then restore_hint();return end
-        assert(ac_field:get_offset()==1768,'Unexpected carry items field')
+        if ac_field:get_offset()~=1768 then
+            -- Alternate possession states can expose a different item component.
+            -- Skip that layout; a later normal pawn must still be able to Drop.
+            restore_hint()
+            local name=pawn:get_class():get_short_name()
+            if not unsupported_pawns[name] then
+                unsupported_pawns[name]=true
+                log.log_warn('[FarFarWest carry] Skipping unsupported pawn '..name..' (AC_PlayerItems@'
+                    ..tostring(ac_field:get_offset())..'); normal possession will be checked again.')
+            end
+            return
+        end
         local items=pawn:get_property('AC_PlayerItems');if not items then restore_hint();return end
         field(items:get_class(),'equipedItem',208)
         local item=items:get_property('equipedItem');if not item then restore_hint();return end

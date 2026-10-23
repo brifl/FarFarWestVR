@@ -283,9 +283,16 @@ MakeInputActionValueOfType, preserving the game's permission/replication path.
 Only the hint's gamepadKeys presentation is temporarily set to IA_Interact for
 its X icon; its action and normal keyboard/X-to-Interact mapping stay intact.
 Hold presentation is preserved. Guns, menus, missing prompts, and held buttons
-across transitions do not invoke Drop. Unknown layouts stop this helper alone.
+across transitions do not invoke Drop. Unsupported pawn item-component offsets
+are skipped with one diagnostic per class; the helper checks normal possession
+again instead of permanently disabling Drop. Other unknown native layouts stop
+this helper alone.
 The user confirmed the live pig test drops correctly and displays X; the permanent
 helper loads on a normal relaunch.
+In a multiplayer mission the pickaxe used the same UI_DropItem/IA_Drop path and
+current verified offsets. Its failure came from an earlier unsupported pawn
+offset permanently stopping the helper. The recovery change restored native X
+Drop without an item-specific binding, confirmed by the user in the running mission.
 
 Menu pointing now uses the right controller's ray intersection with the existing
 screen. Move/rotate the controller to move the pointer and use the right trigger

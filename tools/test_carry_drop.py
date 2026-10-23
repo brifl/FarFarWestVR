@@ -16,7 +16,13 @@ methods[event]={48,{ActionValue=0,ElapsedTime=32,TriggeredTime=36,SourceAction=4
 local function field(n) return {get_offset=function() return offsets[n] end} end
 local function class(name,default)
  return {get_short_name=function() return name end,get_class_default_object=function() return default end,
- find_property=function(_,n) if n=='AC_PlayerItems' and state.unsupported_pawn then return nil end;return field(n) end,
+ find_property=function(_,n)
+  if n=='AC_PlayerItems' then
+   if state.unsupported_pawn then return nil end
+   if state.alternate_layout then return {get_offset=function() return 1904 end} end
+  end
+  return field(n)
+ end,
  find_function=function(_,n)
   local spec=assert(methods[n],n)
   local fn={get_properties_size=function() return state.bad_event and n==event and 12 or spec[1] end,
@@ -130,4 +136,16 @@ state.bad_event=false;state.down=true;tick();assert(state.drops==0)
 ''')
 run('destroyed hint receives no restore writes', '''
 tick();state.objects[state.key.index]=nil;state.key.dead=true;feature.reset();healthy()
+''')
+run('alternate possession layout is skipped and normal pickaxe Drop recovers without a script restart', '''
+state.item.name='BP_Item_Pickaxe_C'
+tick();assert(state.key.props.gamepadKeys==state.interact)
+state.alternate_layout=true;state.down=true;tick();tick();healthy()
+assert(state.drops==0 and state.key.props.gamepadKeys==nil)
+state.alternate_layout=false;tick();assert(state.drops==0)
+state.down=false;tick();state.down=true;tick();healthy()
+assert(state.drops==1 and state.key.props.gamepadKeys==state.interact)
+local skipped=0
+for _,s in ipairs(state.logs) do if s:find('Skipping unsupported pawn',1,true) then skipped=skipped+1 end end
+assert(skipped==1)
 ''')

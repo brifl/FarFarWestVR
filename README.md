@@ -39,7 +39,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Native spell controls:** left grip, right grip, and both grips cast the three
   spells while preserving the native shifted D-pad actions.
 - **Carried-item Drop on X:** the new Drop prompt uses X while holding a supported
-  item, dispatching the game's native Drop input without rebinding normal interaction.
+  item, including pigs and pickaxes, dispatching the game's native Drop input
+  without rebinding normal interaction. Drop recovers after unsupported possession states.
 - **Possession-aware reticle:** aiming traces follow the current player after
   mounting and dismounting, avoiding the earlier stale-pawn freeze.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls
