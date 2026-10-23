@@ -88,7 +88,9 @@ local function finish(reason)
     if not active then return end
     active=false
     store.flush_all()
-    store.event({type='end',reason=reason,elapsed=elapsed,errors=errors,sweeps=scans})
+    local stats=store.stats()
+    store.event({type='end',reason=reason,elapsed=elapsed,errors=errors,sweeps=scans,
+        records=stats.records,dropped=stats.dropped,bytes=stats.bytes})
     assert(file:flush());assert(file:close());file=nil
     status(reason);session_note(reason);command('done '..output)
     queue,visited,links,schemas={}, {}, {}, {}
@@ -110,7 +112,7 @@ local function start(seconds)
     assert(output,'Cannot allocate a new audit filename')
     counter=assert(io.open('ui_audit_counter.txt','wb'));assert(counter:write(tostring(n)));assert(counter:close())
     file=assert(io.open(output,'wb'))
-    store=catalog.new(function(line) return file:write(line) end)
+    store=catalog.new(function(line) return file:write(line) end,{reserved_records=1024})
     active=true;elapsed=0;duration=seconds;next_ledger=300
     queue,head,visited,links,schemas={},1,{},{},{}
     link_count,schema_count=0,0
@@ -300,6 +302,10 @@ local function sample(ref,viewport)
         end
     end
     -- Root class + structural path survives process addresses, maps and engine instance IDs.
+    -- Retained menus must not consume every slot before a late mission marker appears.
+    data.priority=(data.space=='screen' and o:get_address()==address)
+        or (class_name=='UI_Key_C' and data.visible)
+        or (data.visible and data.edge and _G.farfarwest_gameplay_ready==true)
     local id=data.class..'|'..path
     store.observe(id,data,elapsed)
 end

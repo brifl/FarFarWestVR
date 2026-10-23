@@ -131,6 +131,16 @@ run('oversized groups center without shrinking text', GEOMETRY, r'''
 near(safe.shift(10,910,200,800),40)
 near(safe.shift(210,790,200,800),0)
 ''')
+run('mirrored tweak and hint groups keep native orientation while fitting within margins', GEOMETRY, r'''
+state.widget.scale={X=-1,Y=1};state.multiplier=.85;state.factor=.647
+state.slot.layout.Anchors={Minimum={X=1,Y=0},Maximum={X=1,Y=0}}
+state.slot.layout.Offsets={Left=-20,Top=20};state.slot.layout.Alignment={X=1,Y=0}
+for i=1,100 do assert(apply(.2,.3)) end
+local plan=safe.plan(binding,state.viewport,edges(.2,.3),.85,.647)
+assert(plan.left>=2560*.2-.001 and plan.right<=2560*.8+.001)
+assert(plan.top>=1440*.3-.001 and plan.bottom<=1440*.7+.001)
+near(state.widget.scale.X,-.85);near(state.widget.scale.Y,.85*.647)
+''')
 run('nested lobby groups use their verified parent canvas without reparenting', GEOMETRY, r'''
 state.canvas.name='CanvasPanel_86'
 local nested=safe.bind(state.widget,binding.slate,track,'CanvasPanel_86')

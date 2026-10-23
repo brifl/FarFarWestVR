@@ -26,6 +26,8 @@ function M.new(write,options)
     local records,count,bytes,dropped,sequence={},0,0,0,0
     local dirty,dirty_head={},1
     local max_records,max_bytes=options.records or 4096,options.bytes or 16777216
+    local reserved=math.max(0,math.min(options.reserved_records or 0,max_records))
+    local ordinary=0
     local full=false
     local C={}
     local function emit(value)
@@ -39,7 +41,10 @@ function M.new(write,options)
         local r=records[id]
         local changed=false
         if not r then
-            if count>=max_records then dropped=dropped+1;return end
+            if count>=max_records or (not sample.priority and ordinary>=max_records-reserved) then
+                dropped=dropped+1;return
+            end
+            if not sample.priority then ordinary=ordinary+1 end
             count=count+1
             r={type='widget',id=id,first=time,seen=0,visible=0,edge_samples=0,
                 contexts={},modes={},owners={},coverage={},flags={}}

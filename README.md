@@ -23,12 +23,15 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
   mission guides follow their world locations independently of controller aim.
 - **Stable teammate markers:** player nameplates follow the other player while
-  preserving the game's live name, level, health, and voice indicators.
+  preserving the game's live name, level, health, voice indicators, and animated
+  outer scale. Their inner content receives the eye-aspect correction.
 - **Object and location tags:** tag a spot or object with the right-stick click.
   Tags follow moving targets, including chickens, and retain their icons,
   distances, and height offsets.
 - **Corrected UI proportions:** reticles and world markers compensate for the
   eye projection's aspect ratio, keeping dots round and attachment points fixed.
+  The compass and its glyphs, dialogue, boss health, and mission counters/timers
+  share the HUD proportion correction during immersive gameplay.
 - **Corrected interaction prompts:** NPC prompts follow the aiming target while
   preserving the game's interaction text and hold-progress display. Interaction,
   dialogue, and dropped-item action hints keep X across input-mode changes.

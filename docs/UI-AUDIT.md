@@ -65,7 +65,7 @@ python3 tools/ui_audit.py report path/to/capture.jsonl
 
 If SSH is unavailable, write `start 3600` or `stop` to
 `data/ui_audit_command.txt` in the installed profile. After deploying new Lua
-helpers, restart the game or use **Reset scripts** to load them. Play normally;
+helpers, relaunch the game normally; script reset is unreliable in this profile. Play normally;
 there is no need to hold a particular screen open or reproduce each case separately.
 
 ## HUD margins and capture thresholds
@@ -74,18 +74,23 @@ In [data/tuning.ini](../data/tuning.ini):
 
 ```ini
 [hud]
-horizontal_margin = 0.20
-vertical_margin = 0.20
+left_margin = 0.20
+right_margin = 0.20
+top_margin = 0.15
+bottom_margin = 0.30
+scale_multiplier = 0.85
+aspect_correction = 1
 
 [audit]
 auto_start = 1
 ```
 
-These reserve twenty percent of viewport width/height at **each** edge. Numeric
-changes reload during play. The HUD placement helper moves selected fixed groups
-(health/shield, weapons/ammo, spells/cooldowns, party health, and currency) inside
-that rectangle during gameplay. Groups keep their internal layout and size;
-oversized groups are centered. Zero restores native placement on that axis.
+Each edge reserves its own fraction of viewport width/height. Numeric changes
+reload during play. The HUD placement helper moves selected fixed groups
+(health/shield, weapons/ammo, spells/cooldowns, party health, currency/level,
+control hints and tweak indicators) inside that rectangle during gameplay.
+Size and aspect correction preserve each group's internal layout; oversized
+groups are centered. Setting both margins on an axis to zero restores native placement there.
 World markers, reticles, full-screen effects, and separately height-controlled
 panels are excluded. Menus/reset restore the helper's owned translations.
 
@@ -120,7 +125,13 @@ tick, with a soft 0.75 ms Lua work budget). Native calls and checkpoint writes m
 exceed that soft budget; the status file reports the largest observed active tick.
 The capture stops after 3,600 seconds of engine time or at 16 MiB, with caps of
 4,096 catalog IDs, 8,192 queued widgets, 2,048 component associations, and 512 class
-schemas. New IDs, new contexts/modes/flags, and bounds-extrema changes of at least two
+schemas. Capture 15 reached the ID limit before every late multiplayer family
+could be recorded. New captures reserve 1,024 slots for screen-marker roots,
+visible action hints, and visible gameplay edge candidates, so retained menu
+trees cannot consume the entire catalog first. End records include skipped
+observation counts; these count attempts, not distinct missing IDs. Older captures
+do not have those end counts. Reaching a limit still makes a capture incomplete.
+New IDs, new contexts/modes/flags, and bounds-extrema changes of at least two
 percentage points checkpoint about every 30 seconds in small batches. Repeated
 static samples update in-memory totals without filling the file; stopping writes
 final totals for every ID. The status includes errors and dropped samples so an incomplete sweep is visible.

@@ -183,6 +183,23 @@ projecting the unchanged component location through the current eye. Root/Widget
 identity is checked each frame; live name, level, health, and voice content stays
 native. Discovery also queries BP_PlayerNameWidget actors. The user confirmed
 the live multiplayer marker stays stable; other marker families remain unchanged.
+The game also animates the nameplate's outer scale (measured at 1.02797 on both
+axes). Scaling that root around the component's bottom pivot was deliberately
+rejected by the old anchor guard. The shape correction now binds its unit-scale
+WidgetTree.RootWidget, verified as VerticalBox_0, around the same bottom anchor.
+This preserves the outer animation and the screen-projection translation. Missing
+content waits for construction; a replaced/destroyed content root is validated
+before reuse or restoration. Multiplayer appearance still needs user verification.
+
+`libs/hud_shapes.lua` supplies the same immersive eye-aspect correction to compass
+background/glyph siblings, top-level NPC dialogue, boss health, and mission
+counter/timer overlays. It changes scale about each native pivot, keeping existing
+height offsets and game-driven scale baselines. Nested panels are excluded to
+avoid compounding an already-corrected HUD group. The existing
+`[hud] aspect_correction` switch controls it; menus, the UEVR panel, inactive VR,
+and reset restore owned transforms. An unsupported panel is isolated from other
+families. Border_110 and the mirrored Grid_Tweaks also join fixed-HUD margins,
+using native bounds and retaining native horizontal mirroring.
 
 Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
 horizontal/vertical pixel-to-eye scaling. The height factor is
@@ -396,10 +413,12 @@ the automatic session ledger, and incremental collection across sessions;
 Use `python3 tools/ui_audit.py collect` at check-ins. Keep historical candidates
 separate from current coverage; absence in a later capture does not prove a fix.
 
-The October 22 collection contains four sessions, 6,227 distinct IDs, 509 edge
-candidates, seven uncovered marker families, and two visible IA_Interact keyboard
-contexts (targeting and dropped items). Historical observations remain in the
-generated report. Raw capture/status from the first completed mission are also
+The updated October 22 collection contains 15 sessions and 8,915 distinct IDs.
+Capture 15 reached 4,096 IDs with skipped observations; its late multiplayer
+coverage is incomplete. The catalog now reserves 1,024 slots for late screen-marker
+roots, visible hints, and gameplay edge candidates while keeping the same total
+record/byte budgets. New end records preserve skipped-observation counts. Historical
+observations remain in the generated report. Raw capture/status from the first completed mission are also
 archived on robot1-x in `ffw-tests/ui-census-20261021/` under the retained build
 checkout. Later interrupted sessions retain their last complete checkpoints.
 

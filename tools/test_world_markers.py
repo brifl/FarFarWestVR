@@ -32,7 +32,7 @@ local function class(name)
         local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=name=='component' and 1800 or name=='BP_PlayerNameWidget_C' and 680 or 688,Image_Icon=808,Image_Aura=824,
             UI_Key=816,OwningActor=912,Location=state.family=='UI_ObjectPing_C' and 864 or 872,
             InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208,ProgressBar_Boss=808,Overlay_Transform=840,
-            PlayerNameText=840,PlayerState=872}
+            PlayerNameText=840,PlayerState=872,WidgetTree=704}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
@@ -97,6 +97,7 @@ function source:get_property(n)
     if n=='RenderTransformPivot' then return self.pivot end
     if n=='RenderTransform' then return {Translation=self.translation,Scale=self.scale,
         Angle=0,Shear={X=0,Y=0}} end
+    if n=='WidgetTree' then return state.content_tree end
     if n=='OwningActor' then return state.wrong_actor and root or actor end
     if n=='Location' then return state.objective_location or state.world end
     if n=='ProgressBar_Boss' or n=='Overlay_Transform' then return self.icon end
@@ -342,6 +343,23 @@ TEAMMATE_SETUP = """
 state.family='UI_PlayerInfos_C';state.owner_class='BP_PlayerNameWidget_C';state.marker_root=true
 state.source.label='Partner';state.source.health=.6;state.source.level=12
 function state.source:GetOwningPlayerPawn() error('Teammate marker must not require the local pawn') end
+local content=state.source
+-- A separate native content widget lives inside the animated nameplate root.
+local child={scale={X=1,Y=1},pivot={X=.5,Y=.5}}
+local index=state.next;state.next=index+1;state.objects[index]=child
+function child:get_address() return index*256 end
+function child:read_dword() return index end
+function child:get_short_name() return 'VerticalBox_0' end
+function child:get_class() return {get_short_name=function() return 'VerticalBox' end} end
+function child:get_property(n)
+ if n=='RenderTransformPivot' then return self.pivot end
+ assert(n=='RenderTransform');return {Scale=self.scale}
+end
+function child:GetDesiredSize() return {X=107.5,Y=22.5,typed=true} end
+function child:SetRenderScale(v) assert(v.typed);self.scale={X=v.X,Y=v.Y} end
+function child:SetRenderTransformPivot(v) assert(v.typed);self.pivot={X=v.X,Y=v.Y} end
+state.content=child
+state.content_tree={get_property=function(_,n) assert(n=='RootWidget');if not state.no_content then return state.content end end}
 """
 run('teammate root marker corrects both axes without moving its actor or copying live content', '''
 frame();frame();healthy();assert(state.created==0 and state.moves==0)
@@ -376,6 +394,22 @@ frame();frame();healthy();assert(state.moves==0 and state.created==0)
 near(state.source.translation.X,3);near(state.source.translation.Y,4)
 assert(state.source.opacity==.7)
 ''', TEAMMATE_SETUP+';state.wrong_component=true')
+run('animated teammate scale keeps its native value while inner content gets the aspect correction', '''
+state.source.scale={X=1.028,Y=1.028};frame();frame();healthy()
+near(state.source.scale.Y,1.028);near(state.source.pivot.Y,.5)
+near(state.content.scale.Y,.5);near(state.content.pivot.Y,1)
+state.source.scale={X=.7,Y=.7};frame();healthy()
+near(state.source.scale.Y,.7);near(state.content.scale.Y,.5)
+feature.reset();near(state.content.scale.Y,1);near(state.content.pivot.Y,.5)
+near(state.source.scale.Y,.7)
+''', TEAMMATE_SETUP)
+run('late teammate content waits without stopping stabilization; stale content gets no restore write', '''
+state.no_content=true;frame();healthy();assert(state.source.opacity==.7)
+state.no_content=false;frame();healthy();near(state.content.scale.Y,.5)
+for i,o in pairs(state.objects) do if o==state.content then state.objects[i]=nil end end
+state.content.SetRenderScale=function() error('Destroyed content written') end
+feature.reset();healthy()
+''', TEAMMATE_SETUP)
 
 OBJECTIVE_SETUP = """
 state.family='UI_PingObjective_C'

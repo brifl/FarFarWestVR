@@ -21,7 +21,7 @@ local kinds = {
     UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, world_label=true},
     UI_Interact_C={owner="^BP_Player.*_C_", field="UI_Key",offset=816,screen=true},
     UI_PlayerInfos_C={owner_class="^BP_PlayerNameWidget_C$",field="PlayerNameText",offset=840,
-        screen=true,screen_root=true,label="teammate marker"},
+        screen=true,screen_root=true,shape_content=true,label="teammate marker"},
     UI_PingObjective_C={owner_class="^BP_ObjectivePing.*_C$",field="OwningActor",offset=912,
         world_label=true,actor_field="OwningActor",target_field="Location",target_offset=872,label="objective marker"},
     UI_ObjectPing_C={owner_class="^BP_ObjectPing.*_C$",field="Image_Logo",offset=824,
@@ -69,6 +69,12 @@ local function component_valid(entry)
     if not valid(entry.component) or not valid(entry.source) or not valid(entry.owner) then return false end
     local widget = entry.component.object:get_property("Widget")
     if not widget or widget:get_address()~=entry.source.address then return false end
+    if entry.shape_ref then
+        if not valid(entry.shape_ref) then return false end
+        local tree=entry.source.object:get_property('WidgetTree')
+        local root=tree and tree:get_property('RootWidget')
+        if not root or root:get_address()~=entry.shape_ref.address then return false end
+    end
     if entry.kind.screen_root then
         local root=entry.owner.object:get_property('RootComponent')
         local bound=entry.owner.object:get_property('Widget')
@@ -105,7 +111,7 @@ end
 local function restore(entry)
     audit_registry.remove(entry.component.address)
     local display=entry.proxy or entry.source
-    if entry.shape and valid(display) then ui_shape.restore(entry.shape) end
+    if entry.shape and valid(entry.shape_ref or display) then ui_shape.restore(entry.shape) end
     if valid(entry.proxy) then entry.proxy.object:RemoveFromParent() end
     if entry.screen and valid(entry.source) then screen_projection.restore(entry.screen) end
     if entry.moved and component_valid(entry) then
@@ -584,7 +590,19 @@ callbacks.tick = function(engine,delta)
                         if entries[address] then
                             stage='normalize marker shape'
                             if not entry.shape then
-                                entry.shape=ui_shape.bind(display,entry.component.object:get_property('Pivot'))
+                                local target=display
+                                if entry.kind.shape_content then
+                                    -- The nameplate's outer scale is animated by the game.
+                                    -- Correct its unit-scale content around the same bottom anchor.
+                                    local p=display:get_class():find_property('WidgetTree')
+                                    assert(p and p:get_offset()==704,'Unexpected marker widget tree')
+                                    local tree=display:get_property('WidgetTree')
+                                    target=tree and tree:get_property('RootWidget')
+                                    if target and target:get_short_name()=='VerticalBox_0'
+                                        and target:get_class():get_short_name()=='VerticalBox' then entry.shape_ref=track(target)
+                                    else target=nil end -- Widget construction can finish after discovery.
+                                end
+                                if target then entry.shape=ui_shape.bind(target,entry.component.object:get_property('Pivot')) end
                             end
                             local factor=ui_shape.height_factor(camera.matrix,viewport.X,viewport.Y)
                             if ui_shape.apply(entry.shape,factor) and not shape_reported then

@@ -103,7 +103,7 @@ def merge_captures(paths, archive):
                          'reason': end.get('reason', 'unfinished; last checkpoint'),
                          'elapsed': end.get('elapsed', max((r.get('last', 0) for r in rows.values()), default=0)),
                          'ended': bool(end), 'errors': max(end.get('errors', 0), len(errors)),
-                         'notes': errors})
+                         'dropped': end.get('dropped'), 'notes': errors})
         for key, row in rows.items():
             target = merged.setdefault(key, {'id': key, 'sessions': {}, 'first_session': session,
                                              'seen': 0, 'visible': 0, 'edge_samples': 0})
@@ -156,11 +156,14 @@ def history_document(records, sessions):
              'These are observations for review. Edge bounds do not prove headset clipping; '
              'screen components do not prove faulty tracking. Missing from a later session '
              'does not mean fixed. Arbitrary literal FText strings are not inspected.', '',
-             '## Sessions', '', '| Session | Engine seconds | IDs | Errors/parse notes | End |',
-             '| --- | ---: | ---: | ---: | --- |']
+             '## Sessions', '', '| Session | Engine seconds | IDs | Skipped observations | Errors/parse notes | End |',
+             '| --- | ---: | ---: | ---: | ---: | --- |']
     for s in sessions:
         duration = f"{s['elapsed']:.1f}" if s['ended'] else f"at least {s['elapsed']:.1f}"
-        lines.append(f"| {md(s['id'])} | {duration} | {s['widgets']} | {s['errors']} | {md(s['reason'])} |")
+        skipped=s.get('dropped')
+        lines.append(f"| {md(s['id'])} | {duration} | {s['widgets']} | {skipped if skipped is not None else 'not recorded'} | {s['errors']} | {md(s['reason'])} |")
+    lines += ['', 'A capture at its record or byte limit can omit late widget families. '
+              'Skipped observations count attempts, not distinct IDs; older captures did not record that count.']
     lines += ['', '## HUD near the edges', '',
               'Bounds and widget paths are in the dictionary below. Diagnostic margins are '
               'configurable in `data/tuning.ini`; capture does not reposition HUD.', '',

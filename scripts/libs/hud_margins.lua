@@ -10,7 +10,8 @@ local query=require('libs/live_widgets')(
     'WidgetBlueprintGeneratedClass /Game/Interfaces/UI_Player.UI_Player_C',8,.25)
 -- Disjoint groups only; moving a parent and one of its children would double-shift it.
 local direct={HB_Spells=true,HB_JokerCooldown=true,HB_Moneys=true,
-    VerticalBox_PlayerHealths=true,HorizontalBox_1=true,VerticalBox_0=true}
+    VerticalBox_PlayerHealths=true,HorizontalBox_1=true,VerticalBox_0=true,
+    Border_110=true,Grid_Tweaks=true}
 local nested={UI_Equipment_PlayerStats=true,VB_Lobby=true}
 local priority={HorizontalBox_1=1,HB_Spells=2,HB_JokerCooldown=3,VerticalBox_0=4,
     UI_Equipment_PlayerStats=5,HB_Moneys=5,VerticalBox_PlayerHealths=6,VB_Lobby=7}
