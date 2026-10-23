@@ -24,7 +24,7 @@ Keep historical observations distinct from active problems and verified fixes.
 | Validate next | Shared health-bar and dropped-card markers | Implemented for captured enemy, Cryptic Train, barrel, boss-spawn, and dropped Joker families. Confirm native values/content, moving attachment offsets, visibility, and target anchoring in combat. Socket/absolute attachments remain native. |
 | Validate next | Shared interaction hints | Implemented for action-bound IA_Interact keys, including targeting, dialogue, and dropped-item contexts. Confirm X stays stable and hold progress works. Literal embedded FText remains a separate discovery case. |
 | Deferred until recurrence | Elongated gameplay cursor | The user cannot currently reproduce it; no further investigation for now. Menu defaults are restored to scale 1 / aspect correction 0. If it returns, identify the actual gameplay widget/presentation path; existing suppression covers only known native cursor classes. |
-| Ongoing | Additional marker/HUD/hint families | Use stable IDs and native relationships from monitoring; include other-player markers when encountered. Reuse shared projection/placement logic while preserving native content and edge behavior. |
+| Ongoing | Additional marker/HUD/hint families | Use stable IDs and native relationships from monitoring. Teammate nameplates are corrected and user-confirmed stable; watch for distinct revive/downed or other unhandled families. Reuse shared projection/placement logic while preserving native content and edge behavior. |
 | Ongoing | Combat validation | Confirm boss-bar height and remaining combat HUD after shared placement; keep heights adjustable in tuning.ini. |
 
 ## Additional gesture controls

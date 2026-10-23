@@ -7,6 +7,7 @@ local paths={
  'BlueprintGeneratedClass /Game/Levels/Assets/Lobby/BP_WorldIcon.BP_WorldIcon_C',
  'BlueprintGeneratedClass /Game/GPE/Tools/BP_TextGuide.BP_TextGuide_C',
  'BlueprintGeneratedClass /Game/Player/BP_Player.BP_Player_C',
+ 'BlueprintGeneratedClass /Game/Player/BP_PlayerNameWidget.BP_PlayerNameWidget_C',
 }
 local array,library,viewport_class,classes,retry=nil,nil,nil,{},{}
 local elapsed,next_query,failed=0,0,false

@@ -29,9 +29,10 @@ local sizes={K2_GetComponentLocation=24,GetOwner=8,GetOwningPlayer=8,GetDesiredS
     GetLocalSize=96,LocalToViewport=128,K2_GetComponentToWorld=96,TransformLocation=144}
 local function class(name)
     return {get_short_name=function() return name end,find_property=function(_,n)
-        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=name=='component' and 1800 or 688,Image_Icon=808,Image_Aura=824,
+        local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=name=='component' and 1800 or name=='BP_PlayerNameWidget_C' and 680 or 688,Image_Icon=808,Image_Aura=824,
             UI_Key=816,OwningActor=912,Location=state.family=='UI_ObjectPing_C' and 864 or 872,
-            InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208,ProgressBar_Boss=808,Overlay_Transform=840}
+            InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208,ProgressBar_Boss=808,Overlay_Transform=840,
+            PlayerNameText=840,PlayerState=872}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
@@ -53,7 +54,7 @@ function scene:K2_GetComponentToWorld()
 end
 local actor=object({hidden=false},'owner')
 function actor:get_property(n)
-    if n=='RootComponent' then return root end
+    if n=='RootComponent' then return state.marker_root and state.component or root end
     if n=='Scene' then return scene end
     if n=='Widget' then return state.wrong_component and root or state.component end
     assert(n=='bHidden');return self.hidden
@@ -336,6 +337,45 @@ for _,message in ipairs(state.logs) do
 end
 assert(stopped)
 """, "state.family='UI_Interact_C';state.fail_translation=true")
+
+TEAMMATE_SETUP = """
+state.family='UI_PlayerInfos_C';state.owner_class='BP_PlayerNameWidget_C';state.marker_root=true
+state.source.label='Partner';state.source.health=.6;state.source.level=12
+function state.source:GetOwningPlayerPawn() error('Teammate marker must not require the local pawn') end
+"""
+run('teammate root marker corrects both axes without moving its actor or copying live content', '''
+frame();frame();healthy();assert(state.created==0 and state.moves==0)
+state.rotation={x=10,y=10,z=0};frame();healthy()
+local x=state.native_pixel.X+2*(state.source.translation.X-3)
+local y=state.native_pixel.Y+2*(state.source.translation.Y-4)
+assert(x<1000 and y>500)
+state.aim=70;state.source.label='New title';state.source.health=.4;state.source.level=13
+for i=1,120 do frame() end;healthy()
+near(state.native_pixel.X+2*(state.source.translation.X-3),x)
+near(state.native_pixel.Y+2*(state.source.translation.Y-4),y)
+assert(state.source.label=='New title' and state.source.health==.4 and state.source.level==13)
+assert(state.created==0 and state.moves==0 and state.world.X==1000)
+''', TEAMMATE_SETUP)
+run('teammate motion, native visibility and menu return retain attachment and restore translation', '''
+frame();frame();state.world={X=1000,Y=200,Z=100};frame();healthy()
+near(state.native_pixel.X+2*(state.source.translation.X-3),1200)
+near(state.native_pixel.Y+2*(state.source.translation.Y-4),450)
+state.source.visibility=2;frame();assert(state.source.opacity==0)
+state.source.visibility=0;frame();assert(state.source.opacity==.7)
+state.active=false;frame();near(state.source.translation.X,3);near(state.source.translation.Y,4)
+assert(state.source.opacity==.7 and state.moves==0)
+''', TEAMMATE_SETUP)
+run('teammate root reassignment restores only its live widget', '''
+frame();frame();state.rotation={x=10,y=10,z=0};frame();healthy()
+state.marker_root=false;frame();healthy()
+near(state.source.translation.X,3);near(state.source.translation.Y,4)
+assert(state.moves==0 and state.source.opacity==.7)
+''', TEAMMATE_SETUP)
+run('teammate mismatched component binding is rejected before visual writes', '''
+frame();frame();healthy();assert(state.moves==0 and state.created==0)
+near(state.source.translation.X,3);near(state.source.translation.Y,4)
+assert(state.source.opacity==.7)
+''', TEAMMATE_SETUP+';state.wrong_component=true')
 
 OBJECTIVE_SETUP = """
 state.family='UI_PingObjective_C'

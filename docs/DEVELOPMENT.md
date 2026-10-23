@@ -173,6 +173,17 @@ outside the helper's control.
 After deploying this fast path in 3533d6a, the user could no longer reproduce
 the new-tag stabilization delay. This item is closed unless the delay recurs.
 
+Teammate nameplates use UI_PlayerInfos_C on BP_PlayerNameWidget_C. Live inspection
+verified PlayerNameText at 840, PlayerState at 872, and the actor's Widget at 680.
+That WidgetComponent is the nameplate actor's root, attached through a child-actor
+component to the player's interpolated location, with the native height offset.
+Unlike visual children used by other adapters, this root must never be moved.
+The shared screen-widget translation adapter corrects only its rendered widget,
+projecting the unchanged component location through the current eye. Root/Widget
+identity is checked each frame; live name, level, health, and voice content stays
+native. Discovery also queries BP_PlayerNameWidget actors. The user confirmed
+the live multiplayer marker stays stable; other marker families remain unchanged.
+
 Reticle and marker shapes use `libs/ui_shape.lua` to compensate for unequal
 horizontal/vertical pixel-to-eye scaling. The height factor is
 `abs(projection[1][1]) * viewport_height / (abs(projection[0][0]) * viewport_width)`;

@@ -20,6 +20,8 @@ local kinds = {
     UI_WorldIcon_C={owner="^BP_WorldIcon_C_", image="Image_Icon", offset=808},
     UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, world_label=true},
     UI_Interact_C={owner="^BP_Player.*_C_", field="UI_Key",offset=816,screen=true},
+    UI_PlayerInfos_C={owner_class="^BP_PlayerNameWidget_C$",field="PlayerNameText",offset=840,
+        screen=true,screen_root=true,label="teammate marker"},
     UI_PingObjective_C={owner_class="^BP_ObjectivePing.*_C$",field="OwningActor",offset=912,
         world_label=true,actor_field="OwningActor",target_field="Location",target_offset=872,label="objective marker"},
     UI_ObjectPing_C={owner_class="^BP_ObjectPing.*_C$",field="Image_Logo",offset=824,
@@ -67,6 +69,12 @@ local function component_valid(entry)
     if not valid(entry.component) or not valid(entry.source) or not valid(entry.owner) then return false end
     local widget = entry.component.object:get_property("Widget")
     if not widget or widget:get_address()~=entry.source.address then return false end
+    if entry.kind.screen_root then
+        local root=entry.owner.object:get_property('RootComponent')
+        local bound=entry.owner.object:get_property('Widget')
+        return root and root:get_address()==entry.component.address
+            and bound and bound:get_address()==entry.component.address
+    end
     if entry.parent then
         if not valid(entry.parent) or not valid(entry.root) then return false end
         local parent=entry.component.object:get_property("AttachParent")
@@ -264,12 +272,23 @@ local function bind_world_label(component,source,kind)
 end
 
 local function bind_screen(component,source,kind)
-    stage="verify live interaction prompt"
+    local label=kind.label or 'interaction prompt'
+    stage="verify live "..label
     local player=source:GetOwningPlayer()
-    checked(widget_class,"GetOwningPlayerPawn",8,8)
     local owner=component:GetOwner()
-    local pawn=source:GetOwningPlayerPawn()
-    assert(player and owner and pawn and pawn:get_address()==owner:get_address(),"Prompt must belong to the local player")
+    assert(player and owner,'Screen marker owner/player unavailable')
+    if kind.screen_root then
+        local p=owner:get_class():find_property('Widget')
+        local state=source:get_class():find_property('PlayerState')
+        assert(p and p:get_offset()==680 and state and state:get_offset()==872,'Teammate marker layout differs')
+        local root,bound=owner:get_property('RootComponent'),owner:get_property('Widget')
+        assert(root and root:get_address()==component:get_address()
+            and bound and bound:get_address()==component:get_address(),'Teammate widget must be its actor root')
+    else
+        checked(widget_class,"GetOwningPlayerPawn",8,8)
+        local pawn=source:GetOwningPlayerPawn()
+        assert(pawn and pawn:get_address()==owner:get_address(),"Prompt must belong to the local player")
+    end
     checked(player:get_class(),"ProjectWorldLocationToScreen",48,48)
     checked(widget_class,"SetRenderTranslation",16,16)
     checked(widget_class,"GetCachedGeometry",32,256)
@@ -285,7 +304,7 @@ local function bind_screen(component,source,kind)
         owner=track(owner),player=track(player),kind=kind,opacity=opacity,hidden=true,
         screen=screen_projection.bind(source,slate)}
     entry_count=entry_count+1
-    info("Tracking live interaction prompt; text, progress and world target retained.")
+    info("Tracking live "..label.."; text, progress and world target retained.")
 end
 
 local function inspect_component(component)
@@ -383,7 +402,7 @@ local function place_screen(entry,point,pixel)
     entry.hidden=true
     if not entry.reported then
         entry.reported=true
-        info("Live interaction prompt now follows headset-projected aim; no text copy or target movement.")
+        info("Live "..(entry.kind.label or 'interaction prompt').." now uses headset projection; no text copy or target movement.")
     end
 end
 
@@ -535,12 +554,12 @@ callbacks.tick = function(engine,delta)
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
                     if pixel and pixel.inside then
                         if entry.screen then
-                            stage="reproject live interaction prompt"
+                            stage="reproject live "..(entry.kind.label or 'interaction prompt')
                             local success,err=pcall(place_screen,entry,point,pixel)
                             if not success then
                                 pcall(restore,entry); entries[address]=nil; entry_count=entry_count-1
                                 rejected[address]=true
-                                functions.log_warn("[FarFarWest markers] Interaction prompt stopped safely: "..tostring(err))
+                                functions.log_warn("[FarFarWest markers] "..(entry.kind.label or 'Interaction prompt').." stopped safely: "..tostring(err))
                             end
                         elseif entry.kind.world_label then
                             stage="reproject live mission label"
@@ -584,7 +603,7 @@ callbacks.tick = function(engine,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendors, lobby/mission guides, objectives, object pings, health bars, dropped cards and interaction prompts use headset projection.")
+info("Helper loaded; vendors, lobby/mission guides, objectives, object pings, health bars, dropped cards, teammate markers and interaction prompts use headset projection.")
 
 return callbacks
 end

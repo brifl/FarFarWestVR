@@ -20,6 +20,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   right stick.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
   mission guides follow their world locations independently of controller aim.
+- **Stable teammate markers:** player nameplates follow the other player while
+  preserving the game's live name, level, health, and voice indicators.
 - **Object and location tags:** tag a spot or object with the right-stick click.
   Tags follow moving targets, including chickens, and retain their icons,
   distances, and height offsets.
