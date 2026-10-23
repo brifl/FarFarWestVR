@@ -18,6 +18,8 @@ controller aiming, readable menus, and world markers that stay where they belong
   is disabled.
 - **Movement and snap turning:** left-stick movement and 45-degree turns on the
   right stick.
+- **Gesture map access:** bring the left controller near your head and move the
+  left stick right to open the map, while ordinary stick movement stays available.
 - **Adjustable horse steering:** a mounted-only left-stick response curve gives
   finer steering near center while preserving full steering at the edge.
 - **Stable world markers:** vendor icons, Start Mission, quest objectives, and
@@ -74,7 +76,7 @@ workflow and compatibility details.
 
 Package the profile files as `FarFarWest-Win64-Shipping.zip` and import them into
 UEVR, or update an existing profile checkout with `git pull`. After updating Lua
-helpers, restart the game; live script resets can disrupt a running session.
+helpers or plugin bindings, restart the game; live script resets can disrupt a running session.
 Keep the game window focused for menu input.
 
 ## Controls
