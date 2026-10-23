@@ -33,7 +33,8 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Corrected UI proportions:** reticles and world markers compensate for the
   eye projection's aspect ratio, keeping dots round and attachment points fixed.
   The compass and its glyphs, dialogue, boss health, and mission counters/timers
-  share the HUD proportion correction during immersive gameplay.
+  share the HUD proportion correction during immersive gameplay, along with the
+  low-ammo warning.
 - **Corrected interaction prompts:** NPC prompts follow the aiming target while
   preserving the game's interaction text and hold-progress display. Interaction,
   dialogue, and dropped-item action hints keep X across input-mode changes.
@@ -118,7 +119,7 @@ reload during play, about once a second.
 | `boss_health_scale_multiplier` | `0.85` | Boss overlay size; independent of fixed HUD size |
 | `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
 | `compass_offset_y` | `0.15` | Lower the compass and its markers together |
-| `[hud] scale_multiplier` | `0.85` | Fixed HUD size; lower makes groups smaller, `1.0` uses native size |
+| `[hud] scale_multiplier` | `0.85` | Fixed HUD and low-ammo warning size; `1.0` uses native size |
 | `[hud] aspect_correction` | `1` | Correct fixed HUD vertical stretch using the eye projection; `0` disables |
 | `left_margin` | `0.20` | Minimum inset from the left edge |
 | `right_margin` | `0.20` | Minimum inset from the right edge |

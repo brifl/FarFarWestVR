@@ -110,7 +110,7 @@ Keep script-reset recovery as an open issue rather than requiring repeated reset
 | hud | boss_health_scale_multiplier | 0.85 | Independent boss overlay size, anchored at top center. |
 | hud | mission_info_offset_y | 0.15 | Lower mission counters and timers by fifteen percent. |
 | hud | compass_offset_y | 0.15 | Lower the compass background and marker overlay together by fifteen percent. |
-| hud | scale_multiplier | 0.85 | Fixed HUD size, separate from projection-aspect correction. |
+| hud | scale_multiplier | 0.85 | Fixed HUD and low-ammo warning size, separate from projection-aspect correction. |
 | hud | aspect_correction | 1 | Correct fixed HUD vertical stretch using the active eye projection. |
 | hud | left_margin / right_margin | 0.20 / 0.20 | Independent horizontal edge insets for selected fixed HUD groups. |
 | hud | top_margin / bottom_margin | 0.15 / 0.30 | Independent vertical edge insets. |
@@ -202,6 +202,14 @@ avoid compounding an already-corrected HUD group. The existing
 and reset restore owned transforms. An unsupported panel is isolated from other
 families. Border_110 and the mirrored Grid_Tweaks also join fixed-HUD margins,
 using native bounds and retaining native horizontal mirroring.
+
+The Low Ammo overlay (`UI_LowAmmo_C`, audit ID `w-afa1c0cbd4b9`) also uses
+this adapter, guarded by its `Appear` field at 816. It scales about viewport
+center with the existing `[hud] scale_multiplier` (profile 0.85), alongside eye-aspect
+correction. It is separate from edge-margin placement; native text, warning
+animations, visibility, and gameplay state remain with the game. Dismissed
+instances release their owned transforms, and the next viewport instance rebinds.
+Visual validation is pending a normal relaunch and a low-ammo condition.
 
 The boss UserWidget covers the full viewport (the earlier capture measured its
 root at 0..1 while its actual bar sat near the top). Scaling this full canvas

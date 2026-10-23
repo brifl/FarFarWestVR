@@ -7,7 +7,7 @@ MOCK = r'''
 state={objects={},next=1,roots={},logs={},aspect=1,active=true}
 farfarwest_gameplay_ready=true
 local offsets={RenderTransform=144,RenderTransformPivot=200,Image_Compass=1008,
- Overlay_Pings=944,TextBlock_Text=832,ProgressBar_Boss=840,Text_Title=816,TextBlock_Seconds=816}
+ Overlay_Pings=944,TextBlock_Text=832,ProgressBar_Boss=840,Text_Title=816,TextBlock_Seconds=816,Appear=816}
 function make(name,sx,sy)
  local o={name=name,index=state.next,scale={X=sx or 1,Y=sy or 1},pivot={X=.5,Y=.5},translation={X=3,Y=4},props={}}
  state.next=state.next+1;state.objects[o.index]=o
@@ -37,6 +37,7 @@ package.loaded['libs/live_widgets']=function(path,limit,interval,top)
 end
 package.loaded['libs/tuning']={get=function(n)
  if n=='hud.boss_health_scale_multiplier' then return state.boss_scale or .85 end
+ if n=='hud.scale_multiplier' then return state.hud_scale or .85 end
  assert(n=='hud.aspect_correction');return state.aspect
 end}
 state.player=make('UI_Player_C');state.image=make('Image_Compass',.8,.8);state.pings=make('Overlay_Pings')
@@ -49,6 +50,8 @@ for _,path in ipairs({'/Game/Interfaces/UI_NpcTalk.UI_NpcTalk_C','/Game/Interfac
  state.roots['WidgetBlueprintGeneratedClass '..path]={o}
 end
 state.panels[2].scale={X=1,Y=1}
+state.warning=make('UI_LowAmmo_C')
+state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/UI_LowAmmo.UI_LowAmmo_C']={state.warning}
 UEVR_Matrix4x4f={new=function() return {get=function(_,c) return c==0 and 1 or 1.15 end} end}
 local function log(s) state.logs[#state.logs+1]=s end
 local methods={GetDesiredSize=16,SetRenderScale=16,SetRenderTransformPivot=16,GetParent=8,GetViewportSize=24}
@@ -132,4 +135,17 @@ run('removed viewport panels release owned shapes without waiting for a world ch
 frame();local boss=state.panels[2]
 state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/Boss/UI_Lifebar_Boss.UI_Lifebar_Boss_C']={}
 frame();healthy();near(boss.scale.X,1);near(boss.pivot.Y,.5)
+''')
+
+run('low-ammo warning follows HUD size, restores on dismissal and rebinds its next instance', '''
+local path='WidgetBlueprintGeneratedClass /Game/Interfaces/UI_LowAmmo.UI_LowAmmo_C'
+local warning=state.warning
+frame();healthy();near(warning.scale.X,.85);near(warning.scale.Y,.85*.646875)
+state.hud_scale=.7;frame();near(warning.scale.X,.7);near(warning.scale.Y,.7*.646875)
+state.aspect=0;frame();near(warning.scale.Y,.7)
+state.roots[path]={};frame();near(warning.scale.X,1);near(warning.scale.Y,1)
+state.objects[warning.index]=nil;warning.dead=true
+local next_warning=make('UI_LowAmmo_C_2');state.roots[path]={next_warning}
+state.aspect=1;frame();healthy();near(next_warning.scale.Y,.7*.646875)
+state.menu=true;frame();near(next_warning.scale.X,1);near(next_warning.scale.Y,1)
 ''')
