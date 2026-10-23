@@ -268,8 +268,8 @@ layouts disable only this helper. Its signed power curve uses normalized
 horizontal input raised to `[horse] steering_exponent` (1–4, initially 2), with
 separate positive/negative integer endpoints so full lock remains exact. Exponent
 1 bypasses the change. No other axis/button or native horse/camera property is
-written, and no temporal filter is added. A live mounted test is awaiting the
-user's assessment of steering feel.
+written, and no temporal filter is added. The user confirmed the live mounted
+test feels good; keep the accepted steering exponent at 2.0.
 
 The new carried pig advertises IA_Drop, bound separately from IA_Interact.
 `libs/carry_drop.lua` resolves the current pawn/items/equipped object on each tick,
