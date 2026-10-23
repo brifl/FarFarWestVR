@@ -5,7 +5,7 @@ import os
 from pathlib import Path, PureWindowsPath
 import subprocess
 
-from apply_render_baseline import apply
+from apply_render_baseline import PRESETS, apply
 
 
 PROFILE = Path('/mnt/c/Users/brian/AppData/Roaming/UnrealVRMod/FarFarWest-Win64-Shipping')
@@ -22,7 +22,7 @@ def windows_path(path):
     return str(PureWindowsPath('C:/', *path.parts[3:]))
 
 
-def prepare(preset='menu-logging'):
+def prepare(preset='menu-logging', restore=False):
     if not GAME_LOG.is_file():
         raise SystemExit('The known Far Far West log is missing; nothing changed.')
     if os.path.lexists(LINK):
@@ -40,14 +40,19 @@ def prepare(preset='menu-logging'):
     with LINK.open('rb') as stream:
         stream.read(1)
     USER_CONFIG.parent.mkdir(exist_ok=True)
-    apply(target=USER_CONFIG, preset=preset)
+    apply(target=USER_CONFIG, preset=preset, restore=restore)
     print('Game configuration installed:', USER_CONFIG)
     print('Menu helper ready: profile/data/FarFarWest.log links to the game log.')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--material-test', action='store_true',
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--material-test', action='store_true',
                         help='Disable custom post-process materials and log INI CVar application.')
+    selection.add_argument('--preset', choices=tuple(PRESETS), default='menu-logging',
+                           help='Apply a preset to the persistent UserEngine.ini layer.')
+    parser.add_argument('--restore', action='store_true',
+                        help='Restore the selected preset backup, preserving the prior baseline.')
     args = parser.parse_args()
-    prepare(preset='material-probe' if args.material_test else 'menu-logging')
+    prepare(preset='material-probe' if args.material_test else args.preset, restore=args.restore)

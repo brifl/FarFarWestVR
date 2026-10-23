@@ -411,6 +411,35 @@ The repeating upward-moving distortion is absent on the repeat test with the
 startup override `r.PostProcessing.DisableMaterials=1`, confirmed in the live
 game log. This suppresses all custom post-process materials; the exact offending
 material remains unidentified. Check damage/status effects during further play.
+An optional global Niagara test is prepared in
+`game_settings/niagara_suppression_test.ini`. Epic documents
+[`fx.SuppressNiagaraSystems=1`](https://dev.epicgames.com/documentation/en-us/unreal-engine/unreal-engine-console-variables-reference)
+as preventing Niagara systems from activating. It can remove muzzle, spell,
+pickup, and other gameplay effects. Components can still be allocated; neither
+a leak nor a reduction in component growth is proven by enabling this setting.
+The default UEVR profile does not activate this test. It was prepared offline
+and has not been applied to robot1-x.
+
+For one later test, run from the installed profile checkout in **WSL on robot1-x**,
+with Far Far West closed:
+
+```bash
+python3 tools/prepare_menu_helper.py --preset niagara-suppression
+```
+
+This writes the game's persistent `FarFarWest/Config/UserEngine.ini` layer and
+retains the current heat-distortion/menu-logging baseline in its preset backup.
+On launch, confirm the startup CVar readback and check a short solo scene with
+weapons/spells before comparing object growth during comparable play. The
+setting is supported by the documented engine version but still needs verification
+in this shipping game. Restore the exact prior configuration, with the game closed:
+
+```bash
+python3 tools/prepare_menu_helper.py --preset niagara-suppression --restore
+```
+
+The installer refuses to overwrite unrelated changes made after application.
+
 The prepared FXAA experiment is retained outside the autorun scripts in
 [experiments/temporal_aa_test.lua](../experiments/temporal_aa_test.lua).
 

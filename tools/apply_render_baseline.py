@@ -8,17 +8,18 @@ import tempfile
 
 TARGET = Path('/mnt/c/Users/brian/AppData/Local/FarFarWest/Saved/Config/Windows/Engine.ini')
 FRAGMENT = Path(__file__).resolve().parents[1] / 'game_settings/temporal_baseline.ini'
+PRESETS = {
+    'temporal': 'temporal_baseline.ini',
+    'menu-logging': 'menu_logging.ini',
+    'material-probe': 'postprocess_material_test.ini',
+    'niagara-suppression': 'niagara_suppression_test.ini',
+}
 
 
 def apply(target=TARGET, restore=False, preset='temporal'):
-    filenames = {
-        'temporal': 'temporal_baseline.ini',
-        'menu-logging': 'menu_logging.ini',
-        'material-probe': 'postprocess_material_test.ini',
-    }
-    if preset not in filenames:
+    if preset not in PRESETS:
         raise ValueError('Unknown game settings preset')
-    fragment_path = FRAGMENT.with_name(filenames[preset])
+    fragment_path = FRAGMENT.with_name(PRESETS[preset])
     backup = target.with_name(target.name + '.before-ffw-' + preset + '.bak')
     current = target.read_bytes() if target.exists() else b''
     if restore and not backup.exists():
@@ -52,6 +53,6 @@ def apply(target=TARGET, restore=False, preset='temporal'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=('apply', 'restore'))
-    parser.add_argument('--preset', choices=('temporal', 'menu-logging', 'material-probe'), default='temporal')
+    parser.add_argument('--preset', choices=tuple(PRESETS), default='temporal')
     args = parser.parse_args()
     apply(restore=args.mode == 'restore', preset=args.preset)
