@@ -14,6 +14,7 @@ local specs={
  {path='/Game/Interfaces/UI_Timer.UI_Timer_C',field='TextBlock_Seconds',offset=816},
  {path='/Game/Interfaces/UI_LowAmmo.UI_LowAmmo_C',field='Appear',offset=816,
   scale_key='hud.scale_multiplier',anchor={X=.5,Y=.5}},
+ {path='/Game/Interfaces/UI_DropItem.UI_DropItem_C',children={VerticalBox_Holder=808}},
 }
 for _,s in ipairs(specs) do s.query=query('WidgetBlueprintGeneratedClass '..s.path,16,.5,true) end
 local projection=UEVR_Matrix4x4f.new()

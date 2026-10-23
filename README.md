@@ -47,6 +47,7 @@ controller aiming, readable menus, and world markers that stay where they belong
 - **Carried-item Drop on X:** the new Drop prompt uses X while holding a supported
   item, including pigs and pickaxes, dispatching the game's native Drop input
   without rebinding normal interaction. Drop recovers after unsupported possession states.
+  The shared held-item prompt group corrects stretching across Drop, Shoot, and Aim hints.
 - **Possession-aware reticle:** aiming traces follow the current player after
   mounting and dismounting, avoiding the earlier stale-pawn freeze.
 - **Adjustable HUD placement:** raised dialogue text and separate height controls

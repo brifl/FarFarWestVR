@@ -2,7 +2,7 @@
 
 Cumulative record of captured play sessions. Updated by `python3 tools/ui_audit.py collect`; previous sessions remain in the archive.
 
-Updated 2026-10-23 07:21 UTC. **17 sessions, 9,784 distinct widget IDs.**
+Updated 2026-10-23 07:28 UTC. **17 sessions, 9,784 distinct widget IDs.**
 
 687 edge-HUD candidates, 8 marker widget/owner families without latest recorded coverage (28 historical), and 2 interaction-hint contexts with visible keyboard presentation.
 
@@ -28,7 +28,7 @@ These are observations for review. Edge bounds do not prove headset clipping; sc
 | robot1-x/ui-audit-000014 | at least 1591.7 | 1054 | not recorded | 0 | unfinished; last checkpoint |
 | robot1-x/ui-audit-000015 | 3600.0 | 4096 | not recorded | 0 | completed |
 | robot1-x/ui-audit-000016 | 421.8 | 3155 | 17101 | 0 | error |
-| robot1-x/ui-audit-000017 | at least 331.1 | 2611 | not recorded | 0 | unfinished; last checkpoint |
+| robot1-x/ui-audit-000017 | at least 813.0 | 2645 | not recorded | 0 | unfinished; last checkpoint |
 
 A capture at its record or byte limit can omit late widget families. Skipped observations count attempts, not distinct IDs; older captures did not record that count.
 
@@ -106,7 +106,7 @@ Historical unhandled observations are retained even if coverage is observed late
 
 | ID | Widget path | Modes observed | Sessions |
 | --- | --- | --- | --- |
-| w-e2d89729479f | `UI_DropItem_C/CanvasPanel_21/VerticalBox_Holder/UI_ItemContext_C/Border_26/HorizontalBox_0/UI_Key` | +gamepad, keyboard | 7 |
+| w-e2d89729479f | `UI_DropItem_C/CanvasPanel_21/VerticalBox_Holder/UI_ItemContext_C/Border_26/HorizontalBox_0/UI_Key` | +gamepad, keyboard | 8 |
 | w-fd7113bb1e4f | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key` | +gamepad, keyboard | 10 |
 
 ## Candidate dictionary
@@ -137,11 +137,11 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-f17634b8b6cd | unhandled_screen_marker | `UI_Lifebar_C/Border_0` | 0.490, 0.518 → 0.559, 0.548 | 5 | none recorded |
 | w-c3bf5a7a0778 | unhandled_screen_marker | `UI_WorldIcon_C/Border_0` | -0.148, 0.370 → -0.098, 0.459 | 15 | UI_WorldIcon_C:proxy, UI_WorldIcon_C:source |
 | w-d2cd8f1675fa | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/HorizontalBox_Key/SizeBox_2/EditableTextBox_73` | 0.062, 0.762 → 0.068, 0.795 | 15 | none recorded |
-| w-907254bd9dc2 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69` | 0.451, 0.538 → 0.565, 0.565 | 15 | UI_Interact_C:source |
-| w-4985b0bfd721 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key/HorizontalBox_2` | 0.452, 0.685 → 0.468, 0.703 | 15 | UI_Interact_C:source |
+| w-907254bd9dc2 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69` | 0.440, 0.646 → 0.533, 0.664 | 15 | UI_Interact_C:source |
+| w-4985b0bfd721 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key/HorizontalBox_2` | 0.440, 0.647 → 0.455, 0.665 | 15 | UI_Interact_C:source |
 | w-d511affe259c | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0/Overlay_1/HorizontalBox_0` | 0.540, 0.611 → 0.574, 0.631 | 15 | teammate marker:source |
 | w-a6212d9f7113 | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/HorizontalBox_Key/UI_Key/HorizontalBox_2/Image_GamepadIcon` | 0.022, 0.768 → 0.037, 0.793 | 15 | none recorded |
-| w-8f7d9bb00e44 | edge_hud | `UI_Cursor_C/CanvasPanel_0/Image_31` | 0.789, 0.444 → 0.823, 0.503 | 11 | none recorded |
+| w-8f7d9bb00e44 | edge_hud | `UI_Cursor_C/CanvasPanel_0/Image_31` | 0.035, 0.040 → 0.068, 0.100 | 11 | none recorded |
 | w-94025b71780c | edge_hud | `UI_Customization_C/CanvasPanel_21/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key/HorizontalBox_2/Image_GamepadIcon` | 0.059, 0.020 → 0.077, 0.052 | 1 | none recorded |
 | w-723d3e606c58 | edge_hud | `UI_Equipment_Selection_Weapons_C/CanvasPanel_16/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/Image_47` | 0.012, 0.016 → 0.023, 0.053 | 3 | none recorded |
 | w-cffbcaa9bec5 | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/GoBackButton/Button_GoBack/HorizontalBox_0/Image_47` | 0.012, 0.016 → 0.023, 0.053 | 2 | none recorded |
@@ -201,7 +201,7 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-92328d23de65 | edge_hud | `UI_Equipment_Tweak_Hero_C/CanvasPanel_36/UI_Equipment_PlayerStats/InvalidationBox_0/VerticalBox_1/Button_Hover/VerticalBox_0/HorizontalBox_0/HorizontalBox_6/Image_6` | 0.973, 0.020 → 0.988, 0.046 | 2 | none recorded |
 | w-e9e68bd63117 | unhandled_screen_marker | `UI_Guide_C/InvalidationBox_0/Overlay_0/Image_Aura` | 0.379, 0.337 → 0.504, 0.391 | 4 | mission guide:source |
 | w-9f8a5a894220 | unhandled_screen_marker | `UI_Guide_C/Overlay_0/Image_64` | 0.515, -0.143 → 0.587, -0.124 | 11 | mission guide:source |
-| w-81a5485cddc0 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key/HorizontalBox_2/Image_GamepadIcon` | 0.488, 0.439 → 0.503, 0.457 | 15 | UI_Interact_C:source |
+| w-81a5485cddc0 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key/HorizontalBox_2/Image_GamepadIcon` | 0.515, 0.632 → 0.530, 0.649 | 15 | UI_Interact_C:source |
 | w-aa6e9181c93d | unhandled_screen_marker | `UI_JokerCard_InGame_C/SizeBox_1/Overlay_Transform/Image_Fire` | 0.427, 0.173 → 0.570, 0.540 | 3 | none recorded |
 | w-d59e1f25d571 | unhandled_screen_marker | `UI_JokerCard_InGame_C/SizeBox_1/Overlay_Transform/Image_Joker` | 0.453, 0.231 → 0.473, 0.268 | 3 | none recorded |
 | w-e9d0e89e95d6 | unhandled_screen_marker | `UI_JokerCard_InGame_C/SizeBox_1/Overlay_Transform/Image_Joker_B` | 0.523, 0.468 → 0.544, 0.505 | 3 | none recorded |
@@ -250,8 +250,8 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-4bcc979eb4c3 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Disc_Picked_C/SizeBox_35/Overlay_0/Image_108` | 0.587, 0.356 → 0.598, 0.374 | 4 | none recorded |
 | w-1c517d36b713 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Line_C/SizeBox_21/Image_55` | 0.580, 0.399 → 0.650, 0.750 | 5 | none recorded |
 | w-1971dadc9a12 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_MainObjective_C/SizeBox_35/Overlay_0/Background` | 0.312, 0.392 → 0.367, 0.489 | 5 | none recorded |
-| w-b9e79ebf1c53 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Player_C/SizeBox_35/Overlay_0/Image` | 0.367, 0.654 → 0.420, 0.749 | 1 | none recorded |
-| w-79c1db6656df | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Player_C/SizeBox_35/Overlay_0/Image_108` | 0.387, 0.690 → 0.400, 0.713 | 1 | none recorded |
+| w-b9e79ebf1c53 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Player_C/SizeBox_35/Overlay_0/Image` | 0.363, 0.687 → 0.412, 0.773 | 1 | none recorded |
+| w-79c1db6656df | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Player_C/SizeBox_35/Overlay_0/Image_108` | 0.382, 0.720 → 0.393, 0.740 | 1 | none recorded |
 | w-e9b0016b1aca | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_SideObjective_C/SizeBox_35/Overlay_0/Background` | 0.565, 0.489 → 0.620, 0.586 | 5 | none recorded |
 | w-abbc4fcb2e49 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Target_C/SizeBox_35/Overlay_0/Background` | 0.553, 0.701 → 0.608, 0.798 | 5 | none recorded |
 | w-4c525ef9f66c | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Target_C/SizeBox_35/Overlay_0/Image_108` | 0.571, 0.733 → 0.590, 0.765 | 5 | none recorded |
@@ -280,8 +280,8 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-c69b9f21e8d4 | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/UI_JokerCard_InGame/SizeBox_1/Overlay_Transform/Image_Joker` | 0.867, 0.454 → 0.889, 0.494 | 2 | none recorded |
 | w-916767d72281 | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/UI_JokerCard_InGame/SizeBox_1/Overlay_Transform/Image_Joker_B` | 0.928, 0.700 → 0.950, 0.739 | 2 | none recorded |
 | w-420ea8512780 | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/UI_JokerCard_InGame/SizeBox_1/Overlay_Transform/VerticalBox_0/Image_Joker_C` | 0.890, 0.569 → 0.926, 0.633 | 2 | none recorded |
-| w-d60d46de3de6 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Overlay_0/Image_Aura` | 0.969, 0.344 → 1.001, 0.382 | 2 | objective marker:source |
-| w-6cd9b98f5d60 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Overlay_0/Image_Logo` | 0.979, 0.356 → 0.992, 0.371 | 2 | objective marker:source |
+| w-d60d46de3de6 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Overlay_0/Image_Aura` | 0.977, 0.405 → 1.009, 0.442 | 2 | objective marker:source |
+| w-6cd9b98f5d60 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Overlay_0/Image_Logo` | 0.986, 0.416 → 0.999, 0.431 | 2 | objective marker:source |
 | w-0b6c9b0e55d4 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/SizeBox_0/Overlay_0/Image_Aura` | 0.214, 0.346 → 0.254, 0.391 | 4 | objective marker:source |
 | w-812f8e1166aa | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/SizeBox_0/Overlay_0/Image_Logo` | 0.226, 0.358 → 0.242, 0.378 | 4 | objective marker:source |
 | w-da1e4f106c3c | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0/Overlay_1/HorizontalBox_0/Overlay_0/Image_Glow` | 0.495, 0.603 → 0.515, 0.640 | 15 | teammate marker:source |
@@ -312,25 +312,25 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-0b0f415d550a | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/NamedSlot_216/CanvasPanel_86/VB_Lobby/HB_Quests/UI_key_Quest/HorizontalBox_2/Image_GamepadIcon` | 0.773, 0.621 → 0.785, 0.634 | 15 | none recorded |
 | w-4cec78d065e0 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/HB_Ammo/Image_CurrentWeapon` | 0.788, 0.650 → 0.801, 0.665 | 14 | none recorded |
 | w-46dc9b46cbd2 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_PlayerHealths/UI_PlayerLifebar_C/VerticalBox_1/HorizontalBox_2/HorizontalBox_1/Image_VoiceChat` | 0.275, 0.172 → 0.286, 0.184 | 3 | none recorded |
-| w-91a040fc9dfa | edge_hud | `UI_Player_C/CanvasPanel_39/Crosshair_Top` | 0.433, 0.381 → 0.567, 0.619 | 5 | none recorded |
-| w-334746a28eae | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Border_110/HorizontalBox_0/Image_105` | 0.306, 0.919 → 0.306, 0.919 | 5 | none recorded |
+| w-91a040fc9dfa | edge_hud | `UI_Player_C/CanvasPanel_39/Crosshair_Top` | 0.459, 0.345 → 0.593, 0.498 | 5 | none recorded |
+| w-334746a28eae | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Border_110/HorizontalBox_0/Image_105` | 0.317, 0.702 → 0.317, 0.702 | 5 | none recorded |
 | w-9c1983d1089a | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Grid_Tweaks/UI_Joker_InGameOnScreen_C/Button_DropJoker/SizeBox_35/Overlay_0/Image_Glow` | 0.941, 0.064 → 1.003, 0.169 | 3 | none recorded |
 | w-4ecbd63e34c1 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Grid_Tweaks/UI_Joker_InGameOnScreen_C/Button_DropJoker/SizeBox_35/Overlay_0/Image_Tweak` | 0.962, 0.100 → 0.980, 0.132 | 3 | none recorded |
 | w-c8e714360f50 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay/Image_GlowUranium` | 0.886, -0.047 → 1.031, 0.200 | 6 | none recorded |
 | w-6156a4507bbd | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay/Image_Uranium` | 0.949, 0.067 → 0.963, 0.091 | 5 | none recorded |
 | w-5cd297626790 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay_0/Image_GlowKwart` | 0.807, -0.047 → 0.953, 0.200 | 6 | none recorded |
-| w-e6e2eb2f06cf | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay_0/Image_Golds` | 0.871, 0.066 → 0.887, 0.093 | 5 | none recorded |
+| w-e6e2eb2f06cf | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay_0/Image_Golds` | 0.706, 0.153 → 0.719, 0.168 | 5 | none recorded |
 | w-c76dc8bc297a | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay_2/Image_GlowEnemyMoney` | 0.847, -0.047 → 0.993, 0.200 | 6 | none recorded |
-| w-802fc6f5f927 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay_2/Image_Souls` | 0.911, 0.066 → 0.927, 0.093 | 5 | none recorded |
-| w-810f8648c383 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Image_GamepadIcon` | 0.043, 0.845 → 0.059, 0.872 | 5 | none recorded |
+| w-802fc6f5f927 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Overlay_2/Image_Souls` | 0.740, 0.153 → 0.753, 0.168 | 5 | none recorded |
+| w-810f8648c383 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Image_GamepadIcon` | 0.215, 0.646 → 0.228, 0.661 | 5 | none recorded |
 | w-91c77816187a | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/SpellIcon` | 0.025, 0.845 → 0.041, 0.872 | 6 | none recorded |
 | w-00e0c13eaaff | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Image_GamepadIcon` | 0.050, 0.876 → 0.066, 0.903 | 5 | none recorded |
 | w-90673947e3a7 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/SpellIcon` | 0.032, 0.876 → 0.048, 0.903 | 5 | none recorded |
 | w-66f49dc9efda | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Image_GamepadIcon` | 0.057, 0.908 → 0.073, 0.935 | 5 | none recorded |
-| w-a28cd219e797 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/SpellIcon` | 0.040, 0.908 → 0.056, 0.935 | 5 | none recorded |
+| w-a28cd219e797 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/SpellIcon` | 0.214, 0.682 → 0.227, 0.697 | 5 | none recorded |
 | w-7e3cd352b6e6 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/Image_Glow` | -0.045, 0.697 → 0.217, 1.141 | 5 | none recorded |
 | w-7e553a079d19 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Image_Compass` | 0.338, 0.207 → 0.662, 0.241 | 5 | none recorded |
-| w-d2cf5caa2d41 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Overlay_Pings/UI_ObjectiveCompass_C/Image_Compass` | 0.298, 0.203 → 0.702, 0.246 | 5 | none recorded |
+| w-d2cf5caa2d41 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Overlay_Pings/UI_ObjectiveCompass_C/Image_Compass` | 0.299, 0.213 → 0.704, 0.240 | 5 | none recorded |
 | w-9980d50418d7 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/HB_Ammo/Image_CurrentWeapon` | 0.960, 0.898 → 0.976, 0.925 | 6 | none recorded |
 | w-0fcabf0ae6c5 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Grenades/IconGrenade` | 0.960, 0.866 → 0.976, 0.893 | 6 | none recorded |
 | w-a786d8b92ec8 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Grenades/UI_Key_2/HorizontalBox_2/Image_GamepadIcon` | 0.942, 0.866 → 0.958, 0.893 | 5 | none recorded |
@@ -338,7 +338,7 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-02eb3fbb9262 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Map/UI_Key/HorizontalBox_2/Image_GamepadIcon` | 0.942, 0.836 → 0.958, 0.863 | 5 | none recorded |
 | w-1abafb6461da | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_MapAndHorse/IconHorse` | 0.960, 0.806 → 0.976, 0.833 | 6 | none recorded |
 | w-383b934c4eaf | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_MapAndHorse/UI_Key_1/HorizontalBox_2/Image_GamepadIcon` | 0.942, 0.806 → 0.958, 0.833 | 5 | none recorded |
-| w-3af5b81197c8 | edge_hud | `UI_ShortMessage_C/CanvasPanel_21/Border_0/HorizontalBox_0/Image_49` | 0.418, 0.287 → 0.433, 0.313 | 11 | none recorded |
+| w-3af5b81197c8 | edge_hud | `UI_ShortMessage_C/CanvasPanel_21/Border_0/HorizontalBox_0/Image_49` | 0.442, 0.287 → 0.457, 0.313 | 11 | none recorded |
 | w-da8fd89b10d6 | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/UI_RegionImage_/Image_Region` | 0.927, 0.385 → 1.207, 0.884 | 6 | none recorded |
 | w-ccdbae388521 | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/UI_RegionImage_Area41/Image_Region` | 0.154, 0.478 → 0.474, 1.047 | 6 | none recorded |
 | w-b5e70955f00f | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/UI_RegionImage_Canyon/Image_Region` | 0.472, 0.169 → 0.792, 0.738 | 6 | none recorded |
@@ -400,13 +400,13 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-3faee18d3a77 | edge_hud | `UI_TitleScreen_C/CanvasPanel_36/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key/HorizontalBox_2/Image_GamepadIcon` | 0.059, 0.020 → 0.077, 0.052 | 10 | none recorded |
 | w-18d4a0d5e8b6 | unhandled_screen_marker | `UI_WorldIcon_C/Border_0/Image_Icon` | -0.131, 0.400 → -0.115, 0.429 | 15 | UI_WorldIcon_C:proxy, UI_WorldIcon_C:source |
 | w-67d655e6f524 | unhandled_screen_marker | `UI_Guide_C/InvalidationBox_0` | 0.474, 0.488 → 0.544, 0.508 | 4 | mission guide:source |
-| w-96976483a147 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0` | 0.535, 0.489 → 0.608, 0.514 | 15 | UI_Interact_C:source |
+| w-96976483a147 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0` | 0.421, 0.587 → 0.510, 0.613 | 15 | UI_Interact_C:source |
 | w-a72f577613b8 | unhandled_screen_marker | `UI_Guide_C/InvalidationBox_0/Overlay_0` | 0.481, 0.391 → 0.551, 0.411 | 4 | mission guide:source |
 | w-895598c6aba2 | unhandled_screen_marker | `UI_Guide_C/Overlay_0` | 0.518, -0.143 → 0.584, -0.124 | 11 | mission guide:source |
-| w-33007cba1182 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101` | 0.529, 0.450 → 0.638, 0.475 | 15 | UI_Interact_C:source |
+| w-33007cba1182 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101` | 0.426, 0.642 → 0.540, 0.668 | 15 | UI_Interact_C:source |
 | w-08ee27e620dd | unhandled_screen_marker | `UI_JokerCard_InGame_C/SizeBox_1/Overlay_Transform` | 0.435, 0.203 → 0.560, 0.537 | 3 | none recorded |
 | w-07f9943f7f59 | unhandled_screen_marker | `UI_ObjectPing_C/VerticalBox_161/Overlay_0` | 0.865, 0.478 → 0.878, 0.493 | 4 | object ping:source |
-| w-58a5137c29a1 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Overlay_0` | 0.979, 0.356 → 0.992, 0.371 | 2 | objective marker:source |
+| w-58a5137c29a1 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Overlay_0` | 0.985, 0.417 → 0.998, 0.432 | 2 | objective marker:source |
 | w-83f328be2214 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/SizeBox_0/Overlay_0` | 0.220, 0.364 → 0.241, 0.388 | 4 | objective marker:source |
 | w-824d0d2d9aaf | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0/Overlay_1` | 0.580, 0.584 → 0.638, 0.605 | 15 | teammate marker:source |
 | w-2b3b857ed081 | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0/Overlay_1/HorizontalBox_0/Overlay_0` | 0.527, 0.613 → 0.532, 0.632 | 15 | teammate marker:source |
@@ -419,20 +419,20 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-bf7add8ba4c3 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_PlayerHealths/UI_PlayerLifebar_C/VerticalBox_1/HorizontalBox_2/SizeBox_2/Overlay_0/HealProgressBar` | 0.200, 0.153 → 0.273, 0.168 | 3 | none recorded |
 | w-04f8d4e8982e | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HorizontalBox_1/VerticalBox_1/HB_Healbar/Border_0/SizeBox_0/HealProgressBar` | 0.409, 0.912 → 0.581, 0.927 | 5 | none recorded |
 | w-3f5c9f3d3482 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_PlayerHealths/UI_PlayerLifebar_C/VerticalBox_1/HorizontalBox_2/SizeBox_2/Overlay_0/HealProgressBar` | 0.200, 0.187 → 0.273, 0.202 | 1 | none recorded |
-| w-27af464e3894 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/SizeBox_0` | 0.437, 0.532 → 0.572, 0.571 | 15 | UI_Interact_C:source |
+| w-27af464e3894 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/SizeBox_0` | 0.425, 0.642 → 0.540, 0.668 | 15 | UI_Interact_C:source |
 | w-d04ff09524fc | unhandled_screen_marker | `UI_JokerCard_InGame_C/SizeBox_1` | 0.419, 0.169 → 0.544, 0.503 | 3 | none recorded |
 | w-28e7d096bf86 | unhandled_screen_marker | `UI_Lifebar_C/Border_0/SizeBox_0` | 0.599, 0.463 → 0.665, 0.482 | 5 | none recorded |
 | w-fa5af62f0fb7 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/SizeBox_0` | 0.966, 0.083 → 0.987, 0.107 | 4 | objective marker:source |
 | w-c052f4bd0dc9 | edge_hud | `UI_LobbyRace_C/CanvasPanel_30/Border_Color/VB_PlayerScore/VB_AllPlayerScores/UI_LobbyRace_PlayerScore_C/VerticalBox_0/HorizontalBox_20/Spacer` | 0.071, 0.512 → 0.081, 0.513 | 1 | none recorded |
 | w-212bcd350aca | edge_hud | `UI_Menu_MainMenu_C/CanvasPanel_36/Holder/UI_Menu_Container_Multiplayer_C/Overlay_52/HorizontalBox_1/Spacer_94` | 0.180, 0.109 → 0.180, 0.925 | 1 | none recorded |
 | w-a101974b82c5 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Spacer` | 0.938, 0.060 → 0.949, 0.093 | 6 | none recorded |
-| w-86119540b1d5 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Spacer_127` | 0.900, 0.060 → 0.911, 0.093 | 6 | none recorded |
+| w-86119540b1d5 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/Spacer_127` | 0.731, 0.151 → 0.741, 0.169 | 6 | none recorded |
 | w-c26c5e3f72a1 | edge_hud | `UI_BuildId_C/CanvasPanel_17/HorizontalBox_0/TextBlock_Id` | 0.908, 0.972 → 0.995, 0.993 | 15 | none recorded |
 | w-7500161c0f20 | edge_hud | `UI_BuildId_C/CanvasPanel_17/HorizontalBox_0/TextBlock_Id_Extended` | 0.995, 0.972 → 0.996, 0.993 | 11 | none recorded |
 | w-bfacd8310795 | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/HorizontalBox_Key/TextBlock_87` | 0.037, 0.766 → 0.057, 0.791 | 15 | none recorded |
 | w-61ee7c3c4ee8 | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/HorizontalBox_Key/UI_Key/HorizontalBox_2/Text_Key_1` | 0.041, 0.768 → 0.045, 0.790 | 4 | none recorded |
 | w-282ee70c1e1b | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/HorizontalBox_Key/UI_Key/HorizontalBox_2/Text_Key_2` | 0.023, 0.768 → 0.027, 0.790 | 4 | none recorded |
-| w-7f5ba6ecb184 | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/ScrollBox_117/MessagesBox/UI_ChatMessage_C/HorizontalBox_0/Text_Message` | 0.087, 0.732 → 0.173, 0.757 | 3 | none recorded |
+| w-7f5ba6ecb184 | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/ScrollBox_117/MessagesBox/UI_ChatMessage_C/HorizontalBox_0/Text_Message` | 0.087, 0.732 → 0.242, 0.757 | 3 | none recorded |
 | w-ce3db962eecc | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/ScrollBox_117/MessagesBox/UI_ChatMessage_C/HorizontalBox_0/Text_Name` | 0.023, 0.732 → 0.085, 0.757 | 3 | none recorded |
 | w-5507d57659ba | edge_hud | `UI_Equipment_Selection_Weapons_C/CanvasPanel_16/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/TextBlock_53` | 0.027, 0.020 → 0.055, 0.050 | 3 | none recorded |
 | w-7ef1828ec2bc | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/GoBackButton/Button_GoBack/HorizontalBox_0/TextBlock_53` | 0.027, 0.020 → 0.055, 0.050 | 2 | none recorded |
@@ -554,8 +554,8 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-838cdaf3a181 | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/TextBlock_Rarity` | 0.884, 0.422 → 0.944, 0.470 | 2 | none recorded |
 | w-398a5d1a95bc | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/UI_JokerCard_InGame/SizeBox_1/Overlay_Transform/VerticalBox_0/TextBlock_Description` | 0.883, 0.634 → 0.930, 0.663 | 2 | none recorded |
 | w-274bc21a0187 | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/UI_JokerCard_InGame/SizeBox_1/Overlay_Transform/VerticalBox_0/TextBlock_Title` | 0.873, 0.532 → 0.947, 0.573 | 2 | none recorded |
-| w-c75242987ff3 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Text_Distance` | 0.969, 0.369 → 1.001, 0.382 | 6 | objective marker:source |
-| w-4790cb9c8d90 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Text_Title` | 0.969, 0.342 → 1.001, 0.355 | 6 | objective marker:source |
+| w-c75242987ff3 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Text_Distance` | 0.976, 0.431 → 1.008, 0.443 | 6 | objective marker:source |
+| w-4790cb9c8d90 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161/Text_Title` | 0.976, 0.403 → 1.008, 0.416 | 6 | objective marker:source |
 | w-d5e353c30824 | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0/Overlay_1/HorizontalBox_0/Overlay_0/TextBlock_Level` | 0.503, 0.612 → 0.507, 0.631 | 15 | teammate marker:source |
 | w-98618a25fb96 | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0/Overlay_1/HorizontalBox_0/PlayerNameText` | 0.533, 0.612 → 0.561, 0.632 | 15 | teammate marker:source |
 | w-854788c7b082 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/CooldownText` | 0.027, 0.846 → 0.032, 0.867 | 15 | none recorded |
@@ -601,27 +601,27 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-ce4281587aca | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/NamedSlot_216/CanvasPanel_86/VB_Lobby/HB_Quests/UI_key_Quest/HorizontalBox_2/Text_Key_2` | 0.932, 0.871 → 0.936, 0.892 | 4 | none recorded |
 | w-5b1fe51e94ba | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/HB_Ammo/Text_CurrentAmmos` | 0.722, 0.649 → 0.786, 0.666 | 14 | none recorded |
 | w-43e338c7967e | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_PlayerHealths/UI_PlayerLifebar_C/VerticalBox_1/HorizontalBox_2/SizeBox_2/Overlay_0/HorizontalBox_0/PlayerNameText` | 0.206, 0.170 → 0.233, 0.183 | 3 | none recorded |
-| w-5c56b75bbdb9 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Border_110/HorizontalBox_0/TextBlock_KillCounter` | 0.306, 0.919 → 0.306, 0.919 | 5 | none recorded |
+| w-5c56b75bbdb9 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Border_110/HorizontalBox_0/TextBlock_KillCounter` | 0.317, 0.702 → 0.317, 0.702 | 5 | none recorded |
 | w-a5ae798f4054 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Grid_Tweaks/UI_Joker_InGameOnScreen_C/Button_DropJoker/SizeBox_35/Overlay_0/TextBlock_Amount` | 0.978, 0.116 → 0.983, 0.136 | 3 | none recorded |
-| w-3cbbe2b02a75 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/TextBlock_GoldAmount` | 0.890, 0.069 → 0.895, 0.090 | 5 | none recorded |
-| w-8e10776fb906 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/TextBlock_SoulAmount` | 0.927, 0.069 → 0.933, 0.090 | 5 | none recorded |
+| w-3cbbe2b02a75 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/TextBlock_GoldAmount` | 0.722, 0.154 → 0.726, 0.166 | 5 | none recorded |
+| w-8e10776fb906 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/TextBlock_SoulAmount` | 0.756, 0.154 → 0.763, 0.165 | 5 | none recorded |
 | w-508ce206d343 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Moneys/HorizontalBox_463/TextBlock_UraniumAmount` | 0.966, 0.069 → 0.971, 0.090 | 5 | none recorded |
-| w-a177f9071d24 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/CooldownText` | 0.030, 0.840 → 0.034, 0.860 | 5 | none recorded |
+| w-a177f9071d24 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/CooldownText` | 0.203, 0.648 → 0.207, 0.659 | 5 | none recorded |
 | w-2624390ea191 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key` | 0.046, 0.834 → 0.054, 0.862 | 5 | none recorded |
 | w-16c0a8bdbc4a | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key_1` | 0.058, 0.839 → 0.062, 0.862 | 4 | none recorded |
 | w-013f9bc7ef73 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key_2` | 0.039, 0.838 → 0.043, 0.862 | 4 | none recorded |
 | w-159e3ee36663 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/Name` | 0.061, 0.847 → 0.094, 0.869 | 5 | none recorded |
-| w-ea57d163e185 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/CooldownText` | 0.032, 0.873 → 0.037, 0.894 | 5 | none recorded |
+| w-ea57d163e185 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/CooldownText` | 0.209, 0.666 → 0.213, 0.677 | 5 | none recorded |
 | w-556628f6c70e | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key` | 0.050, 0.869 → 0.058, 0.897 | 5 | none recorded |
 | w-80aa5c127649 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key_1` | 0.073, 0.869 → 0.077, 0.892 | 4 | none recorded |
 | w-20974f8f3f8d | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key_2` | 0.054, 0.869 → 0.057, 0.892 | 4 | none recorded |
 | w-607e3cff2907 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/Name` | 0.068, 0.879 → 0.104, 0.901 | 5 | none recorded |
-| w-4b4e6efa769f | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/CooldownText` | 0.043, 0.909 → 0.048, 0.929 | 5 | none recorded |
+| w-4b4e6efa769f | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/CooldownText` | 0.215, 0.682 → 0.219, 0.694 | 5 | none recorded |
 | w-50c0adb45274 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key` | 0.057, 0.904 → 0.064, 0.932 | 5 | none recorded |
 | w-69b372a5ca49 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key_1` | 0.103, 0.905 → 0.107, 0.928 | 4 | none recorded |
 | w-78af071b45ec | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C/HorizontalBox_2/Text_Key_2` | 0.083, 0.905 → 0.087, 0.928 | 4 | none recorded |
-| w-311757b87eac | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/Name` | 0.075, 0.910 → 0.110, 0.932 | 5 | none recorded |
-| w-d26e9c8e13fa | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HorizontalBox_1/VerticalBox_1/HB_Healbar/SizeBox_2/Text_PlayerHeal` | 0.378, 0.908 → 0.407, 0.932 | 6 | none recorded |
+| w-311757b87eac | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/Name` | 0.257, 0.683 → 0.287, 0.696 | 5 | none recorded |
+| w-d26e9c8e13fa | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HorizontalBox_1/VerticalBox_1/HB_Healbar/SizeBox_2/Text_PlayerHeal` | 0.390, 0.687 → 0.411, 0.700 | 6 | none recorded |
 | w-63ce7fbfe7ce | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/HB_Ammo/Text_CurrentAmmos` | 0.882, 0.896 → 0.958, 0.927 | 5 | none recorded |
 | w-2198c2fb5a06 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Grenades/GrenadeAmount` | 0.894, 0.869 → 0.940, 0.890 | 5 | none recorded |
 | w-058b769d60ca | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Grenades/UI_Key_2/HorizontalBox_2/Text_Key` | 0.943, 0.867 → 0.951, 0.895 | 5 | none recorded |
@@ -635,7 +635,7 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-547d18c4df5d | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_MapAndHorse/UI_Key_1/HorizontalBox_2/Text_Key_1` | 0.955, 0.809 → 0.959, 0.832 | 4 | none recorded |
 | w-76965813e30a | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_MapAndHorse/UI_Key_1/HorizontalBox_2/Text_Key_2` | 0.935, 0.809 → 0.939, 0.832 | 4 | none recorded |
 | w-cd8cf9f31193 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_MapAndHorse/textMap_1` | 0.891, 0.809 → 0.940, 0.830 | 5 | none recorded |
-| w-1b38aab0d9b3 | edge_hud | `UI_ShortMessage_C/CanvasPanel_21/Border_0/HorizontalBox_0/PromptText` | 0.433, 0.287 → 0.580, 0.313 | 11 | none recorded |
+| w-1b38aab0d9b3 | edge_hud | `UI_ShortMessage_C/CanvasPanel_21/Border_0/HorizontalBox_0/PromptText` | 0.457, 0.287 → 0.556, 0.313 | 11 | none recorded |
 | w-57709df4508b | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/Contract_FarWest_A/UI_MiniContract_C/Overlay_Main/Border_3/Border_Contract/VerticalBox_196/Text_Xp` | 0.633, 0.723 → 0.675, 0.750 | 6 | none recorded |
 | w-c3b67e7f49c2 | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/UI_Region_Area41/VerticalBox_0/Button_Hover/VerticalBox_1/Border_Region/Border_Background/HorizontalBox_0/Text_Name` | 0.280, 0.817 → 0.311, 0.839 | 5 | none recorded |
 | w-47456db5d47a | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/UI_Region_Brimtstone/VerticalBox_0/Button_Hover/VerticalBox_1/Border_Region/Border_Background/HorizontalBox_0/Text_Name` | 1.051, 0.741 → 1.087, 0.763 | 5 | none recorded |
@@ -685,13 +685,13 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-beab84fa0083 | edge_hud | `UI_TitleScreen_C/CanvasPanel_36/Holder/UI_Menu_Container_WelcomeScreen_C/Overlay_52/Overlay_0/VerticalBox/TextBlock_6` | 0.175, 0.257 → 0.828, 0.315 | 8 | none recorded |
 | w-247b6995cf4f | edge_hud | `UI_TitleScreen_C/CanvasPanel_36/Holder/UI_Menu_Container_WelcomeScreen_C/Overlay_52/Overlay_0/VerticalBox/WidgetSwitcher_0/UI_Template_Tab_HeavyDev/Button_Tab/Overlay_0/Border_Color/Border_Padding/VerticalBox_1/TextBlock_Text` | 0.418, 0.809 → 0.582, 0.841 | 5 | none recorded |
 | w-cede8e4a450e | edge_hud | `UI_TitleScreen_C/CanvasPanel_36/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/TextBlock_53` | 0.027, 0.021 → 0.055, 0.051 | 14 | none recorded |
-| w-de309b530030 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56` | 0.534, 0.488 → 0.608, 0.513 | 15 | UI_Interact_C:source |
+| w-de309b530030 | unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56` | 0.425, 0.643 → 0.540, 0.668 | 15 | UI_Interact_C:source |
 | w-1b85c4ce9ed8 | unhandled_screen_marker | `UI_JokerCard_InGame_C/SizeBox_1/Overlay_Transform/VerticalBox_0` | 0.455, 0.307 → 0.542, 0.429 | 3 | none recorded |
 | w-e07bb3c1b680 | unhandled_screen_marker | `UI_ObjectPing_C/VerticalBox_161` | 0.865, 0.458 → 0.879, 0.493 | 5 | object ping:source |
-| w-7f06bd5e1b37 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161` | 0.969, 0.343 → 1.001, 0.383 | 6 | objective marker:source |
+| w-7f06bd5e1b37 | unhandled_screen_marker | `UI_PingObjective_C/VerticalBox_161` | 0.973, 0.402 → 1.005, 0.442 | 6 | objective marker:source |
 | w-a40a93427a00 | unhandled_screen_marker | `UI_PlayerInfos_C/VerticalBox_0` | 0.734, 0.524 → 0.794, 0.547 | 15 | teammate marker:source |
 | w-b686b1ad600a | edge_hud | `UI_StartMission_C/CanvasPanel_0/VB_ContractHolder/UI_Contract` | 0.019, 0.090 → 0.224, 0.587 | 6 | none recorded |
-| w-ecc415a0fd5b | edge_hud | `UI_Cursor_C` | 0.773, 0.418 → 0.808, 0.479 | 17 | none recorded |
+| w-ecc415a0fd5b | edge_hud | `UI_Cursor_C` | -0.017, 0.014 → 0.017, 0.075 | 17 | none recorded |
 | w-0a3d08acf81f | edge_hud | `UI_Customization_C/CanvasPanel_21/UI_Equipment_GoBack` | 0.006, 0.011 → 0.084, 0.061 | 1 | none recorded |
 | w-d6f214281ff2 | edge_hud | `UI_Equipment_Selection_Weapons_C/CanvasPanel_16/UI_Equipment_GoBack` | 0.006, 0.011 → 0.084, 0.061 | 3 | none recorded |
 | w-023d59288a6f | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/GoBackButton` | 0.006, 0.011 → 0.084, 0.061 | 2 | none recorded |
@@ -746,13 +746,13 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-a9a80b58abfb | edge_hud | `UI_Map_C/CanvasPanel_36/HorizontalBox_0/UI_Map_Legend_5` | 0.637, 0.950 → 0.693, 0.991 | 5 | none recorded |
 | w-927367ca3e48 | edge_hud | `UI_Map_C/CanvasPanel_36/HorizontalBox_0/UI_Map_Legend_6` | 0.565, 0.950 → 0.637, 0.991 | 5 | none recorded |
 | w-1f16f81b9e91 | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Line_C` | 0.512, 0.399 → 0.650, 1.099 | 5 | none recorded |
-| w-c5c6c495b3df | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Player_C` | 0.385, 0.686 → 0.402, 0.717 | 1 | none recorded |
+| w-c5c6c495b3df | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Player_C` | 0.379, 0.715 → 0.396, 0.744 | 1 | none recorded |
 | w-bf98fa9cf41d | edge_hud | `UI_Map_C/CanvasPanel_36/SizeBox_141/Overlay_Map/UI_Map_Target_C` | 0.571, 0.733 → 0.590, 0.765 | 5 | none recorded |
 | w-d9273813aa17 | edge_hud | `UI_LoadingScreen_C/CanvasPanel_30/VerticalBox/UI_Map_Task_Bounty_2` | 0.078, 0.265 → 0.192, 0.326 | 5 | none recorded |
 | w-82bef7f9b1b8 | edge_hud | `UI_LoadingScreen_C/CanvasPanel_30/VerticalBox/UI_Map_Task_Extract_1` | 0.078, 0.326 → 0.170, 0.387 | 5 | none recorded |
 | w-1346a5dc65f3 | edge_hud | `UI_LoadingScreen_C/CanvasPanel_30/VerticalBox/UI_Map_Task_Reveal_1` | 0.078, 0.204 → 0.225, 0.265 | 5 | none recorded |
 | w-be5e9bddb43e | unhandled_screen_marker | `UI_ObjectPing_C` | 0.865, 0.458 → 0.879, 0.493 | 5 | object ping:source |
-| w-328ac978600f | unhandled_screen_marker | `UI_PingObjective_C` | 0.969, 0.343 → 1.001, 0.383 | 6 | objective marker:source |
+| w-328ac978600f | unhandled_screen_marker | `UI_PingObjective_C` | 0.955, 0.338 → 0.988, 0.378 | 6 | objective marker:source |
 | w-a36b170f98b6 | edge_hud | `UI_StartMission_C/CanvasPanel_0/CanvasPanel_Map/Contract_FarWest_A/UI_MiniContract_C` | 0.583, 0.503 → 0.725, 0.859 | 2 | none recorded |
 | w-991931551f5f | edge_hud | `UI_Leaderboard_C/Canvas/WidgetSwitcherLeaderboard/PanelMap/UI_StartMission/CanvasPanel_0/HorizontalBox_3/Button_DifficultyHover/Border_DifficultyGlow/Border_Difficulty/HorizontalBox_1/HorizontalBox_65/UI_StartMission_DifficultyArrow_Left` | 0.498, 0.868 → 0.524, 0.914 | 2 | none recorded |
 | w-9061ac21c7bc | edge_hud | `UI_Leaderboard_C/Canvas/WidgetSwitcherLeaderboard/PanelMap/UI_StartMission/CanvasPanel_0/HorizontalBox_3/Button_DifficultyHover/Border_DifficultyGlow/Border_Difficulty/HorizontalBox_1/HorizontalBox_65/UI_StartMission_DifficultyArrow_Right` | 0.556, 0.868 → 0.582, 0.914 | 2 | none recorded |
@@ -800,17 +800,17 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-bd7a22de6f65 | unhandled_screen_marker | `UI_JokerCard_InGame_C` | 0.405, 0.114 → 0.561, 0.531 | 3 | none recorded |
 | w-b15623a803af | edge_hud | `UI_ObtainedJoker_C/CanvasPanel_39/Overlay_0/UI_JokerCard_InGame` | 0.822, 0.379 → 0.994, 0.814 | 3 | none recorded |
 | w-0c723430921c | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Grid_Tweaks/UI_Joker_InGameOnScreen_C` | 0.958, 0.097 → 0.983, 0.140 | 3 | none recorded |
-| w-48defdb3851b | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/ScrollBox_117/MessagesBox/UI_ChatMessage_C` | 0.023, 0.732 → 0.173, 0.757 | 3 | none recorded |
+| w-48defdb3851b | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/ScrollBox_117/MessagesBox/UI_ChatMessage_C` | 0.023, 0.732 → 0.242, 0.757 | 3 | none recorded |
 | w-5c3699497286 | unhandled_screen_marker | `UI_Guide_C` | 0.518, -0.143 → 0.584, -0.124 | 15 | mission guide:source |
-| w-737a02149ecf | unhandled_screen_marker | `UI_Interact_C` | 0.460, 0.683 → 0.589, 0.713 | 15 | UI_Interact_C:source |
+| w-737a02149ecf | unhandled_screen_marker | `UI_Interact_C` | 0.413, 0.586 → 0.518, 0.616 | 15 | UI_Interact_C:source |
 | w-4e071868b8e9 | edge_hud | `UI_Chat_C/CanvasPanel_27/Border_50/SizeBox_0/VerticalBox_55/HorizontalBox_Key/UI_Key` | 0.022, 0.767 → 0.037, 0.794 | 10 | none recorded |
 | w-abfc0c6811ce | edge_hud | `UI_Customization_C/CanvasPanel_21/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key` | 0.059, 0.020 → 0.077, 0.052 | 1 | none recorded |
-| w-e2d89729479f | interact_keyboard_hint | `UI_DropItem_C/CanvasPanel_21/VerticalBox_Holder/UI_ItemContext_C/Border_26/HorizontalBox_0/UI_Key` | 0.482, 0.604 → 0.496, 0.629 | 7 | none recorded |
+| w-e2d89729479f | interact_keyboard_hint | `UI_DropItem_C/CanvasPanel_21/VerticalBox_Holder/UI_ItemContext_C/Border_26/HorizontalBox_0/UI_Key` | 0.476, 0.650 → 0.489, 0.674 | 8 | none recorded |
 | w-46f35faef69a | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/GoBackButton/Button_GoBack/HorizontalBox_0/UI_Key` | 0.059, 0.020 → 0.077, 0.052 | 1 | none recorded |
 | w-002a1480b486 | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/NamedSlot_63/CanvasPanel_46/HorizontalBox_1/HorizontalBox_0/ActiveSpells/VerticalBox_2/UI_Spell_CardSlot_A/Overlay_3/VerticalBox_1/VerticalBox_Keys/HorizontalBox_Keys/UI_Key_C` | 0.920, 0.322 → 0.944, 0.354 | 2 | none recorded |
 | w-c1aad0d6c89e | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/NamedSlot_63/CanvasPanel_46/HorizontalBox_1/HorizontalBox_0/ActiveSpells/VerticalBox_3/UI_Spell_CardSlot_B/Overlay_3/VerticalBox_1/VerticalBox_Keys/HorizontalBox_Keys/UI_Key_C` | 0.919, 0.554 → 0.945, 0.587 | 2 | none recorded |
 | w-8554e27feafd | edge_hud | `UI_Equipment_Spell_C/CanvasPanel_36/NamedSlot_63/CanvasPanel_46/HorizontalBox_1/HorizontalBox_0/ActiveSpells/VerticalBox_4/UI_Spell_CardSlot_C/Overlay_3/VerticalBox_1/VerticalBox_Keys/HorizontalBox_Keys/UI_Key_C` | 0.904, 0.787 → 0.961, 0.819 | 2 | none recorded |
-| w-fd7113bb1e4f | interact_keyboard_hint, unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key` | 0.532, 0.497 → 0.547, 0.515 | 10 | UI_Interact_C:source |
+| w-fd7113bb1e4f | interact_keyboard_hint, unhandled_screen_marker | `UI_Interact_C/InvalidationBox_0/VerticalBox_56/Overlay_101/HorizontalBox_69/UI_Key` | 0.440, 0.647 → 0.455, 0.664 | 10 | UI_Interact_C:source |
 | w-ac1c562f7130 | edge_hud | `UI_Journal_C/CanvasPanel_29/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key` | 0.065, 0.020 → 0.084, 0.052 | 1 | none recorded |
 | w-237d52daf009 | edge_hud | `UI_Map_C/CanvasPanel_36/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key` | 0.059, 0.020 → 0.077, 0.052 | 1 | none recorded |
 | w-8f9e6eea8818 | edge_hud | `UI_Menu_MainMenu_C/CanvasPanel_36/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key` | 0.059, 0.020 → 0.077, 0.052 | 4 | none recorded |
@@ -824,25 +824,25 @@ IDs are stable SHA-256 abbreviations of the full class/path ID stored in `catalo
 | w-48b89e77a37e | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/NamedSlot_216/CanvasPanel_86/VB_Lobby/HB_Emotes_2/HB_Battlecry_PC/UI_Key_BattleCry_1` | 0.939, 0.810 → 0.953, 0.834 | 10 | none recorded |
 | w-09507df0ec15 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/NamedSlot_216/CanvasPanel_86/VB_Lobby/HB_Melee/UI_Key_Melee` | 0.939, 0.840 → 0.953, 0.864 | 10 | none recorded |
 | w-945e1aff8869 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/NamedSlot_216/CanvasPanel_86/VB_Lobby/HB_Quests/UI_key_Quest` | 0.939, 0.871 → 0.953, 0.895 | 10 | none recorded |
-| w-5ff5be4cfdd5 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C` | 0.043, 0.845 → 0.059, 0.872 | 6 | none recorded |
-| w-6e36ea8f1334 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C` | 0.050, 0.876 → 0.066, 0.903 | 6 | none recorded |
-| w-02e00b213592 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C` | 0.057, 0.908 → 0.073, 0.935 | 6 | none recorded |
+| w-5ff5be4cfdd5 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C` | 0.217, 0.647 → 0.230, 0.661 | 6 | none recorded |
+| w-6e36ea8f1334 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C` | 0.223, 0.664 → 0.236, 0.679 | 6 | none recorded |
+| w-02e00b213592 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown/Overlay_1/HorizontalBox_Holder/HorizontalBox_Keys/UI_Key_C` | 0.243, 0.681 → 0.256, 0.696 | 6 | none recorded |
 | w-3123b79f562e | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Grenades/UI_Key_2` | 0.942, 0.866 → 0.958, 0.893 | 6 | none recorded |
 | w-c8369c6362c4 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_Map/UI_Key` | 0.942, 0.836 → 0.958, 0.863 | 6 | none recorded |
 | w-90370fc3782f | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_0/VerticalBox_Weapons/HB_MapAndHorse/UI_Key_1` | 0.942, 0.806 → 0.958, 0.833 | 6 | none recorded |
 | w-fc0058d86699 | edge_hud | `UI_StartMission_C/CanvasPanel_0/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key` | 0.059, 0.020 → 0.077, 0.052 | 2 | none recorded |
 | w-e1655231ce2f | edge_hud | `UI_TitleScreen_C/CanvasPanel_36/UI_Equipment_GoBack/Button_GoBack/HorizontalBox_0/UI_Key` | 0.059, 0.020 → 0.077, 0.052 | 6 | none recorded |
 | w-c03422b09577 | unhandled_screen_marker | `UI_Lifebar_C` | 0.580, 1.064 → 0.649, 1.094 | 6 | none recorded |
-| w-9a07afc07e90 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Overlay_Pings/UI_ObjectiveCompass_C` | 0.298, 0.203 → 0.702, 0.246 | 5 | none recorded |
+| w-9a07afc07e90 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/Overlay_Pings/UI_ObjectiveCompass_C` | 0.299, 0.214 → 0.703, 0.241 | 5 | none recorded |
 | w-fa4fbb8f8507 | unhandled_screen_marker | `UI_PlayerInfos_C` | 0.734, 0.524 → 0.794, 0.547 | 15 | teammate marker:source |
 | w-a9621520c159 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_PlayerHealths/UI_PlayerLifebar_C` | 0.200, 0.185 → 0.387, 0.203 | 3 | none recorded |
 | w-142ac621952b | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/VerticalBox_PlayerHealths/UI_PlayerLifebar_C` | 0.201, 0.184 → 0.388, 0.202 | 1 | none recorded |
 | w-e6681a39383e | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown` | 0.023, 0.845 → 0.098, 0.872 | 15 | none recorded |
 | w-a3ae9585ce59 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown` | 0.031, 0.876 → 0.108, 0.903 | 15 | none recorded |
 | w-6b7ee8d3bed2 | edge_hud | `UI_PlayerLobby_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown` | 0.038, 0.908 → 0.114, 0.935 | 15 | none recorded |
-| w-71128765565f | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown` | 0.023, 0.845 → 0.098, 0.872 | 6 | none recorded |
+| w-71128765565f | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellA_Cooldown` | 0.199, 0.646 → 0.263, 0.661 | 6 | none recorded |
 | w-248a357725f1 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellB_Cooldown` | 0.031, 0.876 → 0.108, 0.903 | 5 | none recorded |
-| w-2be18f525844 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown` | 0.038, 0.908 → 0.114, 0.935 | 5 | none recorded |
+| w-2be18f525844 | edge_hud | `UI_Player_C/CanvasPanel_39/RetainerBox_0/DPIScalerBox_2/MovingCanvas/HB_Spells/SpellC_Cooldown` | 0.216, 0.680 → 0.294, 0.695 | 5 | none recorded |
 | w-03c6ca3ae73d | edge_hud | `UI_Journal_C/CanvasPanel_29/ScrollBox_71/HorizontalBox_82/UI_Template_Button_All` | 0.183, 0.163 → 0.239, 0.215 | 1 | none recorded |
 | w-0f4e917ed15a | edge_hud | `UI_Leaderboard_C/Canvas/HorizontalBox_SwitcherButtons/UI_Template_Button_Continue` | 0.885, 0.830 → 0.967, 0.881 | 2 | none recorded |
 | w-98cac8e4ed53 | edge_hud | `UI_Leaderboard_C/Canvas/HorizontalBox_SwitcherButtons/UI_Template_Button_Stats` | 0.818, 0.830 → 0.885, 0.881 | 2 | none recorded |

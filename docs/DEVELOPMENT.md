@@ -211,6 +211,14 @@ animations, visibility, and gameplay state remain with the game. Dismissed
 instances release their owned transforms, and the next viewport instance rebinds.
 Visual validation is pending a normal relaunch and a low-ammo condition.
 
+Held-item prompts use the same adapter on `UI_DropItem_C.VerticalBox_Holder`
+(offset 808), not its full-screen root or individual `UI_ItemContext_C` rows.
+The live dynamite probe verified three unit-scale rows bound to IA_Drop,
+IA_Shoot, and IA_Aim. A single holder correction keeps row spacing and glyphs
+in the same coordinate system without applying the factor again to each row.
+Native size and bindings are retained; replacing the holder restores the old
+widget and binds its successor. The live test is pending visual confirmation.
+
 The boss UserWidget covers the full viewport (the earlier capture measured its
 root at 0..1 while its actual bar sat near the top). Scaling this full canvas
 around the default center pivot added a downward displacement of approximately

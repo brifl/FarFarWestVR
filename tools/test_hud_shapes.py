@@ -7,7 +7,8 @@ MOCK = r'''
 state={objects={},next=1,roots={},logs={},aspect=1,active=true}
 farfarwest_gameplay_ready=true
 local offsets={RenderTransform=144,RenderTransformPivot=200,Image_Compass=1008,
- Overlay_Pings=944,TextBlock_Text=832,ProgressBar_Boss=840,Text_Title=816,TextBlock_Seconds=816,Appear=816}
+ Overlay_Pings=944,TextBlock_Text=832,ProgressBar_Boss=840,Text_Title=816,TextBlock_Seconds=816,Appear=816,
+ VerticalBox_Holder=808}
 function make(name,sx,sy)
  local o={name=name,index=state.next,scale={X=sx or 1,Y=sy or 1},pivot={X=.5,Y=.5},translation={X=3,Y=4},props={}}
  state.next=state.next+1;state.objects[o.index]=o
@@ -52,6 +53,9 @@ end
 state.panels[2].scale={X=1,Y=1}
 state.warning=make('UI_LowAmmo_C')
 state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/UI_LowAmmo.UI_LowAmmo_C']={state.warning}
+state.drop=make('UI_DropItem_C');state.drop_holder=make('VerticalBox_Holder')
+state.drop.props.VerticalBox_Holder=state.drop_holder
+state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/UI_DropItem.UI_DropItem_C']={state.drop}
 UEVR_Matrix4x4f={new=function() return {get=function(_,c) return c==0 and 1 or 1.15 end} end}
 local function log(s) state.logs[#state.logs+1]=s end
 local methods={GetDesiredSize=16,SetRenderScale=16,SetRenderTransformPivot=16,GetParent=8,GetViewportSize=24}
@@ -148,4 +152,17 @@ state.objects[warning.index]=nil;warning.dead=true
 local next_warning=make('UI_LowAmmo_C_2');state.roots[path]={next_warning}
 state.aspect=1;frame();healthy();near(next_warning.scale.Y,.7*.646875)
 state.menu=true;frame();near(next_warning.scale.X,1);near(next_warning.scale.Y,1)
+''')
+
+run('carried-item rows inherit one correction and a rebuilt holder restores the detached group', '''
+local rows={make('Drop'),make('Shoot'),make('Aim')}
+for _,row in ipairs(rows) do row.parent=state.drop_holder end
+local holder=state.drop_holder
+frame();healthy();near(holder.scale.X,1);near(holder.scale.Y,.646875)
+near(state.drop.scale.Y,1)
+for _,row in ipairs(rows) do near(row.scale.Y,1) end
+local replacement=make('VerticalBox_Holder_2');state.drop.props.VerticalBox_Holder=replacement
+frame();healthy();near(holder.scale.Y,1);near(replacement.scale.Y,.646875)
+state.aspect=0;frame();near(replacement.scale.Y,1)
+state.aspect=1;frame();state.menu=true;frame();near(replacement.scale.Y,1)
 ''')
