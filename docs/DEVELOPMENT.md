@@ -217,7 +217,10 @@ The live dynamite probe verified three unit-scale rows bound to IA_Drop,
 IA_Shoot, and IA_Aim. A single holder correction keeps row spacing and glyphs
 in the same coordinate system without applying the factor again to each row.
 Native size and bindings are retained; replacing the holder restores the old
-widget and binds its successor. The live test is pending visual confirmation.
+widget and binds its successor. The user confirmed the held-item text looks
+good. The circular X hint looks slightly off, but the shared correction is
+accepted; leave that cosmetic difference unless a common cause emerges, rather
+than introducing an item/icon-specific exception.
 
 The boss UserWidget covers the full viewport (the earlier capture measured its
 root at 0..1 while its actual bar sat near the top). Scaling this full canvas
