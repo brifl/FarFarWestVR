@@ -295,8 +295,10 @@ if ($timestamp -eq 907750432 -and $imageSize -eq 203960320) {
     $poolRva = 0xac9b900; $arrayRva = 0xad3d980
 } elseif ($timestamp -eq 1404130593 -and $imageSize -eq 207814656) {
     $poolRva = 0xafed600; $arrayRva = 0xb08f680
+} elseif ($timestamp -eq 715567327 -and $imageSize -eq 207765504) {
+    $poolRva = 0xafed600; $arrayRva = 0xb08f680
 } else {
-    throw 'Executable differs from the verified 0.2.0.20 and 0.3.0.0 builds; nothing changed.'
+    throw 'Executable differs from the verified 0.2.0.20, 0.3.0.0, and 0.3.0.7 builds; nothing changed.'
 }
 if ($module.ModuleMemorySize -ne $imageSize) { throw 'Image size mismatch; nothing changed.' }
 $reader = New-Object FfwReticleReader -ArgumentList @([uint32]$game.Id, $module.BaseAddress.ToInt64(), [int]$imageSize, [bool]$Markers.IsPresent, [bool]$Hud.IsPresent, [bool]$Pings.IsPresent, [long]$poolRva, [long]$arrayRva)

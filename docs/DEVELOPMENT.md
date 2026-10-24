@@ -36,7 +36,7 @@ Preserve user/runtime changes to `config.txt`, `imgui.ini`, and personal tuning.
 
 ## Native access constraints
 
-The backend tag is `ffw-ue58-sdk-v1`; observed games 0.2.0.20 and 0.3.0.0 use
+The backend tag is `ffw-ue58-sdk-v1`; observed games 0.2.0.20, 0.3.0.0, and 0.3.0.7 use
 UE5.8.1 CanyonEngine. Guard reflected layouts and function parameter metadata
 before native calls. Old binary-patch tools target the previous backend, not
 this source build.
@@ -58,6 +58,19 @@ Do not loosen Lua layout assertions to bypass this gate.
 | --- | --- | --- | --- | --- |
 | 0.2.0.20 | 907750432 | 203960320 | 0xad3d980 | 0xac9b900 |
 | 0.3.0.0 | 1404130593 | 207814656 | 0xb08f680 | 0xafed600 |
+| 0.3.0.7 | 715567327 | 207765504 | 0xb08f680 | 0xafed600 |
+
+The October 24 launch failed the executable allowlist after the game updated to
+0.3.0.7. Lua loaded but SDK-dependent helpers stopped at their object-access
+checks. Read-only inspection confirmed the same array/name locations, object
+identities across the chunk boundary, and unchanged field/function metadata in
+31 shared HUD classes. The retained backend adds only this verified executable
+to the allowlist; unknown builds still fail closed. The incremental build passed.
+Its DLL/PDB pair is recorded in `tools/deploy_native_backend.py`, which preserves
+the preceding pair before installation. Native startup and gameplay validation
+require a normal relaunch after deploying it; `git pull` alone updates only the
+profile and deployment tool. Private probe results and source backup are under
+`ffw-tests/hotfix-0307/` in the retained build checkout.
 
 `tools/probe_game_layout.ps1` finds these tables read-only within the executable's
 bounded .data section, checking unique candidates and UObject/name identities.

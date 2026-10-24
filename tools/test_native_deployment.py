@@ -19,6 +19,7 @@ class NativeDeploymentTests(unittest.TestCase):
         self.old_dll, self.old_pdb = b'previous-themed-backend', b'previous-themed-symbols'
         self.new_dll, self.new_pdb = b'new-ffw-ue58-sdk-v1-backend', b'new-symbols'
         self.update_dll, self.update_pdb = b'first-update-backend', b'first-update-symbols'
+        self.pre_hotfix_dll, self.pre_hotfix_pdb = b'pre-hotfix-backend', b'pre-hotfix-symbols'
         sha = lambda data: hashlib.sha256(data).hexdigest()
         patched = patch.multiple(deployment, require_closed=lambda: None,
                                  BASELINE_SHA=sha(b'baseline'),
@@ -26,6 +27,8 @@ class NativeDeploymentTests(unittest.TestCase):
                                  THEMED_CURSOR_PDB_SHA=sha(self.old_pdb),
                                  FIRST_UPDATE_BUILD_SHA=sha(self.update_dll),
                                  FIRST_UPDATE_PDB_SHA=sha(self.update_pdb),
+                                 PRE_HOTFIX_BUILD_SHA=sha(self.pre_hotfix_dll),
+                                 PRE_HOTFIX_PDB_SHA=sha(self.pre_hotfix_pdb),
                                  BUILD_SHA=sha(self.new_dll), PDB_SHA=sha(self.new_pdb))
         patched.start()
         self.addCleanup(patched.stop)
@@ -75,6 +78,30 @@ class NativeDeploymentTests(unittest.TestCase):
         self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(), self.old_dll)
         self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(), self.old_pdb)
         self.assertFalse((self.runtime/'UEVRBackend.dll.before-fear-fear-west.bak').exists())
+
+    def test_pre_hotfix_upgrade_preserves_pair_and_is_repeatable(self):
+        (self.runtime/'UEVRBackend.dll').write_bytes(self.pre_hotfix_dll)
+        (self.runtime/'UEVRBackend.pdb').write_bytes(self.pre_hotfix_pdb)
+        self.deploy()
+        self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(), self.new_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.dll.before-0307-hotfix.bak').read_bytes(), self.pre_hotfix_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.pdb.before-0307-hotfix.bak').read_bytes(), self.pre_hotfix_pdb)
+
+    def test_pre_hotfix_failed_dll_copy_restores_its_matching_symbols(self):
+        (self.runtime/'UEVRBackend.dll').write_bytes(self.pre_hotfix_dll)
+        (self.runtime/'UEVRBackend.pdb').write_bytes(self.pre_hotfix_pdb)
+        copy = deployment.atomic_copy
+
+        def fail_dll(source, target):
+            if target.name == 'UEVRBackend.dll':
+                raise OSError('simulated locked DLL')
+            copy(source, target)
+
+        with patch.object(deployment, 'atomic_copy', fail_dll), self.assertRaises(OSError):
+            self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(), self.pre_hotfix_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(), self.pre_hotfix_pdb)
 
 
 if __name__ == '__main__':
