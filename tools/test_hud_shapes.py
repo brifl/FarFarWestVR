@@ -70,11 +70,18 @@ feature=require('libs/hud_shapes')()
 function frame() feature.camera();feature.tick({},.016) end
 function near(a,b) assert(math.abs(a-b)<.00001,tostring(a)..' differs from '..tostring(b)) end
 function healthy() for _,s in ipairs(state.logs) do assert(not s:find('Stopped safely',1,true),s) end end
+-- Asset paths and content relationships observed in multiplayer captures 26–30.
+local captured_paths={
+ UI_ShortMessage_C='/Game/Interfaces/UI_ShortMessage.UI_ShortMessage_C',
+ UI_DisturbanceIncrease_C='/Game/Interfaces/Modifiers/UI_DisturbanceIncrease.UI_DisturbanceIncrease_C',
+ UI_DeadAlly_C='/Game/Interfaces/UI_DeadAlly.UI_DeadAlly_C',
+ UI_CrypticSnake_C='/Game/Interfaces/UI_CrypticSnake.UI_CrypticSnake_C',
+}
 function overlay(name,field,parents)
  local root=make(name);local leaf=make(field);local group=leaf
  root.props[field]=leaf
  for _,parent in ipairs(parents or {}) do local next_group=make(parent);group.parent=next_group;group=next_group end
- state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/'..name:gsub('_C$','')..'.'..name]={root}
+ state.roots['WidgetBlueprintGeneratedClass '..assert(captured_paths[name])]={root}
  return root,group,leaf
 end
 '''

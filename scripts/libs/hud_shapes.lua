@@ -16,7 +16,7 @@ local specs={
   scale_key='hud.scale_multiplier',anchor={X=.5,Y=.5}},
  {path='/Game/Interfaces/UI_DropItem.UI_DropItem_C',children={VerticalBox_Holder=808}},
  {path='/Game/Interfaces/UI_ShortMessage.UI_ShortMessage_C',standalone=true,children={Border_0=824}},
- {path='/Game/Interfaces/UI_DisturbanceIncrease.UI_DisturbanceIncrease_C',standalone=true,children={Border_Color=832}},
+ {path='/Game/Interfaces/Modifiers/UI_DisturbanceIncrease.UI_DisturbanceIncrease_C',standalone=true,children={Border_Color=832}},
  {path='/Game/Interfaces/UI_DeadAlly.UI_DeadAlly_C',standalone=true,children={
   TextDeath={offset=824,parents={'VerticalBox_0'}}}},
  {path='/Game/Interfaces/UI_CrypticSnake.UI_CrypticSnake_C',standalone=true,children={
