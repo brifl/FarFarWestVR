@@ -203,6 +203,7 @@ uevr={api={get_uobject_array=function() return array end,find_uobject=function(_
         is_drawing_ui=function() return false end}}}
 state.source,state.component,state.actor=source,component,actor
 state.scene,state.root=scene,root
+state.make_object=object
 function frame(camera)
     if camera~=false then feature.camera(nil,0,100,{x=0,y=0,z=0},state.rotation,true) end
     feature.tick(nil,.016)
@@ -627,3 +628,54 @@ frame();healthy();assert(state.source.opacity==.7)
 state.possessed=true;state.rotation={x=10,y=10,z=0};frame();frame();healthy()
 assert(state.source.translation.X~=3 and state.created==0 and state.moves==0)
 ''', "state.family='UI_Interact_C';function state.source:GetOwningPlayerPawn() return state.possessed and state.actor or nil end")
+
+run('health bar waits for an incomplete attachment chain and retries without a permanent rejection', r'''
+state.scene.parent=nil
+frame();frame();healthy();assert(state.moves==0 and state.source.opacity==.7)
+for _,message in ipairs(state.logs) do assert(not message:find('Marker skipped',1,true),message) end
+state.scene.parent=state.root
+for i=1,10 do frame() end;healthy();assert(state.moves>0)
+near(state.display.Y,436);assert(state.created==0 and state.world.X==1000)
+''', "state.family='UI_Lifebar_C';state.owner_class='BP_Enemy_HalloweenCrow_C';state.nested_parent=true;state.component.relative={X=0,Y=0,Z=128}")
+
+run('a health bar with no parent stays native until construction finishes', r'''
+local get=state.component.GetAttachParent
+function state.component:GetAttachParent() return state.attached and get(self) or nil end
+frame();healthy();assert(state.moves==0 and state.source.opacity==.7)
+state.attached=true
+for i=1,10 do frame() end;healthy();assert(state.moves>0)
+''', "state.family='UI_Lifebar_C';state.owner_class='BP_Enemy_Ordinary_C'")
+
+run('rejected widget identity stays rejected but replacing its instance retries the component', r'''
+frame();assert(state.moves==0)
+state.is_root=false
+for i=1,10 do frame() end;assert(state.moves==0)
+local replacement={};for k,v in pairs(state.source) do replacement[k]=v end
+state.make_object(replacement,'source_rebuilt')
+local get=state.component.get_property
+function state.component:get_property(n) if n=='Widget' then return replacement end;return get(self,n) end
+state.source=replacement
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+''', "state.family='UI_Guide_C';state.is_root=true")
+
+run('reuse of a rejected component address does not exclude the new identity', r'''
+frame();assert(state.moves==0)
+local old=state.component;local index=old:read_dword(12)
+local replacement={};for k,v in pairs(old) do replacement[k]=v end
+function replacement:get_short_name() return 'Widget_reused' end
+state.objects[index]=replacement;state.component=replacement;state.is_root=false
+for i=1,75 do frame() end;healthy();assert(state.moves>0 and state.created==0)
+''', "state.family='UI_Guide_C';state.is_root=true")
+
+run('expired rejected candidates release capacity for a late widget without a full rescan', r'''
+for i=1,130 do
+ frame()
+ local old=state.component;state.objects[old:read_dword(12)]=nil
+ local replacement={};for k,v in pairs(old) do replacement[k]=v end
+ state.make_object(replacement,'Widget_rejected_'..i)
+ replacement.is_a=old.is_a
+ state.component=replacement
+end
+state.is_root=false;state.no_widget=true;frame();assert(state.moves==0)
+state.no_widget=false;frame();frame();healthy();assert(state.moves>0)
+''', "state.family='UI_Guide_C';state.is_root=true")

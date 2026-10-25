@@ -211,6 +211,11 @@ local function bind_world_label(component,source,kind)
     local parent=component:GetAttachParent()
     local root=owner and owner:get_property("RootComponent")
     -- Only reposition this visual child. Its separate actor remains the target.
+    -- Construction/reparenting may leave an attached bar outside the owner root
+    -- temporarily. Leave it native and retry, rather than rejecting its identity.
+    if kind.attached and (not parent or not root or root:get_address()==component:get_address()) then
+        return 'attachment pending'
+    end
     assert(parent and root and root:get_address()~=component:get_address(),
         "World label must be a child of its actor root")
     local chain
@@ -223,7 +228,7 @@ local function bind_world_label(component,source,kind)
             local field=node:get_class():find_property('AttachParent')
             assert(field and field:get_offset()==208,'Marker parent layout differs')
             node=node:get_property('AttachParent')
-            assert(node,'Marker must attach beneath its owner root')
+            if not node then return 'attachment pending' end
         end
     elseif kind.parent_field then
         for field,offset in pairs({[kind.parent_field]=kind.parent_offset,[kind.component_field]=kind.component_offset}) do
@@ -378,8 +383,7 @@ local function inspect_component(component)
             return
         end
         if kind.world_label then
-            bind_world_label(component,source,kind)
-            return
+            return bind_world_label(component,source,kind)
         end
         local size=source:GetDesiredSize()
         if not size or size.X<=0 or size.Y<=0 then
@@ -454,9 +458,36 @@ local function place_world_label(entry,pixel)
     end
 end
 
+local function marker_context(component,source)
+    local ok,context=pcall(function()
+        local owner=component:GetOwner()
+        return ' ['..source:get_class():get_short_name()..' on '..
+            (owner and owner:get_class():get_short_name() or 'no owner')..
+            ', '..component:get_short_name()..']'
+    end)
+    return ok and context or ''
+end
+local function reject(component,source,message)
+    rejected[component.address]={component=component,source=source}
+    functions.log_warn('[FarFarWest markers] '..message..
+        marker_context(component.object,source and source.object))
+end
+
 local function consider(object)
     local address=object:get_address()
-    if entries[address] or rejected[address] then return end
+    if entries[address] then return end
+    local ref=candidates[address]
+    if ref and not valid(ref) then
+        candidates[address]=nil;candidate_count=candidate_count-1;rejected[address]=nil;ref=nil
+    end
+    local rejection=rejected[address]
+    if rejection then
+        local source=object:get_property('Widget')
+        if valid(rejection.component) and valid(rejection.source) and source
+            and source:get_address()==rejection.source.address then return end
+        rejected[address]=nil -- A reused component address or rebuilt widget is a new binding.
+    end
+    if ref and elapsed<(ref.retry_at or 0) then return end
     if not candidates[address] then
         -- SetWidget can supply a live instance without setting WidgetClass.
         local source=object:get_property('Widget')
@@ -469,8 +500,17 @@ local function consider(object)
         if entries[address] then
             pcall(restore,entries[address]);entries[address]=nil;entry_count=entry_count-1
         end
-        rejected[address]=true
-        functions.log_warn('[FarFarWest markers] Marker skipped during '..stage..': '..tostring(err))
+        local source=object:get_property('Widget')
+        reject(candidates[address] or track(object),source and track(source),
+            'Marker skipped during '..stage..': '..tostring(err))
+    elseif err=='attachment pending' and candidates[address] then
+        local pending=candidates[address]
+        pending.retry_at=elapsed+.1
+        if not pending.attachment_reported then
+            pending.attachment_reported=true
+            info('Waiting for marker attachment beneath its owner root; retrying'..
+                marker_context(object,object:get_property('Widget')))
+        end
     end
 end
 
@@ -478,9 +518,10 @@ local function discover()
     -- Widget instances and visibility often arrive after their components.
     -- Revisit recognized components without waiting for another array pass.
     for address,ref in pairs(candidates) do
-        if not entries[address] and not rejected[address] then
-            if valid(ref) then consider(ref.object)
-            else candidates[address]=nil;candidate_count=candidate_count-1 end
+        if not valid(ref) then
+            candidates[address]=nil;candidate_count=candidate_count-1;rejected[address]=nil
+        elseif not entries[address] then
+            consider(ref.object)
         end
     end
     stage='scan object array'
@@ -585,15 +626,15 @@ callbacks.tick = function(engine,delta)
                             local success,err=pcall(place_screen,entry,point,pixel)
                             if not success then
                                 pcall(restore,entry); entries[address]=nil; entry_count=entry_count-1
-                                rejected[address]=true
-                                functions.log_warn("[FarFarWest markers] "..(entry.kind.label or 'Interaction prompt').." stopped safely: "..tostring(err))
+                                reject(entry.component,entry.source,
+                                    (entry.kind.label or 'Interaction prompt')..' stopped safely: '..tostring(err))
                             end
                         elseif entry.kind.world_label then
                             stage="reproject live mission label"
                             local success,err=pcall(place_world_label,entry,pixel)
                             if not success then
-                                pcall(restore,entry);entries[address]=nil;entry_count=entry_count-1;rejected[address]=true
-                                functions.log_warn('[FarFarWest markers] Live label stopped safely: '..tostring(err))
+                                pcall(restore,entry);entries[address]=nil;entry_count=entry_count-1
+                                reject(entry.component,entry.source,'Live label stopped safely: '..tostring(err))
                             end
                         else
                             if elapsed>=entry.style_time then

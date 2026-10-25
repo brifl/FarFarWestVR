@@ -143,7 +143,7 @@ new failures also write explicit error/end records when the output remains writa
 The native object-array count is validated as a positive int32 separately from
 per-frame work limits; the old 250,000-slot probe guard stopped capture 17 and
 other helpers during a long session. Native slot counts are not live-widget counts.
-The capture stops after 3,600 seconds of engine time or at 16 MiB, with caps of
+Each capture segment rotates after 1,800 seconds of engine time or at 16 MiB, with caps of
 4,096 catalog IDs, 8,192 queued widgets, 2,048 component associations, and 512 class
 schemas. Capture 15 reached the ID limit before every late multiplayer family
 could be recorded. New captures reserve 1,024 slots for screen-marker roots,
@@ -155,3 +155,30 @@ New IDs, new contexts/modes/flags, and bounds-extrema changes of at least two
 percentage points checkpoint about every 30 seconds in small batches. Repeated
 static samples update in-memory totals without filling the file; stopping writes
 final totals for every ID. The status includes errors and dropped samples so an incomplete sweep is visible.
+
+## October 25 multiplayer review
+
+Captures 26–30 completed the full 9,000-engine-second monitoring window with no
+capture errors or helper shutdowns in the matching UEVR log. Segment 29 skipped
+295 ordinary observation attempts at its ID reservation; the other four skipped
+none. These counts do not identify distinct omitted widgets. Object-array slots
+rose from 97,165 to 181,830 and then stayed at that high-water count through the
+remaining checkpoints. Slot counts alone cannot establish live-object growth.
+
+Coverage was recorded for objective markers, tagged objects, teammates, health
+bars, and damage numbers. This confirms the adapters ran, not visual correctness
+of every instance. All recorded interaction-key modes were gamepad presentation.
+NPC labels had no visible samples in this window.
+
+The review added shared content-group proportion corrections for short messages,
+disturbance notices, teammate-death notices, and the Cryptic Snake status meter.
+Two health-bar attachment rejections also exposed a retry/lifetime problem:
+incomplete chains now wait, and replaced/reused widget identities can bind again.
+Future rejection/deferred-attachment logs include widget/owner class and component
+name for correlation without capturing player names or dialogue.
+
+The separate `UI_Locator_C` directional overlay still needs a visible example.
+It has a world location and attachment reference, but no WidgetComponent, and
+its Border is rotated/animated. Its geometry alone does not establish the correct
+tracking behavior. A brief symptom and approximate time are useful for this and
+literal text hints; the captured class dictionary supplies the corresponding IDs.

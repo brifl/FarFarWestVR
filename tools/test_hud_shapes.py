@@ -8,7 +8,7 @@ state={objects={},next=1,roots={},logs={},aspect=1,active=true}
 farfarwest_gameplay_ready=true
 local offsets={RenderTransform=144,RenderTransformPivot=200,Image_Compass=1008,
  Overlay_Pings=944,TextBlock_Text=832,ProgressBar_Boss=840,Text_Title=816,TextBlock_Seconds=816,Appear=816,
- VerticalBox_Holder=808}
+ VerticalBox_Holder=808,Border_0=824,Border_Color=832,TextDeath=824,ProgressBar=824}
 function make(name,sx,sy)
  local o={name=name,index=state.next,scale={X=sx or 1,Y=sy or 1},pivot={X=.5,Y=.5},translation={X=3,Y=4},props={}}
  state.next=state.next+1;state.objects[o.index]=o
@@ -70,6 +70,13 @@ feature=require('libs/hud_shapes')()
 function frame() feature.camera();feature.tick({},.016) end
 function near(a,b) assert(math.abs(a-b)<.00001,tostring(a)..' differs from '..tostring(b)) end
 function healthy() for _,s in ipairs(state.logs) do assert(not s:find('Stopped safely',1,true),s) end end
+function overlay(name,field,parents)
+ local root=make(name);local leaf=make(field);local group=leaf
+ root.props[field]=leaf
+ for _,parent in ipairs(parents or {}) do local next_group=make(parent);group.parent=next_group;group=next_group end
+ state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/'..name:gsub('_C$','')..'.'..name]={root}
+ return root,group,leaf
+end
 '''
 
 
@@ -165,4 +172,42 @@ local replacement=make('VerticalBox_Holder_2');state.drop.props.VerticalBox_Hold
 frame();healthy();near(holder.scale.Y,1);near(replacement.scale.Y,.646875)
 state.aspect=0;frame();near(replacement.scale.Y,1)
 state.aspect=1;frame();state.menu=true;frame();near(replacement.scale.Y,1)
+''')
+
+run('captured notices correct the shared content once without moving the fullscreen root or text', '''
+local notices={
+ {overlay('UI_ShortMessage_C','Border_0')},
+ {overlay('UI_DisturbanceIncrease_C','Border_Color')},
+ {overlay('UI_DeadAlly_C','TextDeath',{'VerticalBox_0'})},
+ {overlay('UI_CrypticSnake_C','ProgressBar',{'SizeBox_0','Border_0','VerticalBox_0'})},
+}
+frame();healthy()
+for _,n in ipairs(notices) do
+ local root,group,leaf=n[1],n[2],n[3]
+ near(root.scale.Y,1);near(group.scale.Y,.646875);near(group.translation.Y,4)
+ if leaf~=group then near(leaf.scale.Y,1) end
+end
+for i=1,100 do frame() end;healthy()
+for _,n in ipairs(notices) do near(n[2].scale.Y,.646875) end
+state.aspect=0;frame();for _,n in ipairs(notices) do near(n[2].scale.Y,1) end
+state.aspect=1;frame();feature.reset();for _,n in ipairs(notices) do near(n[2].scale.Y,1) end
+''')
+
+run('rebuilt notice parent groups restore their old binding and respect a changed hierarchy', '''
+local root,group,leaf=overlay('UI_DeadAlly_C','TextDeath',{'VerticalBox_0'})
+frame();healthy();near(group.scale.Y,.646875)
+local replacement=make('VerticalBox_0');leaf.parent=replacement
+frame();healthy();near(group.scale.Y,1);near(replacement.scale.Y,.646875)
+leaf.parent=make('UnknownUpdatedLayout');frame();healthy();near(replacement.scale.Y,1)
+near(leaf.parent.scale.Y,1);near(state.image.scale.Y,.8*.646875)
+''')
+
+run('new notice families stay native if nested in another HUD and release on dismissal', '''
+local root,group=overlay('UI_CrypticSnake_C','ProgressBar',{'SizeBox_0','Border_0','VerticalBox_0'})
+root.parent=state.player;frame();healthy();near(group.scale.Y,1)
+root.parent=nil;frame();healthy();near(group.scale.Y,.646875)
+root.parent=state.player;frame();healthy();near(group.scale.Y,1)
+root.parent=nil;frame();near(group.scale.Y,.646875)
+state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/UI_CrypticSnake.UI_CrypticSnake_C']={}
+frame();healthy();near(group.scale.Y,1)
 ''')

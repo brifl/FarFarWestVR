@@ -15,6 +15,12 @@ local specs={
  {path='/Game/Interfaces/UI_LowAmmo.UI_LowAmmo_C',field='Appear',offset=816,
   scale_key='hud.scale_multiplier',anchor={X=.5,Y=.5}},
  {path='/Game/Interfaces/UI_DropItem.UI_DropItem_C',children={VerticalBox_Holder=808}},
+ {path='/Game/Interfaces/UI_ShortMessage.UI_ShortMessage_C',standalone=true,children={Border_0=824}},
+ {path='/Game/Interfaces/UI_DisturbanceIncrease.UI_DisturbanceIncrease_C',standalone=true,children={Border_Color=832}},
+ {path='/Game/Interfaces/UI_DeadAlly.UI_DeadAlly_C',standalone=true,children={
+  TextDeath={offset=824,parents={'VerticalBox_0'}}}},
+ {path='/Game/Interfaces/UI_CrypticSnake.UI_CrypticSnake_C',standalone=true,children={
+  ProgressBar={offset=824,parents={'SizeBox_0','Border_0','VerticalBox_0'}}}},
 }
 for _,s in ipairs(specs) do s.query=query('WidgetBlueprintGeneratedClass '..s.path,16,.5,true) end
 local projection=UEVR_Matrix4x4f.new()
@@ -35,12 +41,20 @@ end
 local function field(c,n,offset)
  local p=c:find_property(n);assert(p and p:get_offset()==offset,'Unexpected HUD shape field '..n)
 end
-local function bind(o,root,s,name)
+local function content(root,name,parents)
+ local o=root:get_property(name)
+ for _,parent in ipairs(parents or {}) do
+  o=o and o:GetParent()
+  if not o or o:get_short_name()~=parent then return end
+ end
+ return o
+end
+local function bind(o,root,s,name,parents)
  local address=o:get_address();if entries[address] then return end
  local t=o:get_property('RenderTransform')
  assert(math.abs(t.Angle)<.001 and math.abs(t.Shear.X)<.001 and math.abs(t.Shear.Y)<.001,
   'Rotated/sheared overlay requires its own calibration')
- entries[address]={ref=s.query.track(o),root=root,query=s.query,field=name,
+ entries[address]={ref=s.query.track(o),root=root,query=s.query,field=name,parents=parents,standalone=s.standalone,
   scale_key=s.scale_key,binding=shape.bind(o,s.anchor)}
 end
 local function tick(engine,delta)
@@ -65,11 +79,14 @@ local function tick(engine,delta)
      present[root.address]=true
      local bound,reason=pcall(function()
       local o=root.object
+      if s.standalone and o:GetParent() then return end
       if s.children then
-       for name,offset in pairs(s.children) do
+       for name,selector in pairs(s.children) do
+        local offset=type(selector)=='table' and selector.offset or selector
+        local parents=type(selector)=='table' and selector.parents or nil
         field(o:get_class(),name,offset)
-        local child=o:get_property(name)
-        if child then bind(child,root,s,name) end
+        local child=content(o,name,parents)
+        if child then bind(child,root,s,name,parents) end
        end
       elseif not o:GetParent() then
        -- Nested HUD groups already inherit their parent's aspect correction.
@@ -88,8 +105,9 @@ local function tick(engine,delta)
   end
   for address,entry in pairs(entries) do
    local valid=present[entry.root.address] and entry.query.valid(entry.ref) and entry.query.valid(entry.root)
+   if valid and entry.standalone then valid=not entry.root.object:GetParent() end
    if valid and entry.field then
-    local child=entry.root.object:get_property(entry.field)
+    local child=content(entry.root.object,entry.field,entry.parents)
     valid=child and child:get_address()==address
    elseif valid then valid=not entry.ref.object:GetParent() end
    if not valid then pcall(restore,entry);entries[address]=nil

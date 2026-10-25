@@ -554,6 +554,24 @@ extensions need visual confirmation after a normal relaunch. Non-local
 interaction prompts are filtered before binding; missing local possession is
 retried rather than permanently rejecting the component.
 
+The next multiplayer window (captures 26–30) ran for 9,000 engine seconds with
+no helper shutdowns. Two health-bar binds encountered a parent chain that did not
+reach the owner's root. Incomplete attached-label chains now remain native and
+retry at 0.1-second intervals, retaining all owner/root/socket guards. Rejections
+are tied to tracked component and source-widget identities instead of a bare
+address; destroyed rejected candidates release the bounded discovery slots.
+Rejection and deferred-attachment logs identify widget class, owner class, and
+component name. These changes do not force correction of an unsupported attachment.
+
+`hud_shapes` also covers the captured standalone ShortMessage.Border_0@824 and
+DisturbanceIncrease.Border_Color@832 groups. DeadAlly.TextDeath@824 identifies its
+VerticalBox_0 parent; CrypticSnake.ProgressBar@824 identifies the shared content
+through SizeBox_0/Border_0/VerticalBox_0. Expected parent names and field offsets
+guard those selectors. Only the content group is scaled; fullscreen roots,
+native anchors, animations, and existing text remain owned by the game. Rebuilt
+or nested layouts release the binding. These additions use `hud.aspect_correction`
+and still need headset validation after a normal launch.
+
 The earlier extraction stall remains unproven: train departure finished, but the
 view stayed at the station/island. Desktop showed the same scene; F8 showed a black
 screen with the version text. Controller StateName was Inactive with null pawn,
