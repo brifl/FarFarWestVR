@@ -31,13 +31,16 @@ Keep historical observations distinct from active problems and verified fixes.
 ## Quest controller hint icons
 
 **Planned; normal priority after validating the current marker/hint fixes.**
-Await the revised transparent source sheet before preparing individual icons.
-Use [assets/quest_control_icons.png](assets/quest_control_icons.png) for consistent
-Quest button, trigger, grip, stick, and gesture hints. Runtime cost should be
-small: reuse the spell-vendor texture cache and existing hint Image widgets.
+**Assets ready:** the 16 individual [PNGs](assets/controls_png/) are 128×128 with
+verified transparency and antialiased edges. [SVG sources](assets/controls_svg/)
+and a [sprite sheet](assets/quest3_controls_sprite_sheet.png) are included.
+Use these for consistent Quest button, trigger, grip, stick, and gesture hints.
+Runtime cost should be small: reuse the spell-vendor texture cache and existing
+hint Image widgets.
 
-- Prepare individual transparent icons once, offline. The 6-by-4 source sheet is
-  fully opaque: its checkerboard backgrounds and captions are baked into pixels.
+- Use the individual PNGs directly; cropping and background removal are no longer
+  needed. Preserve their proportions and allow wider sizing for head-gesture
+  hints so they remain readable at headset hint sizes.
 - Share one action/context-to-icon map across interaction, dialogue, carried-item,
   spell-vendor, and gameplay hints. Start with X, B, triggers, and grips; combine
   both grips for spell three. Add gesture combinations after the basic set works.
