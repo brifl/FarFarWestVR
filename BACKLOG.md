@@ -31,6 +31,7 @@ Keep historical observations distinct from active problems and verified fixes.
 ## Quest controller hint icons
 
 **Planned; normal priority after validating the current marker/hint fixes.**
+Await the revised transparent source sheet before preparing individual icons.
 Use [assets/quest_control_icons.png](assets/quest_control_icons.png) for consistent
 Quest button, trigger, grip, stick, and gesture hints. Runtime cost should be
 small: reuse the spell-vendor texture cache and existing hint Image widgets.

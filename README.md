@@ -1,191 +1,165 @@
-# Far Far West VR
+# Far Far West VR — Beta
 
-> **Fear Fear West update:** We are working on compatibility fixes for the October 22
-> release and subsequent patches (currently 0.3.0.7). HUD, world-marker, and
-> UI-proportion regressions are being addressed. The 0.3.0.7 fix also requires
-> updating the custom backend; pulling the profile alone is insufficient.
+A VR extension for **Far Far West**, built on UEVR, with controller aiming,
+readable menus, and a HUD adapted for the headset.
 
-A UEVR profile and custom backend for playing **Far Far West** in VR, with
-controller aiming, readable menus, and world markers that stay where they belong.
+**This is a beta build.** It is playable and under active development as we refine
+controls, expand UI coverage, and work through the [backlog](BACKLOG.md). Expect
+some rough edges, especially after game updates.
 
-- **Aligned stereo rendering:** the custom backend provides matching eye views
-  and full-width menu presentation.
-- **Right-controller aiming:** aim smoothly with your controller while looking around
-  independently. The reticle follows the firing target, including at different
-  ranges and when casting spells. Adaptive stabilization has a live strength dial.
-- **Controller-operated menus:** point with the right controller and click with
-  the trigger. Menus stay readable and stationary, with B handling pause/resume.
-- **Native menu cursor:** the game's arrow follows controller pointing, with a
-  visibility and hotspot correction and adjustable size. The earlier custom arrow
-  is disabled.
-- **Movement and snap turning:** left-stick movement and 45-degree turns on the
-  right stick.
-- **Gesture map access:** bring the left controller near your head and move the
-  left stick right to open the map, while ordinary stick movement stays available.
-- **Adjustable horse steering:** a mounted-only left-stick response curve gives
-  finer steering near center while preserving full steering at the edge.
-- **Stable world markers:** vendor icons, Start Mission, quest objectives, and
-  mission guides follow their world locations independently of controller aim.
-- **Stable teammate markers:** player nameplates follow the other player while
-  preserving the game's live name, level, health, voice indicators, and animated
-  outer scale. Their inner content receives the eye-aspect correction.
-- **Object and location tags:** tag a spot or object with the right-stick click.
-  Tags follow moving targets, including chickens, and retain their icons,
-  distances, and height offsets.
-- **Corrected UI proportions:** reticles and world markers compensate for the
-  eye projection's aspect ratio, keeping dots round and attachment points fixed.
-  The compass and its glyphs, dialogue, boss health, and mission counters/timers
-  share the HUD proportion correction during immersive gameplay, along with the
-  low-ammo warning.
-- **Corrected interaction prompts:** NPC prompts follow the aiming target while
-  preserving the game's interaction text and hold-progress display. Interaction,
-  dialogue, and dropped-item action hints keep X across input-mode changes.
-- **VR spell-selection hints:** the joker card vendor shows LG, RG, and LG+RG
-  for left grip, right grip, and both grips. Labels stay stable across input modes.
-- **Readable train mission previews:** the title/objective card uses the readable
-  menu presentation, with faster detection during loading transitions.
-- **Native spell controls:** left grip, right grip, and both grips cast the three
-  spells while preserving the native shifted D-pad actions.
-- **Carried-item Drop on X:** the new Drop prompt uses X while holding a supported
-  item, including pigs and pickaxes, dispatching the game's native Drop input
-  without rebinding normal interaction. Drop recovers after unsupported possession states.
-  The shared held-item prompt group corrects stretching across Drop, Shoot, and Aim hints.
-- **Possession-aware reticle:** aiming traces follow the current player after
-  mounting and dismounting, avoiding the earlier stale-pawn freeze.
-- **Adjustable HUD placement:** raised dialogue text and separate height controls
-  for the compass, mission counters/timers, and boss health bar, plus independent
-  boss-bar size with scaling anchored at the top of the screen. Minimum edge
-  margins bring fixed health, shield, ammo, spell/cooldown, party, currency,
-  and level groups into view. Fixed HUD groups have adjustable size, eye-aspect
-  correction, four independent edge margins, and overlap avoidance. Gameplay
-  bypasses the game's curved HUD rendering stage to prevent doubled hints.
-- **Additional marker families:** shared projection adapters for enemy/object
-  health bars, NPC name labels, floating damage numbers, and dropped Joker cards
-  preserve native content and movement. Discovery supports dynamically created
-  widget components as well as the original named components.
-- **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
-  and editable contrast and saturation multipliers.
-- **Live tuning:** adjust graphics multipliers and HUD heights during play.
-- **Faster marker stabilization:** prepare markers as a level loads and promptly
-  discover newly placed tags, reducing the delay before stabilization.
-- **UI monitoring across play sessions:** optional automatic capture preserves
-  widget IDs, positions, marker coverage, and input-hint observations in a
-  cumulative findings document.
+## Features
 
-## Requirements and setup
+- **Stereo VR and controller aiming:** aim with the right controller while looking around
+  independently. The reticle follows the firing target. Adjustable stabilization
+  reduces small hand movements.
+- **Point-and-click menus:** use the right controller and trigger, with readable
+  menus, a visible cursor, and B to pause or resume. Train mission previews have
+  a readable presentation too.
+- **Movement and riding:** left-stick movement, 45-degree snap turning, gesture
+  access to the map, and adjustable horse steering.
+- **VR spell controls:** left grip, right grip, and both grips cast the three spells.
+  The spell vendor uses matching grip labels.
+- **World markers:** corrections for vendor icons, mission objectives, teammates,
+  tagged locations and objects, and interaction prompts. Coverage is expanding to
+  health bars, NPC names, floating damage numbers, and dropped cards.
+- **Readable HUD:** corrected proportions, adjustable size, four edge margins,
+  and separate height controls for dialogue, the compass, objectives, and boss health.
+- **Item interaction:** X interacts, advances dialogue, and drops carried items
+  when their Drop prompt is active.
+- **Tunable visuals:** reduced haze, a heat-distortion workaround, and editable
+  contrast and saturation.
 
-The current setup is tested with **Far Far West 0.2.0.20**, **Meta Quest 3**,
-**Virtual Desktop**, and **SteamVR**. It requires the custom UEVR backend developed
-for this profile; importing the profile alone does not install that backend.
-See [development and deployment](docs/DEVELOPMENT.md) for the existing installation
-workflow and compatibility details.
+## Compatibility
 
-Package the profile files as `FarFarWest-Win64-Shipping.zip` and import them into
-UEVR, or update an existing profile checkout with `git pull`. After updating Lua
-helpers or plugin bindings, restart the game; live script resets can disrupt a running session.
-Keep the game window focused for menu input.
+The current beta is tested with **Far Far West 0.3.0.7**, **Windows**, **Meta Quest 3**,
+**Virtual Desktop**, and **SteamVR using OpenVR**. Other headsets and runtimes have
+not been verified. Game updates may require a matching backend update.
 
-## Controls
+**A matching custom UEVR runtime is required.** The profile alone cannot provide
+all these features. This repository contains the profile and scripts; backend
+binaries are not included, and a packaged runtime has not yet been published on
+this project's [Releases page](https://github.com/brifl/FarFarWestVR/releases).
+Obtain the matching beta runtime from the maintainer before installing.
 
-These are the tested Quest button labels.
+## Installation
+
+1. **Extract the matching beta UEVR runtime** into its own folder. Keep its files
+   together, including `UEVRInjector.exe` and the supplied `UEVRBackend.dll`.
+2. **Launch Far Far West normally once, then close it.** This creates the game log
+   used by the menu helper.
+3. **Install the profile.** Download this repository with **Code → Download ZIP**,
+   extract it, and copy the contents of `FarFarWestVR-main` into:
+
+   ```text
+   %APPDATA%\UnrealVRMod\FarFarWest-Win64-Shipping\
+   ```
+
+   Create that folder if needed. `config.txt` must be directly inside it, alongside
+   `scripts`, `plugins`, `assets`, and `data`. Copy the contents, not the outer
+   `FarFarWestVR-main` folder. The repository ZIP is not a ready-made UEVR profile
+   import archive.
+4. **Complete the [required one-time Windows setup](docs/SETUP.md).** It connects
+   the menu helper to the game log, enables controller aiming, and applies the
+   game configuration. This step is required on each new installation.
+5. **Play.** Connect through Virtual Desktop, start SteamVR and Far Far West, then
+   open the supplied `UEVRInjector.exe`. Select `FarFarWest-Win64-Shipping`, choose
+   **OpenVR**, and click **Inject**. Keep the game window focused for input. Press **Insert** to open or close the
+   UEVR settings panel.
+
+To enable the directional shortcuts below, turn on UEVR's **D-pad Shifting** and
+select **Gesture (Head) + Left Joystick**. It is off in the checked-in profile.
+
+For updates, close the game first and keep a copy of your personal
+`data/tuning.ini` and UEVR settings. Replace the profile files, restore your tuning,
+then relaunch normally. Update the custom runtime too when a beta requires it.
+Existing Git checkouts can use `git pull`. Use a normal relaunch instead of
+**Reset scripts**, which can disrupt the current session.
+
+## Quest controls
 
 | Control | Action |
 | --- | --- |
 | Left stick | Move forward/back and strafe |
 | Right stick left/right | 45-degree snap turn |
-| Right-stick click | Tag an object or location |
+| Right-stick click | Tag a location or object |
 | Right trigger | Fire; click in menus |
-| Left trigger | Native aim action |
-| Left/right grip | Spells |
+| Left trigger | Aim |
+| Left grip / right grip | First / second spell |
 | Both grips together | Third spell |
-| Shifted D-pad Left | Native photo mode |
-| Shifted D-pad Down | Summon horse (native action) |
-| Shifted D-pad Up | Native Utility action |
-| Shifted D-pad Right | Map (native View/Back button) |
-| X | Interact; advance dialogue; drop a carried item with an active Drop prompt |
+| X | Interact; advance dialogue; drop when a Drop prompt is active |
 | Y | Switch weapons |
 | B | Pause/resume |
+| Left controller near head + left stick Right | Map |
+| Left controller near head + left stick Down | Summon horse / dismount |
+| Left controller near head + left stick Up | Utility |
+| Left controller near head + left stick Left | Photo mode |
 
-Directional actions require UEVR's **D-pad Shifting** to be enabled. The tested
-activation method is **Gesture (Head) + Left Joystick**.
+The last four shortcuts require D-pad Shifting. `LG` and `RG` in spell hints mean
+**left grip** and **right grip**. Some other in-game prompts still show keyboard
+or gamepad labels; Quest-specific icons are planned.
 
-## Personal tuning
+## Configuration
 
-Edit [data/tuning.ini](data/tuning.ini) in the installed profile. Numeric changes
-reload during play, about once a second.
+Open this file in a text editor:
 
-| Setting | Profile value | Effect |
-| --- | --- | --- |
-| `saturation_multiplier` | `0.95` | Slightly lower saturation |
-| `contrast_multiplier` | `1.15` | Fifteen percent more contrast |
-| `fog_density_multiplier` | `0.20` | Reduce primary distance haze to twenty percent |
-| `dialogue_offset_y` | `-0.10` | Raise conversation text |
-| `boss_health_offset_y` | `0.15` | Lower boss health |
-| `boss_health_scale_multiplier` | `0.85` | Boss overlay size; independent of fixed HUD size |
-| `mission_info_offset_y` | `0.15` | Lower mission counters and timers |
-| `compass_offset_y` | `0.15` | Lower the compass and its markers together |
-| `[hud] scale_multiplier` | `0.85` | Fixed HUD and low-ammo warning size; `1.0` uses native size |
-| `[hud] aspect_correction` | `1` | Correct fixed HUD vertical stretch using the eye projection; `0` disables |
-| `left_margin` | `0.20` | Minimum inset from the left edge |
-| `right_margin` | `0.20` | Minimum inset from the right edge |
-| `top_margin` | `0.15` | Minimum inset from the top edge |
-| `bottom_margin` | `0.30` | Minimum inset from the bottom edge |
-| `[aim] stabilization` | `0.35` | `0` is unfiltered; `1` gives strongest steady-hand smoothing |
-| `[cursor] scale_multiplier` | `1.0` | Menu arrow size; `1.0` preserves its native size |
-| `[cursor] aspect_correction` | `0` | Optional projection correction; leave off to preserve normal menu proportions |
-| `[horse] steering_exponent` | `2.0` | Soften small left-stick steering movements while mounted; `1.0` restores native response |
+```text
+%APPDATA%\UnrealVRMod\FarFarWest-Win64-Shipping\data\tuning.ini
+```
 
-A graphics multiplier of `1.0` uses the game's original amount. HUD offsets are
-fractions of viewport height: positive moves down, negative moves up, and `0`
-restores the original position. For example, `0.10` moves a panel down by ten
-percent. Size, aspect correction, and margins belong in `[hud]` and reload live.
-Size accepts `0.25`–`1.50`; aspect correction is independent of size. Each margin
-accepts `0`–`0.40` of full viewport width/height: `0.20` reserves twenty percent
-at that edge. Zero adds no inset; setting both margins on an axis to zero restores
-native placement on that axis. Placement and overlap avoidance use the resized
-bounds; a group still too large to fit is centered. Reticles, world markers,
-full-screen effects, and separate height-controlled panels are excluded.
-Old `horizontal_margin`/`vertical_margin` settings still supply paired edges.
-Explicit edge values win, followed by old `[hud]` values, then old `[audit]` values.
-Invalid edits retain the previous settings. The saved world scale is
-`0.010000`, matching the tested setup; preserve personal runtime adjustments.
+Save numeric changes to apply them while playing, usually within a second.
+Keep each setting in its existing section. Invalid edits leave the previous
+settings active.
 
-Aiming stabilization slows small hand fluctuations and responds faster during
-deliberate sweeps. Increase it for steadier precision or reduce it for less lag.
-It filters the aiming direction before snap-turn offsets; head tracking and
-45-degree turns remain immediate. It does not filter the menu click coordinates.
+| Section | Setting | Included value | Adjustment |
+| --- | --- | --- | --- |
+| `[aim]` | `stabilization` | `0.35` | `0` disables smoothing; `1` is strongest. More smoothing can add aim lag. |
+| `[horse]` | `steering_exponent` | `2.0` | `1` is the original response; higher values soften small left-stick turns. Full steering is preserved. |
+| `[hud]` | `scale_multiplier` | `0.85` | Overall fixed-HUD size; smaller values shrink it. |
+| `[hud]` | `left_margin`, `right_margin` | `0.20` each | Minimum left/right inset as a fraction of screen width. |
+| `[hud]` | `top_margin`, `bottom_margin` | `0.15`, `0.30` | Minimum top/bottom inset as a fraction of screen height. |
+| `[hud]` | `dialogue_offset_y` | `-0.10` | Conversation text height. |
+| `[hud]` | `compass_offset_y` | `0.15` | Compass height. |
+| `[hud]` | `mission_info_offset_y` | `0.15` | Mission counter/timer height. |
+| `[hud]` | `boss_health_offset_y` | `0.15` | Boss-bar height. |
+| `[hud]` | `boss_health_scale_multiplier` | `0.85` | Boss-bar size, independently of the fixed HUD. |
+| `[graphics]` | `saturation_multiplier` | `0.95` | Color saturation; `1.0` uses the original amount. |
+| `[graphics]` | `contrast_multiplier` | `1.15` | Contrast; `1.0` uses the original amount. |
+| `[graphics]` | `fog_density_multiplier` | `0.20` | Primary weather haze; `1.0` is the original density. |
+| `[cursor]` | `scale_multiplier` | `1.0` | Menu cursor size. |
+| `[audit]` | `auto_start` | `1` | Set to `0` to disable automatic UI capture on future launches. |
 
-Horse steering accepts an exponent from `1.0` to `4.0` and reloads during play.
-Higher values give gentler steering near center; at `2.0`, half-stick horizontal
-input becomes quarter-strength. Full left/right input stays full strength. Only
-mounted left-stick horizontal input changes; walking, forward/back input, buttons,
-and right-stick snap turning keep their existing behavior. The curve adds no
-time-based smoothing or delay.
+For height offsets, **positive moves down**, **negative moves up**, and `0` uses
+the original position. For example, `-0.10` raises a panel by 10% of screen height.
+Margins accept `0`–`0.40`; `0.20` means 20%. They apply to supported fixed-HUD
+groups, while the height settings control their separate panels. Keep the included
+aspect-correction settings unless you are troubleshooting proportions.
 
-## Development status
+## Beta limitations and feedback
 
-Controller aiming currently follows the right controller’s orientation. Full
-position and wrist-roll tracking for hands/weapons is a
-[planned design project](docs/LOOSE-HANDS.md); implementation has not started.
+- Aiming follows controller **orientation**. Full hand/weapon position tracking,
+  wrist roll, and physical melee/throwing are [planned](docs/LOOSE-HANDS.md).
+- Some UI elements still need placement or tracking fixes. The newest NPC-label,
+  damage-number, and health-bar corrections need more gameplay validation.
+- Emote, Battlecry, Melee, and Challenges do not yet have dedicated VR mappings.
+- The heat workaround disables custom post-process materials, which may also
+  change some damage/status effects. The train camera and some scene transitions
+  still have rough edges.
 
-[Ongoing UI monitoring](docs/UI-FINDINGS.md) is identifying additional edge HUD,
-marker families, and control hints to improve. The latest shared margin, health-bar,
-dropped-card, and interaction-hint changes need in-game validation; historical
-capture findings remain visible. Remaining cases are tracked in the
-[backlog](BACKLOG.md). Boss-bar height still needs combat validation.
+Report problems through [GitHub Issues](https://github.com/brifl/FarFarWestVR/issues),
+including the game version, beta/profile version, headset/runtime, what happened,
+and steps to reproduce it. A screenshot or short video helps with UI issues.
 
-The heat-distortion workaround disables all custom post-process materials;
-some damage or status effects may also be affected. One post-extraction stall
-was observed; a repeat mission completed normally, and recurrence is being watched.
+UI capture is enabled by default for beta testing and saves observations locally
+under the profile's `data` folder. See [UI diagnostics](docs/UI-AUDIT.md) for
+collection instructions and the [cumulative findings](docs/UI-FINDINGS.md) for
+current coverage. Progress and planned improvements are in the [backlog](BACKLOG.md).
 
-See [the backlog](BACKLOG.md) for progress and planned improvements, or
-[development notes](docs/DEVELOPMENT.md) for backend deployment, diagnostics, and
-implementation details.
+For building, backend deployment, and troubleshooting internals, see
+[development notes](docs/DEVELOPMENT.md).
 
-## UI diagnostics
+## Credits
 
-A [gameplay capture](docs/UI-AUDIT.md) catalogs edge HUD, marker families, and
-action-bound interaction hints across play sessions. Capture starts on each launch
-when `[audit] auto_start = 1`. The [cumulative findings](docs/UI-FINDINGS.md) retain
-widget IDs, positions, and session history; refresh them with
-`python3 tools/ui_audit.py collect`. Capture does not change gameplay.
+Built on [praydog's UEVR](https://github.com/praydog/UEVR) and the starting
+Far Far West profile shared by [HeadsetVR](https://www.patreon.com/HeadsetVR/posts/is-far-far-west-163314637).
+This project builds on that work with additional aiming, UI, controls, and
+compatibility fixes.
