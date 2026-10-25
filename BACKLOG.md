@@ -28,6 +28,27 @@ Keep historical observations distinct from active problems and verified fixes.
 | Validate next long session | Helpers stopped above 250,000 UObject slots | At 02:57 on October 23, grading, fog, HUD, cursor, hints, reticle and markers hit the same old probe limit. A shared native-count validator now accepts positive int32 slot counts; existing per-frame scan/time/query caps remain. Live counts exceeded 286,000. Confirm helpers remain active across the former limit after a normal relaunch. A census found about 190,000 Niagara components; overlay instances were few. Keep the effects-growth question separate and attribute it before changing effects. |
 | Ongoing | Combat validation | Confirm boss-bar height and remaining combat HUD after shared placement; keep heights adjustable in tuning.ini. |
 
+## Quest controller hint icons
+
+**Planned; normal priority after validating the current marker/hint fixes.**
+Use [assets/quest_control_icons.png](assets/quest_control_icons.png) for consistent
+Quest button, trigger, grip, stick, and gesture hints. Runtime cost should be
+small: reuse the spell-vendor texture cache and existing hint Image widgets.
+
+- Prepare individual transparent icons once, offline. The 6-by-4 source sheet is
+  fully opaque: its checkerboard backgrounds and captions are baked into pixels.
+- Share one action/context-to-icon map across interaction, dialogue, carried-item,
+  spell-vendor, and gameplay hints. Start with X, B, triggers, and grips; combine
+  both grips for spell three. Add gesture combinations after the basic set works.
+- Preserve native action bindings, hold-progress displays, widget sizing/aspect
+  corrections, and unknown-action fallback. Do not label unimplemented controls
+  as available or replace literal keyboard text without knowing its action.
+- Cache imported textures and update brushes only when needed. Reapply after
+  native input-mode changes or widget rebuilds; make the visual override reversible.
+
+Acceptance: readable, correctly mapped Quest icons remain stable across input
+modes, menus, carrying, and scene transitions without repeated texture creation.
+
 ## Additional gesture controls
 
 **Design/backlog only.** The newly visible right-side hint panel lists
