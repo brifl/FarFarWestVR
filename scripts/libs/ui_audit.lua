@@ -17,6 +17,13 @@ local errors,scans,max_tick_ms,queue_dropped=0,0,0,0
 local last_command
 local auto_pending=true
 local next_ledger=300
+local remaining_seconds,segment_number,peak_object_slots=0,1,0
+local function object_slots()
+    local ok,n=pcall(function() return array and array:get_object_count() end)
+    if ok and type(n)=='number' and n>0 and n<=0x7fffffff and n%1==0 then
+        peak_object_slots=math.max(peak_object_slots,n);return n
+    end
+end
 local function field(class,name,offset)
     local p=class:find_property(name)
     assert(p and p:get_offset()==offset,'Unexpected audit field: '..name)
@@ -69,11 +76,23 @@ local function status(reason)
     stats.file=output;stats.elapsed=elapsed;stats.duration=duration;stats.state=reason
     stats.links=link_count;stats.schemas=schema_count
     stats.errors=errors;stats.sweeps=scans;stats.max_tick_ms=max_tick_ms;stats.queue_dropped=queue_dropped
+    stats.object_slots=object_slots();stats.peak_object_slots=peak_object_slots
+    stats.segment=segment_number
+    stats.remaining_seconds=active and math.max(0,duration-elapsed)+remaining_seconds or 0
     local f=assert(io.open('ui_audit_status.json','wb'))
     assert(f:write(catalog.json(stats)..'\n'));assert(f:close())
+    if reason~='active' then
+        f=assert(io.open(output:gsub('%.jsonl$','.status.json'),'wb'))
+        assert(f:write(catalog.json(stats)..'\n'));assert(f:close())
+    end
 end
 local function session_note(event)
     local stats=store.stats()
+    if event=='checkpoint' then
+        store.event({type='checkpoint',elapsed=elapsed,object_slots=object_slots(),
+            peak_object_slots=peak_object_slots,records=stats.records,dropped=stats.dropped,errors=errors})
+        assert(file:flush())
+    end
     local note=assert(io.open('ui_audit_sessions.md','ab'))
     if note:seek('end')==0 then
         assert(note:write('# Gameplay UI capture sessions\n\n'..
@@ -91,13 +110,15 @@ local function finish(reason)
     store.flush_all()
     local stats=store.stats()
     store.event({type='end',reason=reason,elapsed=elapsed,errors=errors,sweeps=scans,
-        records=stats.records,dropped=stats.dropped,bytes=stats.bytes})
+        records=stats.records,dropped=stats.dropped,bytes=stats.bytes,
+        object_slots=object_slots(),peak_object_slots=peak_object_slots})
     assert(file:flush());assert(file:close());file=nil
     status(reason);session_note(reason);command('done '..output)
+    remaining_seconds=0
     queue,visited,links,schemas={}, {}, {}, {}
     log.log_info('[FarFarWest audit] '..reason..': data/'..output)
 end
-local function start(seconds)
+local function start(seconds,segment)
     if active then finish('replaced') end
     if not prepared then prepare() end
     local counter=io.open('ui_audit_counter.txt','rb')
@@ -114,12 +135,14 @@ local function start(seconds)
     counter=assert(io.open('ui_audit_counter.txt','wb'));assert(counter:write(tostring(n)));assert(counter:close())
     file=assert(io.open(output,'wb'))
     store=catalog.new(function(line) return file:write(line) end,{reserved_records=1024})
-    active=true;elapsed=0;duration=seconds;next_ledger=300
+    active=true;elapsed=0;duration=math.min(seconds,1800);next_ledger=300
+    remaining_seconds=math.max(0,seconds-duration);segment_number=segment or 1;peak_object_slots=0
     queue,head,visited,links,schemas={},1,{},{},{}
     link_count,schema_count=0,0
     poll,next_query,next_flush,next_status,scan_index,next_scan=0,0,30,10,0,0
     errors,scans,max_tick_ms,queue_dropped=0,0,0,0
-    store.event({type='start',version=1,duration=duration,
+    store.event({type='start',version=1,duration=duration,window_seconds=seconds,segment=segment_number,
+        object_slots=object_slots(),
         left_margin=tuning.get('hud.left_margin'),right_margin=tuning.get('hud.right_margin'),
         top_margin=tuning.get('hud.top_margin'),bottom_margin=tuning.get('hud.bottom_margin'),
         text_access='Action bindings and key-widget modes; arbitrary FText strings unavailable',
@@ -197,6 +220,7 @@ local function discover(viewport)
 end
 local function components(deadline)
     local count=object_count(array)
+    peak_object_slots=math.max(peak_object_slots,count)
     if elapsed<next_scan then return end
     for i=1,256 do
         if scan_index>=count then
@@ -330,7 +354,7 @@ local function tick(engine,delta)
                 local seconds=text:match('^start%s+(%d+)$')
                 if text=='start' then seconds='3600' end
                 if seconds then
-                    auto_pending=false;start(math.max(10,math.min(tonumber(seconds),3600)))
+                    auto_pending=false;start(math.max(10,math.min(tonumber(seconds),10800)))
                 elseif text=='stop' then auto_pending=false;finish('stopped') end
             end
             if auto_pending then
@@ -340,8 +364,15 @@ local function tick(engine,delta)
         end
         if not active then return end
         elapsed=elapsed+dt
-        if elapsed>=duration then finish('completed');return end
-        if store.stats().full then finish('size limit');return end
+        if elapsed>=duration or store.stats().full then
+            local left=remaining_seconds+math.max(0,duration-elapsed)
+            local segment=segment_number+1
+            local reason=store.stats().full and 'size limit' or left>0 and 'rotated' or 'completed'
+            if left>0 and segment>12 then reason='segment limit' end
+            finish(reason)
+            if left>0 and segment<=12 then start(left,segment) end
+            return
+        end
         if elapsed>=next_flush then
             local _,pending=store.flush(16)
             if pending==0 then file:flush();next_flush=elapsed+30 end

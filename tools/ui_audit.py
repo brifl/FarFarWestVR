@@ -105,7 +105,7 @@ def merge_captures(paths, archive):
         status_path = path.with_suffix('.status.json')
         if not end and status_path.exists():
             status = json.loads(status_path.read_text())
-            if status.get('file') == path.name and status.get('state') in ('error', 'completed', 'stopped', 'size limit'):
+            if status.get('file') == path.name and status.get('state') in ('error', 'completed', 'stopped', 'size limit', 'rotated', 'segment limit'):
                 end = dict(reason=status['state'], elapsed=status.get('elapsed', 0),
                            errors=status.get('errors', 0), dropped=status.get('dropped'))
         sessions.append({'id': session, 'widgets': len(rows),
@@ -249,7 +249,7 @@ with zipfile.ZipFile(output,'w',compression=zipfile.ZIP_DEFLATED) as z:
   st=pth.stat();stamp=[st.st_size,st.st_mtime_ns]
   manifest[pth.name]=stamp
   if known.get(pth.name)!=stamp: z.write(pth,pth.name)
- for name in ['ui_audit_sessions.md','ui_audit_status.json']:
+ for name in ['ui_audit_sessions.md','ui_audit_status.json'] + [p.name for p in p.glob('ui-audit-*.status.json')]:
   pth=p/name
   if pth.exists(): z.write(pth,name)
  z.writestr('manifest.json',json.dumps(manifest))
@@ -259,7 +259,7 @@ sys.stdout.buffer.write(output.getvalue())
     with zipfile.ZipFile(io.BytesIO(payload)) as z:
         for info in z.infolist():
             name = info.filename
-            if not (re.fullmatch(r'ui-audit-[0-9]+\.jsonl', name) or
+            if not (re.fullmatch(r'ui-audit-[0-9]+\.(?:jsonl|status\.json)', name) or
                     name in ('manifest.json', 'ui_audit_sessions.md', 'ui_audit_status.json')):
                 raise ValueError('Unexpected archive entry: ' + name)
             if info.file_size > 20 * 1024 * 1024:
@@ -282,7 +282,7 @@ def main():
         p = sub.add_parser(name)
         p.add_argument('--host', default='robot1-x')
         if name == 'start':
-            p.add_argument('--seconds', type=int, default=3600, choices=range(10, 3601), metavar='10..3600')
+            p.add_argument('--seconds', type=int, default=3600, choices=range(10, 10801), metavar='10..10800')
         if name == 'fetch':
             p.add_argument('--output', type=Path, default=Path('diagnostics/ui-audit'))
         if name == 'collect':
@@ -301,7 +301,8 @@ def main():
     prefix = 'from pathlib import Path\nimport json, re\np = Path(' + repr(PROFILE) + ')\n'
     if args.command in ('start', 'stop'):
         value = f'start {args.seconds}' if args.command == 'start' else 'stop'
-        body = prefix + f"(p/'ui_audit_command.txt').write_text({value!r}+'\\n')\nprint({value!r})"
+        payload = value + '\n'
+        body = prefix + f"(p/'ui_audit_command.txt').write_text({payload!r})\nprint({value!r})"
         print(remote(args.host, body).strip())
     elif args.command == 'status':
         print(remote(args.host, prefix + "f=p/'ui_audit_status.json'\nprint(f.read_text() if f.exists() else 'No capture status yet')").strip())

@@ -169,6 +169,40 @@ state.auto_start=1;state.files['ui_audit_command.txt']='stop';tick(100);healthy(
 assert(state.query_count==0 and not state.files['ui-audit-000001.jsonl'])
 ''')
 
+run('two-hour monitoring rotates four bounded captures and completes without another launch', r'''
+start(7200);state.engine=nil;tick(29000,.25);healthy()
+assert(state.files['ui-audit-000004.jsonl'] and not state.files['ui-audit-000005.jsonl'])
+assert(state.files['ui-audit-000001.status.json']:find('"state":"rotated"',1,true))
+assert(state.files['ui-audit-000004.status.json']:find('"state":"completed"',1,true))
+assert(state.files['ui_audit_status.json']:find('"remaining_seconds":0',1,true))
+''')
+
+run('manual stop cancels the remaining monitoring window after rotation', r'''
+start(9000);state.engine=nil;tick(7300,.25);healthy()
+assert(state.files['ui-audit-000002.jsonl'])
+stop();tick(29000,.25);healthy();assert(not state.files['ui-audit-000003.jsonl'])
+''')
+
+run('object growth and peaks survive checkpoints without additional native object scans', r'''
+start(9000);state.engine=nil;local reads=state.reads
+state.object_count=286344;tick(1250,.25);healthy()
+local s=state.files['ui_audit_status.json']
+assert(s:find('"object_slots":286344',1,true) and s:find('"peak_object_slots":286344',1,true))
+local data=state.files['ui-audit-000001.jsonl']
+assert(data:find('"type":"checkpoint"',1,true) and data:find('"object_slots":286344',1,true))
+state.object_count=90000;tick(50,.25);healthy()
+assert(state.files['ui_audit_status.json']:find('"peak_object_slots":286344',1,true))
+assert(state.reads==reads);stop()
+''')
+
+run('repeated byte limits rotate safely and stop at the total segment cap', r'''
+local catalog=require('libs/ui_audit_catalog');local new=catalog.new
+catalog.new=function(write,options) options.bytes=32;return new(write,options) end
+start(9000);tick(100);healthy()
+assert(state.files['ui-audit-000012.jsonl'] and not state.files['ui-audit-000013.jsonl'])
+assert(state.files['ui-audit-000012.status.json']:find('"state":"segment limit"',1,true))
+''')
+
 
 def inspect_capture(lua):
     rows, meta, errors = report.load_capture(capture(lua))
@@ -398,9 +432,11 @@ with TemporaryDirectory() as d:
             for name, content in files.items():
                 z.writestr(name, content)
         return buffer.getvalue()
-    one = '\n'.join(map(json.dumps, [sample(1, 7), dict(type='end', elapsed=60, reason='stopped')]))+'\n'
+    one = json.dumps(sample(1, 7))+'\n'
     two = '\n'.join(map(json.dumps, [sample(1, 3), dict(type='end', elapsed=60, reason='completed')]))+'\n'
     packets = [packet({'ui-audit-000001.jsonl': one,
+                       'ui-audit-000001.status.json': json.dumps({'file':'ui-audit-000001.jsonl',
+                           'state':'rotated','elapsed':1800,'errors':0,'dropped':0}),
                        'manifest.json': json.dumps({'ui-audit-000001.jsonl': [len(one), 1]})}),
                packet({'ui-audit-000002.jsonl': two,
                        'manifest.json': json.dumps({'ui-audit-000001.jsonl': [len(one), 1],
@@ -420,6 +456,36 @@ with TemporaryDirectory() as d:
         report.collect('robot1-x', archive, document)
         merged, sessions = report.merge_captures(archive.glob('*/*.jsonl'), archive)
         assert len(sessions) == 2 and next(iter(merged.values()))['seen'] == 10
+        assert sessions[0]['reason']=='rotated' and sessions[0]['elapsed']==1800
     finally:
         report.remote = original
 print('PASS incremental collection preserves old sessions when remote files disappear')
+
+# Run the generated remote Python locally to verify command/newline handling.
+import contextlib
+import io
+import sys
+from unittest.mock import patch
+
+with TemporaryDirectory() as directory:
+    remote_root = Path(directory)/'profile'
+    remote_root.mkdir()
+
+    def local_remote(host, body, binary=False):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            exec(compile(body, '<generated-remote-command>', 'exec'), {})
+        return output.getvalue()
+
+    with patch.object(report, 'PROFILE', str(remote_root)), patch.object(report, 'remote', local_remote):
+        with patch.object(sys, 'argv', ['ui_audit.py', 'start', '--seconds', '9000']), contextlib.redirect_stdout(io.StringIO()):
+            report.main()
+        assert (remote_root/'ui_audit_command.txt').read_bytes() == b'start 9000\n'
+        with patch.object(sys, 'argv', ['ui_audit.py', 'stop']), contextlib.redirect_stdout(io.StringIO()):
+            report.main()
+        assert (remote_root/'ui_audit_command.txt').read_bytes() == b'stop\n'
+        (remote_root/'ui_audit_status.json').write_text('{"state":"active"}')
+        with patch.object(sys, 'argv', ['ui_audit.py', 'status']), contextlib.redirect_stdout(io.StringIO()) as output:
+            report.main()
+        assert json.loads(output.getvalue())['state'] == 'active'
+print('PASS generated remote start, stop and status commands use valid Python and real newlines')

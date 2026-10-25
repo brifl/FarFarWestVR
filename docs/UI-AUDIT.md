@@ -11,14 +11,21 @@ switch back to keyboard presentation.
 ## Multiple play sessions
 
 The installed [tuning.ini](../data/tuning.ini) enables `audit.auto_start = 1`.
-Each game launch or **Reset scripts** starts a separate capture, limited to one
-hour or 16 MiB. Earlier captures are preserved. The helper stays idle after that
-limit or a manual Stop until the next launch/reset. Set `auto_start = 0` to prevent
+Each game launch starts a one-hour monitoring window by default. Recording rotates
+into a fresh capture every 30 minutes, or sooner if a file reaches 16 MiB, so late
+missions get fresh ID capacity. Earlier captures and their final status are preserved.
+A window is limited to 12 files (192 MiB of capture data). The helper stays idle after the
+window, segment limit, or a manual Stop until the next launch or Start command.
+Set `auto_start = 0` to prevent
 automatic capture on future launches; Stop ends the current capture immediately.
 
 The game automatically appends start/checkpoint/end counts to
 `data/ui_audit_sessions.md` in the installed profile. An unfinished entry may mean
 the game exited without a final script callback; its JSONL checkpoints survive.
+Five-minute JSONL checkpoints also record current and peak UObject slot counts
+for diagnosing growth over long sessions. This adds no object census or gameplay
+writes. Status includes the remaining monitoring time. One gameplay session may
+produce several capture files; each appears separately in the cumulative report.
 
 The repository's cumulative findings document is
 [UI-FINDINGS.md](UI-FINDINGS.md). Refresh it at check-ins from the development
@@ -49,12 +56,16 @@ service is required. The game's session ledger updates automatically while playi
 
 ```bash
 python3 tools/ui_audit.py start
+python3 tools/ui_audit.py start --seconds 9000
 python3 tools/ui_audit.py status
 python3 tools/ui_audit.py stop
 python3 tools/ui_audit.py fetch
 ```
 
-Start also works during play. Fetch downloads only the most recent capture to
+The second Start example arms 2½ hours, including a buffer around a two-hour play
+session. Start accepts 10–10,800 engine seconds and also works during play or can
+be armed before launch. Its command is consumed when the scripts load.
+Fetch downloads only the most recent capture to
 `diagnostics/ui-audit/`, including `summary.txt`, `widgets.csv`, `edge-hud.csv`,
 `marker-candidates.csv`, `interaction-hints.csv`, and `capture.jsonl`. Fetch and
 Collect work while recording or afterward. To summarize an individual archived file:
@@ -63,7 +74,7 @@ Collect work while recording or afterward. To summarize an individual archived f
 python3 tools/ui_audit.py report path/to/capture.jsonl
 ```
 
-If SSH is unavailable, write `start 3600` or `stop` to
+If SSH is unavailable, write `start 3600`, `start 9000`, or `stop` to
 `data/ui_audit_command.txt` in the installed profile. After deploying new Lua
 helpers, relaunch the game normally; script reset is unreliable in this profile. Play normally;
 there is no need to hold a particular screen open or reproduce each case separately.
