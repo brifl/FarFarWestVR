@@ -23,4 +23,9 @@ function M.find(address,valid)
         if entry.proxy and valid(entry.proxy) and entry.proxy.address==address then return entry.label,'proxy' end
     end
 end
+function M.visit_sources(valid,visit)
+    for _,entry in pairs(entries) do
+        if valid(entry.component) and valid(entry.source) then visit(entry.source.object) end
+    end
+end
 return M

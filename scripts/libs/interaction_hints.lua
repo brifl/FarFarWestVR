@@ -1,5 +1,5 @@
 return function()
-local query=require('libs/live_widgets')(
+local query=require('libs/active_widgets')(
     'WidgetBlueprintGeneratedClass /Game/Interfaces/UI_Key.UI_Key_C',256,.25)
 local key_hint=require('libs/interaction_key')
 local elapsed,failed,reported=0,false,false

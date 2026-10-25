@@ -67,9 +67,10 @@ identities across the chunk boundary, and unchanged field/function metadata in
 31 shared HUD classes. The retained backend adds only this verified executable
 to the allowlist; unknown builds still fail closed. The incremental build passed.
 Its DLL/PDB pair is recorded in `tools/deploy_native_backend.py`, which preserves
-the preceding pair before installation. Native startup and gameplay validation
-require a normal relaunch after deploying it; `git pull` alone updates only the
-profile and deployment tool. Private probe results and source backup are under
+the preceding pair before installation. The pair is installed; the user reports
+normal gameplay and the launch log confirms native access, reticle/marker layouts,
+grading, fog, and capture startup without helper errors. `git pull` alone updates
+only the profile and deployment tool. Private probe results and source backup are under
 `ffw-tests/hotfix-0307/` in the retained build checkout.
 
 `tools/probe_game_layout.ps1` finds these tables read-only within the executable's
@@ -280,8 +281,15 @@ and validates either verified isGamepad/bIsGamepad parameter name at offset zero
 and leaves unrelated or explicitly overridden actions alone. The separate
 `interaction_hints.lua` helper uses the same correction across native UI_Key_C
 widgets, including targeting and dropped-item contexts. `libs/live_widgets.lua`
-centralizes guarded native queries and compact-array lifetime checks for this
-helper and HUD margins. No UObjectHook discovery, FText bridge, binding changes,
+centralizes guarded native queries and compact-array lifetime checks. After the
+October 25 log exposed its 256-result limit on retained UI_Key instances,
+Interact/Drop discovery moved to `libs/active_widgets.lua`: query viewport roots,
+visit their visible trees plus the marker registry's live world widgets, and
+validate every reused object reference. Each call visits at most 128 widgets
+with a soft 0.5 ms deadline; sweeps retain at most 4,096 queued widgets and 256
+matching keys. Budget exhaustion retains partial results and retries on the next
+sweep instead of disabling the helper. HUD queries keep their existing scopes.
+No UObjectHook discovery, FText bridge, binding changes,
 or backend rebuild is required.
 The read-only UI audit uses the same hint-layout guard; its former hardcoded
 0.2 offsets caused captures in 0.3.0.0 to stop at the 64-error budget.
@@ -525,6 +533,26 @@ at 32 to reserve room for established markers, and hidden components release slo
 These changes and the shared HUD/hint helpers have regression coverage; native
 geometry, combat behavior, and visual validation remain pending. Do not treat
 historical capture flags as a current failure or a verified fix.
+
+The October 25 collection contains 25 sessions and 11,926 distinct IDs. Sessions
+22–25 each completed a full engine hour without capture errors. Some reached
+the ordinary-ID reservation and skipped observations; late priority markers
+were still retained. New visible observations include NPC names, damage numbers,
+and still-uncovered health bars. Discovery previously selected only three fixed
+component names and required WidgetClass, missing runtime-created components
+such as `NODE_AddWidgetComponent-1`. It now checks WidgetComponent type within
+the existing scan budget and prefers the live Widget class when present.
+
+`UI_NpcInGame_C.InteractTextHolder@816` on the captured BP_NPC families reuses
+the attached-label adapter, including its native height offset. `UI_Damages_C`
+uses the same root-component-safe screen projection as teammates, with its
+owner's Widget@688 verified against RootComponent. Its TextBlock_Damages@808
+receives aspect correction separately so native outer scale and actor/projectile
+motion remain intact. At most 16 damage entries share the existing 64-marker
+total, and hidden components release their slots. Damage actors also join bounded fast discovery. These
+extensions need visual confirmation after a normal relaunch. Non-local
+interaction prompts are filtered before binding; missing local possession is
+retried rather than permanently rejecting the component.
 
 The earlier extraction stall remains unproven: train departure finished, but the
 view stayed at the station/island. Desktop showed the same scene; F8 showed a black

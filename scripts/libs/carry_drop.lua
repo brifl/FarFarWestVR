@@ -2,7 +2,7 @@
 -- Dispatch its native input event on a fresh Quest X press, only for its owning item.
 return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
-local query=require('libs/live_widgets')(
+local query=require('libs/active_widgets')(
     'WidgetBlueprintGeneratedClass /Game/Interfaces/UI_Key.UI_Key_C',256,.1)
 local key_hint=require('libs/interaction_key')
 local array,statics,value_library,interact,button

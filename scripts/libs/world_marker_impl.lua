@@ -22,7 +22,11 @@ local kinds = {
     UI_Guide_C={owner="^BP_LobbyGuide_C_", image="Image_Aura", offset=824, world_label=true},
     UI_Interact_C={owner="^BP_Player.*_C_", field="UI_Key",offset=816,screen=true},
     UI_PlayerInfos_C={owner_class="^BP_PlayerNameWidget_C$",field="PlayerNameText",offset=840,
-        screen=true,screen_root=true,shape_content=true,label="teammate marker"},
+        screen=true,screen_root=true,component_offset=680,additional_fields={PlayerState=872},
+        shape_content=true,label="teammate marker"},
+    UI_Damages_C={owner_class='^BP_UiDamages_C$',field='TextBlock_Damages',offset=808,
+        screen=true,screen_root=true,component_offset=688,shape_field='TextBlock_Damages',
+        transient=true,label='damage number'},
     UI_PingObjective_C={owner_class="^BP_ObjectivePing.*_C$",field="OwningActor",offset=912,
         world_label=true,actor_field="OwningActor",target_field="Location",target_offset=872,label="objective marker"},
     UI_ObjectPing_C={owner_class="^BP_ObjectPing.*_C$",field="Image_Logo",offset=824,
@@ -33,6 +37,8 @@ kinds.UI_Lifebar_C={field='ProgressBar_Boss',offset=808,world_label=true,attache
     owners={'^BP_Enemy_.*_C$','^BP_CrypticTrain_Section_.*_C$','^BP_RadioactiveBarrel_C$','^BP_GasBomb_BossSpawner_C$'}}
 kinds.UI_JokerCard_InGame_C={field='Overlay_Transform',offset=840,world_label=true,attached=true,
     label='dropped Joker card',owner_class='^BP_Pickable_Joker_C$'}
+kinds.UI_NpcInGame_C={field='InteractTextHolder',offset=816,world_label=true,attached=true,
+    label='NPC name label',owner_class='^BP_NPC_.*_C$'}
 local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder",offset=816,
     world_label=true,label="mission guide"}
 local screen_projection=require('libs/screen_widget_projection')
@@ -72,8 +78,9 @@ local function component_valid(entry)
     if not widget or widget:get_address()~=entry.source.address then return false end
     if entry.shape_ref then
         if not valid(entry.shape_ref) then return false end
-        local tree=entry.source.object:get_property('WidgetTree')
-        local root=tree and tree:get_property('RootWidget')
+        local tree=not entry.kind.shape_field and entry.source.object:get_property('WidgetTree')
+        local root=entry.kind.shape_field and entry.source.object:get_property(entry.kind.shape_field)
+            or tree and tree:get_property('RootWidget')
         if not root or root:get_address()~=entry.shape_ref.address then return false end
     end
     if entry.kind.screen_root then
@@ -176,6 +183,7 @@ local function prepare()
     checked(component_class,"K2_GetComponentLocation",24,24)
     checked(component_class,"GetOwner",8,8)
     checked(widget_class,"GetOwningPlayer",8,8)
+    checked(widget_class,"GetOwningPlayerPawn",8,8)
     checked(widget_class,"GetDesiredSize",16,16)
     checked(widget_class,"ForceLayoutPrepass",0,0)
     checked(widget_class,"AddToViewport",4,4)
@@ -286,11 +294,10 @@ local function bind_screen(component,source,kind)
     assert(player and owner,'Screen marker owner/player unavailable')
     if kind.screen_root then
         local p=owner:get_class():find_property('Widget')
-        local state=source:get_class():find_property('PlayerState')
-        assert(p and p:get_offset()==680 and state and state:get_offset()==872,'Teammate marker layout differs')
+        assert(p and p:get_offset()==kind.component_offset,'Screen marker component layout differs')
         local root,bound=owner:get_property('RootComponent'),owner:get_property('Widget')
         assert(root and root:get_address()==component:get_address()
-            and bound and bound:get_address()==component:get_address(),'Teammate widget must be its actor root')
+            and bound and bound:get_address()==component:get_address(),'Screen widget must be its actor root')
     else
         checked(widget_class,"GetOwningPlayerPawn",8,8)
         local pawn=source:GetOwningPlayerPawn()
@@ -335,14 +342,22 @@ local function inspect_component(component)
     elseif kind.owner_class then
         if not owner_class:match(kind.owner_class) then return end
     elseif not owner_name:match(kind.owner) then return end
-    if kind.attached then
+    if kind.screen and not kind.screen_root then
+        -- Remote prompts are ineligible; a local possession gap may resolve later.
+        -- Neither condition is a bad layout or a permanently rejected component.
+        local pawn,owner=source:GetOwningPlayerPawn(),component:GetOwner()
+        if not pawn or not owner or pawn:get_address()~=owner:get_address() then return end
+    end
+    if kind.attached or kind.transient then
         local visibility=source:get_property('Visibility')
         local owner=component:GetOwner()
         if not owner or not component:get_property('bVisible') or owner:get_property('bHidden')
             or visibility==1 or visibility==2 then return end
         local count=0
-        for _,entry in pairs(entries) do if entry.kind.attached then count=count+1 end end
-        if count>=32 then return end -- Keep capacity for established guides/prompts/pings.
+        for _,entry in pairs(entries) do
+            if (kind.attached and entry.kind.attached) or (kind.transient and entry.kind.transient) then count=count+1 end
+        end
+        if count>=(kind.transient and 16 or 32) then return end -- Reserve capacity for established guides/prompts/pings.
     end
     stage="read marker component visibility"
     -- The typed bool getter throws on this backend; reflected reads work for
@@ -354,6 +369,10 @@ local function inspect_component(component)
         assert(entry_count<64,"Too many world icons")
         local p=source:get_class():find_property(kind.field or kind.image)
         assert(p and p:get_offset()==kind.offset,"World-marker image layout mismatch")
+        for name,offset in pairs(kind.additional_fields or {}) do
+            p=source:get_class():find_property(name)
+            assert(p and p:get_offset()==offset,'Screen marker layout differs: '..name)
+        end
         if kind.screen then
             bind_screen(component,source,kind)
             return
@@ -439,7 +458,9 @@ local function consider(object)
     local address=object:get_address()
     if entries[address] or rejected[address] then return end
     if not candidates[address] then
-        local class=object:get_property('WidgetClass')
+        -- SetWidget can supply a live instance without setting WidgetClass.
+        local source=object:get_property('Widget')
+        local class=source and source:get_class() or object:get_property('WidgetClass')
         if not class or not kinds[class:get_short_name()] then return end
         if candidate_count<128 then candidates[address]=track(object);candidate_count=candidate_count+1 end
     end
@@ -486,8 +507,8 @@ local function discover()
         local index=recent_index or scan_index
         local object=array:get_object(index)
         if recent_index then recent_index=recent_index-1 else scan_index=scan_index-1 end
-        local name=object and object:get_short_name()
-        if (name=="Widget" or name=="WidgetInteract" or name=="LifebarWidget") and object:is_a(component_class) then
+        -- Blueprint-created components need not have one of the old fixed names.
+        if object and object:is_a(component_class) then
             consider(object)
         end
         if deadline and i%32==0 and clock()>=deadline then return end
@@ -522,7 +543,7 @@ callbacks.tick = function(engine,delta)
         for address,entry in pairs(entries) do
             stage="validate tracked icon"
             if not component_valid(entry) or (entry.proxy and not valid(entry.proxy))
-                or (entry.kind.attached and (not entry.component.object:get_property('bVisible')
+                or ((entry.kind.attached or entry.kind.transient) and (not entry.component.object:get_property('bVisible')
                     or entry.owner.object:get_property('bHidden'))) then
                 restore(entry); entries[address]=nil; entry_count=entry_count-1
             else
@@ -591,7 +612,10 @@ callbacks.tick = function(engine,delta)
                             stage='normalize marker shape'
                             if not entry.shape then
                                 local target=display
-                                if entry.kind.shape_content then
+                                if entry.kind.shape_field then
+                                    target=display:get_property(entry.kind.shape_field)
+                                    if target then entry.shape_ref=track(target) end
+                                elseif entry.kind.shape_content then
                                     -- The nameplate's outer scale is animated by the game.
                                     -- Correct its unit-scale content around the same bottom anchor.
                                     local p=display:get_class():find_property('WidgetTree')
@@ -621,7 +645,7 @@ callbacks.tick = function(engine,delta)
     end)
 end
 callbacks.reset = reset
-info("Helper loaded; vendors, lobby/mission guides, objectives, object pings, health bars, dropped cards, teammate markers and interaction prompts use headset projection.")
+info("Helper loaded; vendors, guides, objectives, pings, health bars, dropped cards, teammate/NPC labels, damage numbers and interaction prompts use headset projection.")
 
 return callbacks
 end

@@ -16,6 +16,7 @@ local function object(o,name)
     function o:get_address() return index*256 end
     function o:read_dword(offset) assert(offset==12);return index end
     function o:get_short_name() return name end
+    function o:is_a() return false end
     return o
 end
 local sizes={K2_GetComponentLocation=24,GetOwner=8,GetOwningPlayer=8,GetDesiredSize=16,
@@ -32,7 +33,7 @@ local function class(name)
         local offsets={Space=1512,WidgetClass=1520,Pivot=1568,Widget=name=='component' and 1800 or name=='BP_PlayerNameWidget_C' and 680 or 688,Image_Icon=808,Image_Aura=824,
             UI_Key=816,OwningActor=912,Location=state.family=='UI_ObjectPing_C' and 864 or 872,
             InteractTextHolder=816,Image_Logo=824,Scene=696,AttachParent=208,ProgressBar_Boss=808,Overlay_Transform=840,
-            PlayerNameText=840,PlayerState=872,WidgetTree=704}
+            PlayerNameText=840,PlayerState=872,WidgetTree=704,TextBlock_Damages=808}
         return {get_offset=function() return state.bad_layout and 1 or offsets[n] end}
     end,find_function=function(_,n) return {get_properties_size=function() return sizes[n] end,
         get_child_properties=function() return nil end} end}
@@ -109,7 +110,7 @@ function source:GetDesiredSize() return {X=64,Y=32,typed=true} end
 function source.icon:get_property(n) return {name=n} end
 local component=object({visible=true,relative={X=0,Y=0,Z=0}},'Widget')
 local component_name=component.get_short_name
-function component:get_short_name() return state.family=='UI_Lifebar_C' and 'LifebarWidget' or state.family=='UI_Interact_C' and 'WidgetInteract' or component_name(self) end
+function component:get_short_name() return state.component_name or (state.family=='UI_Lifebar_C' and 'LifebarWidget' or state.family=='UI_Interact_C' and 'WidgetInteract' or component_name(self)) end
 function component:get_class() return component_class end
 function component:is_a(c) return c==component_class end
 function component:get_outer() return {get_short_name=function()
@@ -123,7 +124,7 @@ function component:get_property(n)
     if n=='AttachSocketName' then return state.socket or 'None' end
     if n=='bAbsoluteLocation' then return state.absolute or false end
     if n=='Widget' then return not state.no_widget and source or nil
-    elseif n=='WidgetClass' then return source:get_class()
+    elseif n=='WidgetClass' then return not state.no_widget_class and source:get_class() or nil
     elseif n=='bVisible' then return self.visible
     elseif n=='RelativeLocation' then return self.relative end
     if n=='AttachParent' then return self:GetAttachParent() end
@@ -350,6 +351,7 @@ local index=state.next;state.next=index+1;state.objects[index]=child
 function child:get_address() return index*256 end
 function child:read_dword() return index end
 function child:get_short_name() return 'VerticalBox_0' end
+function child:is_a() return false end
 function child:get_class() return {get_short_name=function() return 'VerticalBox' end} end
 function child:get_property(n)
  if n=='RenderTransformPivot' then return self.pivot end
@@ -509,7 +511,7 @@ state.no_widget=false;frame();healthy();assert(state.moves>0)
 
 run("newly allocated objects bypass the background scan cooldown", """
 frame();frame();healthy()
-state.objects[state.next]={get_short_name=function() state.saw_new=true;return 'unrelated' end}
+state.objects[state.next]={is_a=function() state.saw_new=true;return false end}
 state.next=state.next+1
 frame();healthy();assert(state.saw_new)
 """)
@@ -556,3 +558,72 @@ run('native counts above the old probe limit do not disable marker helpers', '''
 state.next=286344
 frame();healthy()
 ''')
+
+run('runtime-created health bars are found by type without a WidgetClass or fixed name', r'''
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+near(state.display.Y,436)
+state.aim=160;state.parent_location={X=1000,Y=200,Z=0};frame();healthy()
+near(state.display.X,1200)
+''', "state.family='UI_Lifebar_C';state.owner_class='BP_Enemy_HalloweenCrow_C';state.component_name='NODE_AddWidgetComponent-1_84';state.no_widget_class=true;state.component.relative={X=0,Y=0,Z=128}")
+
+run('NPC labels follow the character and retain live text and native height', r'''
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+near(state.display.Y,440)
+state.parent_location={X=1000,Y=200,Z=20};state.aim=170;state.source.label='New NPC name';frame();healthy()
+near(state.display.X,1200);near(state.display.Y,430)
+assert(state.source.label=='New NPC name' and state.world.Y==0)
+state.active=false;frame();near(state.component.relative.Z,120);assert(state.source.opacity==.7)
+''', "state.family='UI_NpcInGame_C';state.owner_class='BP_NPC_WanderingTrader_C';state.component.relative={X=0,Y=0,Z=120};state.no_widget_class=true")
+
+DAMAGE_SETUP = TEAMMATE_SETUP + r'''
+state.family='UI_Damages_C';state.owner_class='BP_UiDamages_C';state.source.label='125'
+local get=state.source.get_property
+function state.source:get_property(n)
+ if n=='TextBlock_Damages' then return state.content end
+ return get(self,n)
+end
+function state.content:get_short_name() return 'TextBlock_Damages' end
+'''
+run('floating damage tracks its moving actor and preserves animated outer scale and live numbers', r'''
+frame();frame();healthy();near(state.content.scale.Y,.5)
+state.rotation={x=10,y=10,z=0};frame();healthy()
+local x=state.native_pixel.X+2*(state.source.translation.X-3)
+local y=state.native_pixel.Y+2*(state.source.translation.Y-4)
+assert(x<1000 and y>500)
+state.aim=70;state.source.label='250';state.source.scale={X=2,Y=.8}
+for i=1,120 do frame() end;healthy()
+near(state.native_pixel.X+2*(state.source.translation.X-3),x)
+near(state.native_pixel.Y+2*(state.source.translation.Y-4),y)
+assert(state.source.scale.X==2 and state.source.scale.Y==.8 and state.source.label=='250')
+assert(state.moves==0 and state.created==0 and state.world.X==1000)
+state.world={X=1000,Y=300,Z=200};state.rotation={x=0,y=0,z=0};frame();healthy()
+near(state.native_pixel.X+2*(state.source.translation.X-3),1300)
+near(state.native_pixel.Y+2*(state.source.translation.Y-4),400)
+feature.reset();near(state.content.scale.Y,1);near(state.source.translation.X,3)
+assert(state.source.label=='250' and state.source.scale.Y==.8)
+''', DAMAGE_SETUP)
+
+run('replaced damage text is not accessed through a stale binding', r'''
+frame();frame();local child=state.content;state.objects[child:read_dword(12)]=nil
+function child:get_property() error('stale text was accessed') end
+frame();healthy();near(state.source.translation.X,3);assert(state.moves==0)
+''', DAMAGE_SETUP)
+
+run('hidden damage components release their slot and restore only their live text', r'''
+frame();frame();near(state.content.scale.Y,.5)
+state.component.visible=false;frame();healthy();near(state.content.scale.Y,1)
+near(state.source.translation.X,3);assert(state.source.opacity==.7)
+state.component.visible=true;frame();frame();healthy();near(state.content.scale.Y,.5)
+''', DAMAGE_SETUP)
+
+run('remote interaction prompts are left native without repeated rejection warnings', r'''
+for i=1,5 do frame() end;healthy();assert(state.moves==0 and state.created==0)
+near(state.source.translation.X,3);assert(state.source.opacity==.7)
+for _,message in ipairs(state.logs) do assert(not message:find('Marker skipped',1,true),message) end
+''', "state.family='UI_Interact_C';function state.source:GetOwningPlayerPawn() return state.root end")
+
+run('local prompt retries after a temporary possession gap instead of latching rejected', r'''
+frame();healthy();assert(state.source.opacity==.7)
+state.possessed=true;state.rotation={x=10,y=10,z=0};frame();frame();healthy()
+assert(state.source.translation.X~=3 and state.created==0 and state.moves==0)
+''', "state.family='UI_Interact_C';function state.source:GetOwningPlayerPawn() return state.possessed and state.actor or nil end")

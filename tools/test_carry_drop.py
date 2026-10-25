@@ -75,7 +75,7 @@ local array={get_objects_offset=function() return 0 end,get_item_distance=functi
 local initialized=false
 local function ref(o) assert(initialized);return {object=o,index=o.index,address=o:get_address(),name=o.name} end
 local function valid(r) assert(initialized);return r and state.objects[r.index]==r.object end
-package.loaded['libs/live_widgets']=function()
+package.loaded['libs/active_widgets']=function()
  return {get=function() initialized=true;return state.objects[state.key.index] and {ref(state.key)} or {} end,
  valid=valid,track=ref}
 end

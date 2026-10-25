@@ -60,7 +60,9 @@ controller aiming, readable menus, and world markers that stay where they belong
   correction, four independent edge margins, and overlap avoidance. Gameplay
   bypasses the game's curved HUD rendering stage to prevent doubled hints.
 - **Additional marker families:** shared projection adapters for enemy/object
-  health bars and dropped Joker cards preserve native content and attachment offsets.
+  health bars, NPC name labels, floating damage numbers, and dropped Joker cards
+  preserve native content and movement. Discovery supports dynamically created
+  widget components as well as the original named components.
 - **Graphics tuned for VR:** reduced distance haze, a heat-distortion workaround,
   and editable contrast and saturation multipliers.
 - **Live tuning:** adjust graphics multipliers and HUD heights during play.
