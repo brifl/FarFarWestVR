@@ -85,6 +85,25 @@ Acceptance: all four actions are reachable with stable matching hints, no
 accidental snap turns or repeated actions, and normal controls return cleanly
 when the controller leaves the head area or the layer is disabled.
 
+## Weapon-specific pointer angle tuning
+
+**Planned; configuration and design only for now.** Add per-weapon pitch/yaw
+offsets in degrees to `data/tuning.ini` so the aiming pointer better matches the
+way each equipped gun is held. This can be implemented independently of loose hands.
+
+- Identify the currently equipped weapon by stable item/class ID and select its
+  offsets automatically on equip, weapon switch, or possession change.
+- Apply offsets in controller-local orientation, with a shared default and
+  per-weapon overrides. Zero offsets preserve the current aiming behavior.
+- Reload numeric tuning during play for calibration. Preserve stabilization,
+  head-look independence, snap turning, and the separate menu pointer behavior.
+- Keep the firing direction, reticle, and actual hit location consistent; avoid
+  correcting only the visible pointer while leaving shots elsewhere.
+
+Acceptance: switching weapons selects the corresponding tuning, unknown weapons
+use the shared default, and aiming remains aligned with the held gun and impacts.
+Document the configuration keys and angle directions when implemented.
+
 ## Loose hands and tracked weapons
 
 **Design stage; implementation has not started.** See
