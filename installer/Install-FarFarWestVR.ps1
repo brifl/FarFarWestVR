@@ -126,12 +126,16 @@ function New-GameLogLink([string]$Link, [string]$Target) {
 
 function Write-GameConfig([string]$Path, [string]$Text) {
     $temporary = Join-Path (Split-Path -Parent $Path) ('.ffw-config-' + [guid]::NewGuid().ToString('N') + '.tmp')
+    $replaceBackup = $temporary + '.original'
     try {
         [IO.File]::WriteAllText($temporary, $Text, $ffwUtf8)
-        if ([IO.File]::Exists($Path)) { [IO.File]::Replace($temporary,$Path,$null) }
+        # PS 5.1 converts a null string argument to an empty path; supply a real
+        # temporary backup name. The installer retains its separate user backup.
+        if ([IO.File]::Exists($Path)) { [IO.File]::Replace($temporary,$Path,$replaceBackup) }
         else { [IO.File]::Move($temporary,$Path) }
     } finally {
         if ([IO.File]::Exists($temporary)) { [IO.File]::Delete($temporary) }
+        if ([IO.File]::Exists($replaceBackup)) { [IO.File]::Delete($replaceBackup) }
     }
 }
 
