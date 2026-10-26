@@ -10,6 +10,11 @@ local rules={
     ['hud.mission_info_offset_y']={.10,-.5,.5},
     ['hud.compass_offset_y']={.10,-.5,.5},
     ['audit.auto_start']={0,0,1},
+    ['audit.auto_seconds']={3600,10,10800},
+    ['diagnostics.gesture_enabled']={1,0,1},
+    ['diagnostics.head_radius_m']={.40,.2,.6},
+    ['diagnostics.hold_seconds']={.6,.25,2},
+    ['diagnostics.cooldown_seconds']={8,3,60},
     ['hud.left_margin']={.10,0,.4},
     ['hud.right_margin']={.10,0,.4},
     ['hud.top_margin']={.15,0,.4},
@@ -45,7 +50,7 @@ local function parse(source)
             local header=line:match('^%[([%w_]+)%]$')
             if header then
                 assert(header=='graphics' or header=='hud' or header=='audit' or header=='aim'
-                    or header=='cursor' or header=='horse','Unknown section: '..header)
+                    or header=='cursor' or header=='horse' or header=='diagnostics','Unknown section: '..header)
                 section=header
             else
                 local name,text=line:match('^([%w_]+)%s*=%s*(.-)%s*$')
@@ -58,7 +63,7 @@ local function parse(source)
                     assert(rule,'Unknown setting: '..key)
                     assert(n and n==n and n>=rule[2] and n<=rule[3],
                         key..' must be between '..tostring(rule[2])..' and '..tostring(rule[3]))
-                    assert((key~='audit.auto_start' and not key:match('%.aspect_correction$')) or n==0 or n==1,
+                    assert((key~='audit.auto_start' and key~='diagnostics.gesture_enabled' and not key:match('%.aspect_correction$')) or n==0 or n==1,
                         key..' must be 0 or 1')
                     if targets[1]>=(priorities[key] or 0) then
                         candidate[key]=n;priorities[key]=targets[1]
@@ -86,6 +91,9 @@ end
 function M.get(key)
     assert(rules[key],'Unknown tuning key: '..tostring(key))
     return values[key]
+end
+function M.snapshot()
+    local out={};for key,value in pairs(values) do out[key]=value end;return out
 end
 function M.tick(_,delta)
     poll=poll+math.min(math.max(delta or 0,0),.1)

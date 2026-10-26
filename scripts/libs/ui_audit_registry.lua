@@ -28,4 +28,9 @@ function M.visit_sources(valid,visit)
         if valid(entry.component) and valid(entry.source) then visit(entry.source.object) end
     end
 end
+function M.visit_components(valid,visit)
+    for _,entry in pairs(entries) do
+        if valid(entry.component) and valid(entry.source) then visit(entry.component,entry.source) end
+    end
+end
 return M

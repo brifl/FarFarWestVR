@@ -182,6 +182,13 @@ current coverage. Progress and planned improvements are in the [backlog](BACKLOG
 For building, backend deployment, and troubleshooting internals, see
 [development notes](docs/DEVELOPMENT.md).
 
+**Current Git builds, after the published beta:** a deliberate issue-marker
+gesture saves recent diagnostic context for later investigation. Bring both
+controllers to your ears and hold both triggers for about 0.6 seconds; two short
+vibrations confirm it. Take screenshots yourself with Virtual Desktop or SteamVR
+and use the [offline issue-capture workflow](docs/ISSUE-CAPTURE.md) to match them
+by time. This feature is not in the 0.1.0-beta.1 release ZIPs yet.
+
 ## Credits
 
 Built on [praydog's UEVR](https://github.com/praydog/UEVR) and the starting

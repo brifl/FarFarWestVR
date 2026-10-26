@@ -679,3 +679,10 @@ end
 state.is_root=false;state.no_widget=true;frame();assert(state.moves==0)
 state.no_widget=false;frame();frame();healthy();assert(state.moves>0)
 ''', "state.family='UI_Guide_C';state.is_root=true")
+
+run('a diagnostic observer failure cannot disable marker tracking or change its target', r'''
+require('libs/incident').configure(true)
+frame();frame();healthy();assert(state.moves>0 and state.created==0)
+state.aim=70;state.rotation={x=10,y=10,z=0};frame();healthy()
+assert(state.world.X==1000 and state.display.X<1000 and state.display.Y>500)
+''', "state.family='UI_Guide_C'")

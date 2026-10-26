@@ -66,6 +66,11 @@ def build(root, output, revision='HEAD'):
     if release.get('runtime_included') is not False:
         raise ValueError('This packager publishes profile/installer only; no UEVR runtime redistribution.')
     files = {p: read(p) for p in paths if selected(p)}
+    for path,content in files.items():
+        if not path.endswith('.lua'): continue
+        for dependency in re.findall(rb'\brequire\s*(?:\(\s*|,\s*)?[\'"](libs/[^\'"]+)[\'"]',content):
+            expected='scripts/'+dependency.decode()+'.lua'
+            if expected not in files: raise ValueError(f'{path} requires missing packaged module {expected}')
     missing = TOP_LEVEL - files.keys()
     if missing or 'data/tuning.ini' not in files or 'scripts/controller_aim.lua' not in files:
         raise ValueError(f'Incomplete profile: {sorted(missing)}')

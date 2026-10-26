@@ -12,11 +12,14 @@ switch back to keyboard presentation.
 
 The development [tuning.ini](../data/tuning.ini) enables `audit.auto_start = 1`.
 Public release ZIPs default to `0`; set it to `1` to opt in for troubleshooting.
-Each game launch starts a one-hour monitoring window by default. Recording rotates
+`audit.auto_seconds` sets the monitoring window; the development profile uses
+9,000 seconds (2½ hours), with a one-hour fallback when the key is absent. Recording rotates
 into a fresh capture every 30 minutes, or sooner if a file reaches 16 MiB, so late
 missions get fresh ID capacity. Earlier captures and their final status are preserved.
 A window is limited to 12 files (192 MiB of capture data). The helper stays idle after the
 window, segment limit, or a manual Stop until the next launch or Start command.
+The separate [issue-marker ring](ISSUE-CAPTURE.md) continues to sample when enabled,
+even after ordinary catalog recording ends.
 Set `auto_start = 0` to prevent
 automatic capture on future launches; Stop ends the current capture immediately.
 

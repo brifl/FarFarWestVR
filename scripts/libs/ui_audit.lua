@@ -6,9 +6,13 @@ local catalog=require('libs/ui_audit_catalog')
 local registry=require('libs/ui_audit_registry')
 local hint_layout=require('libs/hint_layout')
 local tuning=require('libs/tuning')
+local incident=require('libs/incident')
 local array,classes,library,slate,layout
 local prepared=false
 local active,file,output,elapsed,duration,store
+elapsed=0
+local failed=false
+local next_prepare=0
 local clock=os.clock
 local poll,next_query,next_flush,next_status,scan_index,next_scan=0,0,0,0,0,0
 local queue,head,visited,links,schemas={},1,{},{},{}
@@ -115,7 +119,10 @@ local function finish(reason)
     assert(file:flush());assert(file:close());file=nil
     status(reason);session_note(reason);command('done '..output)
     remaining_seconds=0
-    queue,visited,links,schemas={}, {}, {}, {}
+    if not incident.enabled() then
+        queue,visited,links,schemas={}, {}, {}, {}
+        head,link_count,schema_count=1,0,0
+    end
     log.log_info('[FarFarWest audit] '..reason..': data/'..output)
 end
 local function start(seconds,segment)
@@ -211,12 +218,19 @@ local function discover(viewport)
         local ref=track(o)
         if ref then enqueue(o) end
     end
+    registry.visit_components(valid,function(component,source)
+        local owner=track(component.object:get_outer())
+        if owner and (links[source.address] or link_count<2048) then
+            if not links[source.address] then link_count=link_count+1 end
+            links[source.address]={component=component,source=source,owner=owner}
+        end
+    end)
     -- Screen/world component widgets are not viewport roots. Seed them explicitly
     -- rather than enumerating every retained UserWidget in a long-running session.
     for _,link in pairs(links) do
         if valid(link.source) then enqueue(link.source.object) end
     end
-    scans=scans+1;next_query=elapsed+3
+    scans=scans+1;next_query=elapsed+(incident.bursting() and .25 or incident.enabled() and .5 or 3)
 end
 local function components(deadline)
     local count=object_count(array)
@@ -266,12 +280,14 @@ end
 local function sample(ref,viewport)
     if not valid(ref) then return end
     local o=ref.object
-    if o:is_a(classes.UserWidget) then
+    local visibility=o:get_property('Visibility')
+    local self_visible=visibility~=1 and visibility~=2 and (o:get_property('RenderOpacity') or 0)>0
+    if self_visible and o:is_a(classes.UserWidget) then
         local tree=o:get_property('WidgetTree');local root=tree and tree:get_property('RootWidget')
         if root then enqueue(root) end
     end
     local panel=o:is_a(classes.PanelWidget)
-    if panel then
+    if self_visible and panel then
         local count=o:GetChildrenCount();assert(count>=0 and count<=512,'Audit panel child count exceeds budget')
         for i=0,count-1 do enqueue(o:GetChildAt(i)) end
     end
@@ -337,9 +353,53 @@ local function sample(ref,viewport)
         or (class_name=='UI_Key_C' and data.visible)
         or (data.visible and data.edge and _G.farfarwest_gameplay_ready==true)
     local id=data.class..'|'..path
-    store.observe(id,data,elapsed)
+    if incident.enabled() and data.visible then
+        local transform=o:get_property('RenderTransform')
+        local pivot=o:get_property('RenderTransformPivot')
+        if transform and pivot then
+            local function vec(v) return v and {x=v.X,y=v.Y} end
+            data.transform={scale=vec(transform.Scale),translation=vec(transform.Translation),
+                shear=vec(transform.Shear),angle=transform.Angle,pivot=vec(pivot)}
+        end
+        if link then data.owner_instance=link.owner.name;data.component_instance=link.component.name end
+        local function references(object,fields)
+            local out,count={},0
+            for name in (fields or ''):gmatch('([%w_]+):ObjectProperty@%d+') do
+                local lower=name:lower()
+                if lower:find('actor',1,true) or lower:find('attach',1,true) or lower:find('target',1,true) or lower=='owner' then
+                    local value=object:get_property(name)
+                    local ref=value and track(value)
+                    if ref and valid(ref) then
+                        local outer=value:get_outer();local outer_ref=outer and track(outer)
+                        out[name]={class=value:get_class():get_full_name(),name=catalog.normalize(ref.name),
+                            outer_class=outer_ref and valid(outer_ref) and outer:get_class():get_full_name() or nil}
+                    end
+                    count=count+1;if count>=8 then break end
+                end
+            end
+            return out
+        end
+        if data.fields then data.references={widget=references(o,data.fields)} end
+        if data.owner_fields and link then
+            data.references=data.references or {}
+            data.references.owner=references(link.owner.object,data.owner_fields)
+        end
+        local offsets={UI_PingObjective_C=872,UI_ObjectPing_C=864,UI_Locator_C=832}
+        if offsets[class_name] then
+            local p=class:find_property('Location')
+            if p and p:get_offset()==offsets[class_name] then
+                local target=o:get_property('Location')
+                if target then data.target={x=target.X,y=target.Y,z=target.Z} end
+            end
+        end
+        incident.observe(id,data,ref.address)
+    end
+    -- Hidden menu branches consumed the ordinary ID reservation in long play.
+    -- Preserve known records and critical marker roots; omit new invisible noise.
+    if active and (data.visible or data.priority or store.contains(id)) then store.observe(id,data,elapsed) end
 end
 local function tick(engine,delta)
+    if failed then return end
     local begin=clock()
     local ok,err=pcall(function()
         local dt=math.min(math.max(delta or 0,0),.25)
@@ -359,12 +419,22 @@ local function tick(engine,delta)
             end
             if auto_pending then
                 auto_pending=false
-                if tuning.get('audit.auto_start')==1 then start(3600) end
+                if tuning.get('audit.auto_start')==1 then start(tuning.get('audit.auto_seconds')) end
             end
         end
-        if not active then return end
+        if not active and not incident.enabled() then return end
+        if not active and (not engine or not vr.is_runtime_ready()) then return end
+        if not prepared and not active then
+            if clock()<next_prepare then return end
+            next_prepare=clock()+1
+            for _,name in ipairs({'Widget','UserWidget','WidgetTree','PanelWidget','WidgetComponent',
+                'WidgetBlueprintLibrary','SlateBlueprintLibrary','WidgetLayoutLibrary'}) do
+                if not api:find_uobject('Class /Script/UMG.'..name) then return end
+            end
+        end
+        if not prepared then prepare() end
         elapsed=elapsed+dt
-        if elapsed>=duration or store.stats().full then
+        if active and (elapsed>=duration or store.stats().full) then
             local left=remaining_seconds+math.max(0,duration-elapsed)
             local segment=segment_number+1
             local reason=store.stats().full and 'size limit' or left>0 and 'rotated' or 'completed'
@@ -373,12 +443,12 @@ local function tick(engine,delta)
             if left>0 and segment<=12 then start(left,segment) end
             return
         end
-        if elapsed>=next_flush then
+        if active and elapsed>=next_flush then
             local _,pending=store.flush(16)
             if pending==0 then file:flush();next_flush=elapsed+30 end
         end
-        if elapsed>=next_status then status('active');next_status=elapsed+10 end
-        if elapsed>=next_ledger then session_note('checkpoint');next_ledger=elapsed+300 end
+        if active and elapsed>=next_status then status('active');next_status=elapsed+10 end
+        if active and elapsed>=next_ledger then session_note('checkpoint');next_ledger=elapsed+300 end
         if not engine or not vr.is_runtime_ready() then return end
         field(engine:get_class(),'GameViewport',3448)
         local viewport=engine:get_property('GameViewport')
@@ -395,13 +465,15 @@ local function tick(engine,delta)
             local sampled,reason=pcall(sample,ref,size)
             if not sampled then
                 errors=errors+1
-                if errors<=8 then store.event({type='error',message=tostring(reason),widget=ref.name}) end
-                if errors>=64 then finish('error limit');break end
+                incident.count('audit.sample:'..tostring(reason),tostring(reason),'ui-audit','warning')
+                if active and errors<=8 then store.event({type='error',message=tostring(reason),widget=ref.name}) end
+                if errors>=64 then finish('error limit');failed=true;break end
             end
         end
         max_tick_ms=math.max(max_tick_ms,(clock()-begin)*1000)
     end)
     if not ok then
+        failed=true
         log.log_warn('[FarFarWest audit] Stopped safely: '..tostring(err))
         active=false
         errors=errors+1

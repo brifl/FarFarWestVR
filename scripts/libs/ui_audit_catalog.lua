@@ -111,6 +111,7 @@ function M.new(write,options)
         return true,0
     end
     function C.stats() return {records=count,bytes=bytes,dropped=dropped,full=full} end
+    function C.contains(id) return records[id]~=nil end
     return C
 end
 return M

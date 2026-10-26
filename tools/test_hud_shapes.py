@@ -218,3 +218,9 @@ root.parent=nil;frame();near(group.scale.Y,.646875)
 state.roots['WidgetBlueprintGeneratedClass /Game/Interfaces/UI_CrypticSnake.UI_CrypticSnake_C']={}
 frame();healthy();near(group.scale.Y,1)
 ''')
+
+run('a diagnostic observer failure cannot disable the HUD correction', '''
+require('libs/incident').configure(true)
+frame();frame();healthy();near(state.image.scale.Y,.8*.646875)
+near(state.panels[2].scale.Y,.85*.646875)
+''')

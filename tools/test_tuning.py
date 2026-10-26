@@ -134,6 +134,15 @@ def run(name, code):
     print('PASS', name)
 
 
+run('diagnostic gesture and duration tuning validate and snapshots cannot alter live values', r'''
+reload('[audit]\nauto_seconds=9000\n[diagnostics]\ngesture_enabled=1\nhead_radius_m=.4\nhold_seconds=.6\ncooldown_seconds=8\n')
+near(tuning.get('audit.auto_seconds'),9000);near(tuning.get('diagnostics.hold_seconds'),.6)
+local snapshot=tuning.snapshot();snapshot['diagnostics.head_radius_m']=99
+near(tuning.get('diagnostics.head_radius_m'),.4)
+reload('[diagnostics]\ngesture_enabled=.5\n');near(tuning.get('diagnostics.gesture_enabled'),1)
+''')
+
+
 run('INI reload, comments, defaults and invalid-file preservation', r'''
 near(tuning.get('graphics.saturation_multiplier'),.95)
 near(tuning.get('hud.dialogue_offset_y'),-.10)

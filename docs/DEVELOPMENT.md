@@ -5,6 +5,8 @@ refer to the existing WSL installation on robot1-x.
 
 Public profile/installer packaging and tagged beta publication are documented in
 [RELEASING.md](RELEASING.md). They do not replace the Git/WSL workflow below.
+For timestamped gesture reports, rolling UI/tracking context, compact log counters,
+and manually supplied screenshot correlation, see [ISSUE-CAPTURE.md](ISSUE-CAPTURE.md).
 
 See the [README](../README.md) for completed features and controls,
 [BACKLOG.md](../BACKLOG.md) for open work, and the

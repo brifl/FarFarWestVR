@@ -38,9 +38,11 @@ try {
     Check (Test-Path -LiteralPath (Join-Path $profile 'scripts\controller_aim.lua')) 'Fresh installation creates the complete profile'
     Check ([IO.File]::ReadAllText((Join-Path $profile 'data\controller_aim_backend.txt')) -ceq "ue5-camera-aim-pose-v1`n") 'Controller marker retains exact LF encoding'
     Check (Test-Path -LiteralPath (Join-Path $backup 'UserEngine.ini')) 'Original game configuration is backed up'
+    Check (Test-Path -LiteralPath (Join-Path $profile 'data\issue_screenshots') -PathType Container) 'Manual screenshot correlation folder is created'
     if ($realLinks) {
         $link=Join-Path $profile 'data\FarFarWest.log'
         Check ((Get-Item -LiteralPath $link).LinkType -eq 'SymbolicLink') 'Installer creates a real Windows game-log link'
+        Check ((Get-Item -LiteralPath (Join-Path $profile 'data\UEVR.log')).LinkType -eq 'SymbolicLink') 'Diagnostic log link points to the active profile log'
         Move-Item -LiteralPath $log -Destination ($log+'.old')
         [IO.File]::WriteAllText($log,'rotated log')
         Check ([IO.File]::ReadAllText($link) -ceq 'rotated log') 'Log link follows game-log replacement across launches'

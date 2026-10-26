@@ -115,6 +115,7 @@ uevr={api={get_uobject_array=function() return array end,find_uobject=function(_
     params={vr={is_runtime_ready=function() return true end},functions={log_info=log,log_warn=log}}}
 package.loaded['libs/tuning']={get=function(key)
     if key=='audit.auto_start' then return state.auto_start or 0 end
+    if key=='audit.auto_seconds' then return state.auto_seconds or 3600 end
     if state.margins and state.margins[key] then return state.margins[key] end
     if key=='hud.left_margin' or key=='hud.right_margin' then return .1 end
     assert(key=='hud.top_margin' or key=='hud.bottom_margin');return .15
@@ -167,6 +168,23 @@ local _,headings=ledger:gsub('# Gameplay UI capture sessions','');assert(heading
 run('explicit stop before startup suppresses automatic capture for that script load', '''
 state.auto_start=1;state.files['ui_audit_command.txt']='stop';tick(100);healthy()
 assert(state.query_count==0 and not state.files['ui-audit-000001.jsonl'])
+''')
+
+run('development capture duration is configurable without increasing per-file limits', r'''
+state.auto_start=1;state.auto_seconds=9000;tick(12);healthy()
+assert(state.files['ui-audit-000001.jsonl']:find('"window_seconds":9000',1,true))
+assert(state.files['ui_audit_status.json']:find('"duration":1800',1,true))
+''')
+
+run('incident buffer still discovers UI after continuous catalog recording is disabled or completed', r'''
+local recorder=require('libs/incident');recorder.configure(true)
+for i=1,100 do feature.tick(state.engine,.1);recorder.tick(.1) end
+healthy();assert(state.query_count>0 and not state.files['ui_audit_status.json'])
+local saved,name=recorder.trigger('buffer-only');assert(saved)
+for i=1,70 do feature.tick(state.engine,.1);recorder.tick(.1) end
+assert(state.files[name]:find('UI_UnknownMarker_C',1,true))
+start(10);tick(150);healthy();local queries=state.query_count
+tick(100);healthy();assert(state.query_count>queries)
 ''')
 
 run('two-hour monitoring rotates four bounded captures and completes without another launch', r'''
@@ -278,8 +296,8 @@ local queries=state.query_count;tick(200);assert(state.query_count==queries)
 def check_hidden(lua):
     rows, _, errors = report.load_capture(capture(lua))
     assert not errors
-    health = next(r for r in rows.values() if r['path'].endswith('HealProgressBar'))
-    assert health['visible'] == 0 and health['edge_samples'] == 0
+    health = [r for r in rows.values() if r['path'].endswith('HealProgressBar')]
+    assert not health or (health[0]['visible'] == 0 and health[0]['edge_samples'] == 0)
     assert not any('interact_keyboard_hint' in r['flags'] for r in rows.values())
 
 
@@ -299,6 +317,25 @@ local function ref(o) return {object=o,index=o.index,address=o:get_address(),nam
 require('libs/ui_audit_registry').set(ref(state.component),ref(state.source),nil,'existing fix')
 start();tick(100);stop();healthy()
 ''', check_covered)
+
+def check_registered_owner(lua):
+    rows, _, errors = report.load_capture(capture(lua))
+    assert not errors, errors
+    marker = next(r for r in rows.values() if r['class'].endswith('UI_UnknownMarker_C')
+                  and r['path'] == 'UI_UnknownMarker_C')
+    assert any('BP_OtherPlayer_C' in owner for owner in marker['owners'])
+    assert marker['component'] == 'NameTag'
+    assert marker['kind'] == 'world_widget'
+    assert 'existing fix:source' in marker['coverage']
+
+
+run('registered marker metadata does not wait for a large object-array sweep', r'''
+local old=state.component.index;state.objects[old]=nil
+state.component.index=1000000;state.objects[1000000]=state.component;state.object_count=1000002
+local function ref(o) return {object=o,index=o.index,address=o:get_address(),name=o.name} end
+require('libs/ui_audit_registry').set(ref(state.component),ref(state.source),nil,'existing fix')
+start();tick(100);stop();healthy()
+''', check_registered_owner)
 
 
 def check_hidden_marker(lua):

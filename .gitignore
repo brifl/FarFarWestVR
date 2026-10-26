@@ -1,6 +1,12 @@
 log.txt
 crash.dmp
 /data/FarFarWest.log
+/data/UEVR.log
+/data/issue-*.jsonl
+/data/log-digest-*.json
+/data/issue_capture_status.json
+/data/issue_capture_command.txt
+/data/issue_screenshots/
 /data/controller_aim_backend.txt
 /data/reticle_mode.txt
 /data/world_markers_dev.lua
@@ -11,4 +17,5 @@ crash.dmp
 /data/ui-audit-*.status.json
 /data/ui_audit_sessions.md
 /diagnostics/ui-audit/
+/diagnostics/issues/
 /dist/

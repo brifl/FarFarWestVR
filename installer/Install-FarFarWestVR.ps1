@@ -177,6 +177,9 @@ function Invoke-ProfileInstall([string]$Profile, [string]$LogPath, [string]$Game
             ConvertTo-Json | Set-Content -LiteralPath (Join-Path $backup 'install.json') -Encoding UTF8
         if ($hadProfile) { Move-Item -LiteralPath $Profile -Destination (Join-Path $backup 'profile'); $movedOld=$true }
         Move-Item -LiteralPath $staging -Destination $Profile; $installedNew=$true
+        [IO.File]::WriteAllText((Join-Path $Profile 'log.txt'),'',$ffwUtf8)
+        New-GameLogLink (Join-Path $Profile 'data\UEVR.log') (Join-Path $Profile 'log.txt')
+        [IO.Directory]::CreateDirectory((Join-Path $Profile 'data\issue_screenshots')) | Out-Null
         [IO.Directory]::CreateDirectory($configFolder) | Out-Null
         $configTouched=$true
         Write-GameConfig $configPath $newConfig

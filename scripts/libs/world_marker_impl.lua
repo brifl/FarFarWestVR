@@ -44,6 +44,7 @@ local mission_guide={owner_class="^BP_TextGuide.*_C$",field="InteractTextHolder"
 local screen_projection=require('libs/screen_widget_projection')
 local ui_shape=require('libs/ui_shape')
 local audit_registry=require('libs/ui_audit_registry')
+local incident=require('libs/incident')
 local rejected={}
 local fast_discovery
 local discovery_factory=require('libs/marker_discovery')
@@ -620,6 +621,29 @@ callbacks.tick = function(engine,delta)
                     else point=entry.component.object:K2_GetComponentLocation() end
                     local pixel=geometry.project({x=point.X,y=point.Y,z=point.Z},camera.position,
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
+                    if incident.enabled() and not entry.diagnostic_failed and elapsed>=(entry.next_diagnostic or 0) then
+                        entry.next_diagnostic=elapsed+.25
+                        local diagnostic_ok,diagnostic_error=pcall(function()
+                        local owner_origin
+                        if entry.kind.world_label then
+                            local p=entry.owner.object:K2_GetActorLocation()
+                            owner_origin={x=p.X,y=p.Y,z=p.Z}
+                        end
+                        local class=entry.source.object:get_class():get_full_name()
+                        incident.observe('tracking|'..class..'|'..(entry.kind.label or 'marker'),{
+                            visible=true,kind='marker_tracking',class=class,path=entry.kind.label or 'marker',
+                            owner_class=entry.owner.object:get_class():get_full_name(),owner_instance=entry.owner.name,
+                            component_instance=entry.component.name,coverage=entry.kind.label or 'marker',
+                            target={x=point.X,y=point.Y,z=point.Z},tracking={owner_origin=owner_origin,
+                                eye_position=camera.position,eye_rotation=camera.rotation,
+                                projected=pixel and {x=pixel.x,y=pixel.y,inside=pixel.inside} or nil,
+                                native_offset=entry.relative}},entry.component.address)
+                        end)
+                        if not diagnostic_ok then
+                            entry.diagnostic_failed=true
+                            incident.count('marker-diagnostics',tostring(diagnostic_error),'markers','warning')
+                        end
+                    end
                     if pixel and pixel.inside then
                         if entry.screen then
                             stage="reproject live "..(entry.kind.label or 'interaction prompt')

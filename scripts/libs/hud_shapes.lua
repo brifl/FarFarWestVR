@@ -4,6 +4,7 @@ return function()
 local api,vr,log=uevr.api,uevr.params.vr,uevr.params.functions
 local tuning=require('libs/tuning')
 local shape=require('libs/ui_shape')
+local incident=require('libs/incident')
 local query=require('libs/live_widgets')
 local specs={
  {path='/Game/Interfaces/UI_Player.UI_Player_C',children={Image_Compass=1008,Overlay_Pings=944}},
@@ -119,6 +120,22 @@ local function tick(engine,delta)
     if shape.apply(entry.binding,factor,entry.scale_key and tuning.get(entry.scale_key) or 1) and not entry.reported then
      entry.reported=true;log.log_info('[FarFarWest HUD shape] Corrected '..entry.ref.name..' while preserving native placement.')
     end
+   end
+   if valid and incident.enabled() and not entry.diagnostic_failed and elapsed>=(entry.next_diagnostic or 0) then
+    entry.next_diagnostic=elapsed+.25
+    local diagnostic_ok,diagnostic_error=pcall(function()
+    local o=entry.ref.object
+    local class=entry.root.object:get_class():get_full_name()
+    local function vec(v) return v and {x=v.X,y=v.Y} end
+    local t=o:get_property('RenderTransform')
+    incident.observe('shape|'..class..'|'..(entry.field or 'root'),{
+     visible=true,kind='shape_adapter',class=class,path=entry.field or 'root',
+     transform={scale=vec(t.Scale),translation=vec(t.Translation),pivot=vec(o:get_property('RenderTransformPivot')),
+      angle=t.Angle,shear=vec(t.Shear)},tracking={disabled=entry.binding.disabled,
+      anchor=vec(entry.binding.anchor),baseline_scale=vec(entry.binding.scale),applied=vec(entry.binding.applied)},
+    },entry.ref.address)
+    end)
+    if not diagnostic_ok then entry.diagnostic_failed=true;incident.count('shape-diagnostics',tostring(diagnostic_error),'hud','warning') end
    end
   end
  end)

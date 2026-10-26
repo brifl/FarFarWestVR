@@ -106,6 +106,17 @@ class ReleaseTests(unittest.TestCase):
             digest, name = line.split('  ')
             self.assertEqual(digest, hashlib.sha256((self.out/name).read_bytes()).hexdigest())
 
+    def test_missing_committed_lua_dependency_stops_packaging(self):
+        original=self.manifest['source_commit']
+        try:
+            subprocess.run(['git','-C',str(self.root),'rm','--cached','-q','scripts/libs/reticle_projection.lua'],check=True)
+            subprocess.run(['git','-C',str(self.root),'-c','user.name=Release Test','-c','user.email=test@example.invalid',
+                            'commit','-qm','missing runtime dependency'],check=True)
+            with self.assertRaisesRegex(ValueError,'missing packaged module'):
+                build(self.root,Path(self.temp.name)/'broken')
+        finally:
+            subprocess.run(['git','-C',str(self.root),'reset','--mixed','--quiet',original],check=True)
+
     def test_publisher_validates_before_requesting_credentials(self):
         with patch.dict('os.environ', {}, clear=True), patch('urllib.request.urlopen') as request:
             with self.assertRaises(SystemExit):
