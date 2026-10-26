@@ -8,8 +8,13 @@ function M.classify(line,source)
     local severity=(line:find('[error]',1,true) or line:find('Error:',1,true) or line:find('Fatal error',1,true)) and 'error'
         or (line:find('[warning]',1,true) or line:find('Warning:',1,true)) and 'warning'
     if not severity then return end
-    local message=line:match('%[Plugin%]%s*(.*)') or line:gsub('^%[[^%]]*%]','')
-    message=message:gsub('_C_%d+','_C_*'):gsub('0x%x+','0x*'):sub(1,600)
+    local message=line:match('%[Plugin%]%s*(.*)')
+    if not message then
+        message=line:gsub('^%[[^%]]*%]%s*','')
+        -- Unreal prefixes every line with a changing frame number after its timestamp.
+        if source=='game' then message=message:gsub('^%[%s*%d+%]%s*','') end
+    end
+    message=message:gsub('%s+$',''):gsub('_C_%d+','_C_*'):gsub('0x%x+','0x*'):sub(1,600)
     local documented=message:find('Skipping unsupported pawn BP_LoadingScreen_C',1,true)~=nil
         or (message:find('Skipped UI_DisturbanceIncrease_C',1,true)~=nil
             and message:find('Rotated/sheared overlay',1,true)~=nil)
@@ -19,7 +24,7 @@ function M.new(recorder)
     local json=require('libs/ui_audit_catalog').json
     local elapsed,next_poll,next_save=0,0,0
     local streams={{name='UEVR.log',source='uevr'},{name='FarFarWest.log',source='game'}}
-    local counts,count,overflow={},0,0
+    local counts,count,ordinary,overflow={},0,0,0
     local output='log-digest-'..os.date('!%Y%m%dT%H%M%SZ')..'.json'
     for n=1,100 do
         local old=io.open(output,'rb')
@@ -29,7 +34,7 @@ function M.new(recorder)
     local function save()
         local file=io.open(output,'wb');if not file then return end
         file:write(json({version=1,utc=os.date('!%Y-%m-%dT%H:%M:%SZ'),messages=counts,
-            overflow=overflow,uevr_log_available=streams[1].available or false,
+            overflow=overflow,gesture=recorder.gesture_status(),uevr_log_available=streams[1].available or false,
             skipped_uevr_bytes=streams[1].skipped_bytes or 0,skipped_game_bytes=streams[2].skipped_bytes or 0,
             note='Counts since this script load. Original engine/plugin log files are not modified.'})..'\n')
         file:close()
@@ -40,8 +45,10 @@ function M.new(recorder)
         local timestamp=line:match('^%[([^%]]+)%]') or os.date('!%Y-%m-%dT%H:%M:%SZ')
         local row=counts[key]
         if not row then
-            if count>=256 then overflow=overflow+1;return end
+            -- Reserve dictionary capacity for errors after a noisy game warning stream.
+            if count>=256 or (severity~='error' and ordinary>=192) then overflow=overflow+1;return end
             count=count+1
+            if severity~='error' then ordinary=ordinary+1 end
             row={message=message,source=source,severity=severity,documented=documented,count=0,first=timestamp}
             counts[key]=row
         end

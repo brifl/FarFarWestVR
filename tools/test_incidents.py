@@ -166,6 +166,23 @@ local a=d.classify('[x] [warning] [Plugin] Failed UI_Test_C_12345','uevr')
 local b=d.classify('[x] [warning] [Plugin] Failed UI_Test_C_54321','uevr');assert(a==b)
 assert(d.classify('[x] [info] ordinary render message','uevr')==nil)
 ''')
+run('Unreal timestamps, frame numbers and CRLF do not multiply one warning into dictionary entries',r'''
+local d=require('libs/log_digest')
+local a,message=d.classify('[2026.10.26-08.06.02:113][ 83]LogEOSSDK: Warning: Missing user\r','game')
+local b=d.classify('[2026.10.26-10.06.06:193][248]LogEOSSDK: Warning: Missing user\r','game')
+assert(a==b and message=='LogEOSSDK: Warning: Missing user')
+local c=d.classify('[2026.10.26-10.06.06:193][248]LogEOSSDK: Warning: Different warning','game')
+assert(c~=a)
+''')
+run('warning noise leaves dictionary capacity for a subsequent new error',r'''
+state.files['UEVR.log']='';state.files['FarFarWest.log']=''
+local d=require('libs/log_digest').new(recorder);state.digest=d.output()
+for i=1,200 do state.files['FarFarWest.log']=state.files['FarFarWest.log']..'[t][ 42]LogTest: Warning: unique-'..i..'\r\n' end
+state.files['FarFarWest.log']=state.files['FarFarWest.log']..'[t][ 43]LogTest: Error: Important new failure\r\n'
+d.flush()
+assert(state.files[state.digest]:find('Important new failure',1,true))
+assert(state.files[state.digest]:find('"overflow":8',1,true))
+''')
 
 def check_logs(lua):
     s=lua.globals().state
@@ -213,6 +230,23 @@ assert(#state.haptics==4)
 local status=state.files['issue_capture_status.json'];assert(status and status:find('ears%-and%-both%-triggers'))
 frame(60)
 for _,line in ipairs(state.logs) do assert(not line:find('stopped safely',1,true),line) end
+assert(recorder.gesture_status().marked==1)
+''')
+run('a rejected physical chord records the failed geometry test without claiming a report',FEATURE+r'''
+local native_pose=uevr.params.vr.get_pose
+uevr.params.vr.get_pose=function(index,p,q) native_pose(index,p,q);if index>0 then p.z=-.28 end end
+frame(1);state.left=true;state.right=true;frame(10)
+local status=recorder.gesture_status()
+assert(#state.haptics==0 and status.marked==0 and status.attempts==1)
+assert(status.last_attempt.reason=='left_too_far_forward_back')
+assert(status.last_attempt.pose.left.distance_m<.4 and status.last_attempt.pose.left.depth_m>.22)
+assert(status.closest_attempt.attempt.reason=='left_too_far_forward_back')
+state.left=false;state.right=false;frame(1)
+local found=false
+for name,contents in pairs(state.files) do
+ if name:find('log%-digest%-') and contents:find('left_too_far_forward_back',1,true) then found=true end
+end
+assert(found)
 ''')
 
 with TemporaryDirectory() as temp:
@@ -264,3 +298,19 @@ with TemporaryDirectory() as temp:
         else:raise AssertionError('unsafe ZIP path accepted')
     assert not (root/'outside.png').exists()
     print('PASS collector rejects unsafe screenshot archive paths')
+
+with TemporaryDirectory() as temp:
+    root=Path(temp)
+    messages={}
+    for frame,count in [(83,5),(248,2)]:
+        message=f'[{frame:3}]LogEOSSDK: Warning: Missing user\r'
+        messages['game:'+message]={'message':message,'source':'game','severity':'warning','count':count}
+    digest={'messages':messages,'overflow':8,'gesture':{'frames':100,'ready_frames':80,
+        'attempts':1,'marked':0,'last_attempt':{'reason':'left_too_far_forward_back'}}}
+    (root/'log-digest-20261026T000000Z.json').write_text(json.dumps(digest))
+    issue_report.write_report(root)
+    text=(root/'REPORT.md').read_text()
+    assert text.count('Missing user')==1 and '| 7 | no |' in text
+    assert 'Dictionary capacity omitted 8' in text
+    assert 'left_too_far_forward_back' in text and '80 / 100' in text
+    print('PASS offline index merges legacy frame counters, flags omissions and explains rejected gestures')

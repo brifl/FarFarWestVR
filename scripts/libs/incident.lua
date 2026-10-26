@@ -7,6 +7,7 @@ local buckets,definitions={},{}
 local pending,writer,next_id=nil,nil,0
 local max_bucket,max_definitions,max_file=256,2048,2097152
 local skipped,definition_count,epoch=0,0,0
+local gesture_status
 local function bucket()
     local generation=math.floor(now*2)
     local slot=generation%21+1
@@ -23,6 +24,10 @@ local function bucket()
     return b
 end
 function M.enabled() return enabled end
+function M.gesture_status(value)
+    if value~=nil then gesture_status=value end
+    return gesture_status
+end
 function M.now() return now end
 function M.configure(value)
     local next_enabled=value==true

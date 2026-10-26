@@ -2,20 +2,30 @@
 local M={}
 local function finite(n) return type(n)=='number' and n==n and math.abs(n)<10000 end
 local function vector(p) return p and finite(p.x) and finite(p.y) and finite(p.z) end
-function M.at_ears(head,left,right,rotation,radius)
-    if not vector(head) or not vector(left) or not vector(right) or not rotation then return false end
+function M.at_ears(head,left,right,rotation,radius,detailed)
+    local function invalid(reason) return false,detailed~=false and {reason=reason} or nil end
+    if not vector(head) or not vector(left) or not vector(right) or not rotation then return invalid('invalid_pose') end
     local x,y,z,w=rotation.x,rotation.y,rotation.z,rotation.w
-    if not finite(x) or not finite(y) or not finite(z) or not finite(w) then return false end
+    if not finite(x) or not finite(y) or not finite(z) or not finite(w) then return invalid('invalid_rotation') end
     local norm=x*x+y*y+z*z+w*w
-    if norm<.5 or norm>1.5 then return false end
+    if norm<.5 or norm>1.5 then return invalid('invalid_rotation') end
     local rx,ry,rz=1-2*(y*y+z*z)/norm,2*(x*y+w*z)/norm,2*(x*z-w*y)/norm
     local fx,fy,fz=-2*(x*z+w*y)/norm,2*(w*x-y*z)/norm,2*(x*x+y*y)/norm-1
-    local function near(p,side)
+    local metrics=detailed~=false and {radius_m=radius} or nil
+    local function near(p,side,name)
         local dx,dy,dz=p.x-head.x,p.y-head.y,p.z-head.z
-        return dx*dx+dy*dy+dz*dz<=radius*radius and (dx*rx+dy*ry+dz*rz)*side>.10
-            and math.abs(dx*fx+dy*fy+dz*fz)<.22
+        local distance=math.sqrt(dx*dx+dy*dy+dz*dz)
+        local lateral=(dx*rx+dy*ry+dz*rz)*side
+        local depth=math.abs(dx*fx+dy*fy+dz*fz)
+        if metrics then metrics[name]={distance_m=distance,side_m=lateral,depth_m=depth} end
+        local reason=distance>radius and 'too_far' or lateral<=.10 and 'wrong_side'
+            or depth>=.22 and 'too_far_forward_back' or nil
+        if metrics and reason and not metrics.reason then metrics.reason=name..'_'..reason end
+        return reason==nil
     end
-    return near(left,-1) and near(right,1)
+    local l,r=near(left,-1,'left'),near(right,1,'right')
+    if metrics then metrics.reason=metrics.reason or 'at_ears' end
+    return l and r,metrics
 end
 function M.new()
     local held,latched,cooldown=0,true,0
@@ -35,6 +45,7 @@ function M.new()
             held=0;latched=true;cooldown=delay;return true
         end,
         reset=function() held=0;latched=true end,
+        status=function() return {held_seconds=held,release_required=latched,cooldown_seconds=cooldown} end,
     }
 end
 return M

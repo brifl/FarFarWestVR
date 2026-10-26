@@ -99,11 +99,30 @@ def write_report(directory, tolerance=30):
             lines += [f'| `{markdown(key)}` | {count} |' for key, count in issue['logs'].most_common(30)]
         note = directory/(Path(issue['file']).stem + '.notes.md')
         if note.exists(): lines += ['', f'[Your notes]({note.name})']
-    totals = Counter(); messages = {}
-    for path in directory.glob('log-digest-*.json'):
+    totals = Counter(); messages = {}; gesture_sessions=[]; overflow=0
+    for path in sorted(directory.glob('log-digest-*.json')):
         digest = json.loads(path.read_text())
+        overflow+=digest.get('overflow',0)
+        if digest.get('gesture'): gesture_sessions.append((path.name,digest['gesture']))
         for key, value in digest.get('messages', {}).items():
+            # Older captures included Unreal's changing frame prefix in the key.
+            # Merge those existing counters without altering the archived evidence.
+            value=dict(value,message=value['message'].strip())
+            if value.get('source')=='game':
+                value['message']=re.sub(r'^\[\s*[0-9]+\]\s*','',value['message'])
+                key='game:'+value['message']
             totals[key] += value['count']; messages[key] = value
+    if gesture_sessions:
+        lines += ['', '## Gesture recognition', '',
+                  'Trigger counts are sampled frames, not separate presses. Failed chords retain their geometry and detector state in the session digest.', '',
+                  '| Session | Ready frames | Left / right trigger frames | Both-trigger attempts | Marked | Last result / closest result |',
+                  '| --- | ---: | ---: | ---: | ---: | --- |']
+        for name,g in gesture_sessions:
+            last=g.get('last_attempt',{}).get('reason',g.get('state','?'))
+            closest=g.get('closest_attempt',{}).get('attempt',{}).get('reason','none recorded')
+            lines.append(f"| [{name}]({name}) | {g.get('ready_frames',0)} / {g.get('frames',0)} | "
+                         f"{g.get('left_trigger_frames',0)} / {g.get('right_trigger_frames',0)} | "
+                         f"{g.get('attempts',0)} | {g.get('marked',0)} | {markdown(last)} / {markdown(closest)} |")
     lines += ['', '## Repeated messages across collected sessions', '',
               'One dictionary entry and counter per message. Counts cover the tailed intervals; raw UEVR/plugin logs are unchanged.', '',
               '| Message | Count | Documented |', '| --- | ---: | --- |']
@@ -112,6 +131,8 @@ def write_report(directory, tolerance=30):
         count=totals[key]
         value = messages[key]
         lines.append(f"| `{markdown(value['message'])}` | {count} | {'yes' if value.get('documented') else 'no'} |")
+    if overflow:
+        lines += ['',f'Dictionary capacity omitted {overflow} message observations across these sessions. Counts are incomplete; the raw logs retain those messages.']
     if unmatched: lines += ['', '## Unmatched screenshots', ''] + [f'- [{markdown(n)}](<{n}>)' for n in unmatched]
     lines += ['', 'Rename an image with an issue filename prefix to associate it explicitly. '
               'Keep personal notes in a same-named `.notes.md` file; regenerating this report preserves them.', '']

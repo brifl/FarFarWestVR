@@ -114,6 +114,19 @@ and skipped bytes are reported. This reduces diagnostic/report volume; it does
 not change the upstream plugin’s raw log output. Raw log suppression remains
 separate work so control behavior is preserved.
 
+If a gesture gives no confirmation, the session digest now also records whether
+the headset/controllers were ready, each trigger was detected, and a chord failed
+the distance, side, depth, release, cooldown, or hold check. The offline index
+summarizes these counters; the digest retains the measured distances for review.
+The existing UEVR left-head D-pad gesture remains enabled as configured. Its
+implementation adds D-pad directions and suppresses stick axes; this recorder
+reads the underlying trigger actions independently of gamepad remapping.
+
+Changing Unreal frame counters are removed from message keys, and dictionary
+capacity is reserved for errors after warning noise. The report flags capacity
+omissions and also merges older captured frame-counter variants when reviewing
+previous sessions. A full dictionary never proves that later warnings were absent.
+
 Generated reports, digests, and screenshots stay local and are excluded from Git
 and release ZIPs. Review engine warning text and screenshots before posting them
 to a public issue. This workflow is intended to make live debugging a fallback.
