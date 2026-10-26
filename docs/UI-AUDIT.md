@@ -10,7 +10,8 @@ switch back to keyboard presentation.
 
 ## Multiple play sessions
 
-The installed [tuning.ini](../data/tuning.ini) enables `audit.auto_start = 1`.
+The development [tuning.ini](../data/tuning.ini) enables `audit.auto_start = 1`.
+Public release ZIPs default to `0`; set it to `1` to opt in for troubleshooting.
 Each game launch starts a one-hour monitoring window by default. Recording rotates
 into a fresh capture every 30 minutes, or sooner if a file reaches 16 MiB, so late
 missions get fresh ID capacity. Earlier captures and their final status are preserved.

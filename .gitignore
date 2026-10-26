@@ -11,3 +11,4 @@ crash.dmp
 /data/ui-audit-*.status.json
 /data/ui_audit_sessions.md
 /diagnostics/ui-audit/
+/dist/

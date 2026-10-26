@@ -1,0 +1,25 @@
+name: Installation help
+description: Trouble downloading, installing, or launching the beta
+title: '[Install] '
+body:
+  - type: input
+    id: beta
+    attributes:
+      label: Beta version and downloaded file
+      placeholder: 0.1.0-beta.1, Setup.zip
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Include the step that failed and the exact error. A screenshot helps. Remove private information from logs.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Your setup
+      description: Windows version, game version, headset, PC VR connection, and whether you have the matching custom UEVR runtime.
+    validations:
+      required: true

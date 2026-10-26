@@ -1,0 +1,43 @@
+name: Package and publish beta
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Fetch the exact tagged commit
+        shell: pwsh
+        env:
+          RELEASE_SHA: ${{ github.sha }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          git init .
+          git remote add origin "https://github.com/$env:RELEASE_REPOSITORY.git"
+          git fetch --depth=1 origin $env:RELEASE_SHA
+          if ($LASTEXITCODE -ne 0) { throw 'Release checkout failed' }
+          git checkout --detach FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Release checkout failed' }
+      - name: Check packaging and build scrubbed ZIPs
+        shell: pwsh
+        run: |
+          python tools/test_release.py
+          if ($LASTEXITCODE -ne 0) { throw 'Packaging tests failed' }
+          python tools/package_release.py
+          if ($LASTEXITCODE -ne 0) { throw 'Packaging failed' }
+          $version = (Get-Content release.json -Raw | ConvertFrom-Json).version
+          powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File tools/test_installer.ps1 -SetupZip "dist/FarFarWestVR-$version-Setup.zip" -RequireRealLinks
+          if ($LASTEXITCODE -ne 0) { throw 'Windows installer tests failed' }
+      - name: Publish prerelease after validating all assets
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python tools/publish_release.py --tag $env:RELEASE_TAG
+          if ($LASTEXITCODE -ne 0) { throw 'Release publication failed' }

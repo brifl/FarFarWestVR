@@ -1,7 +1,23 @@
-# Far Far West VR — Beta
+# Far Far West VR — Beta 0.1.0-beta.1
 
-A VR extension for **Far Far West**, built on UEVR, with controller aiming,
+Play the Windows PC game **Far Far West** in VR, with controller aiming,
 readable menus, and a HUD adapted for the headset.
+
+[**Download the beta**](https://github.com/brifl/FarFarWestVR/releases/tag/v0.1.0-beta.1) ·
+[Installation help](docs/SETUP.md) ·
+[Report a problem](https://github.com/brifl/FarFarWestVR/issues/new/choose)
+
+**UEVR** is praydog’s tool for adding VR to Unreal Engine games. This project is
+a game-specific **profile**: settings, scripts, and controller mappings that run
+inside UEVR. It requires a VR-capable Windows PC and your own copy of the game;
+it is not a standalone Quest app.
+
+**Runtime availability:** this release contains the profile and Windows installer.
+The matching **custom UEVR runtime is not publicly downloadable yet**, pending
+redistribution permission. The installer currently serves users who already have
+that runtime. First-time users need to wait for its availability;
+[ask about installation or runtime availability](https://github.com/brifl/FarFarWestVR/issues/new?template=installation.yml)
+if unsure. Stock UEVR does not provide the required backend.
 
 **This is a beta build.** It is playable and under active development as we refine
 controls, expand UI coverage, and work through the [backlog](BACKLOG.md). Expect
@@ -35,45 +51,52 @@ The current beta is tested with **Far Far West 0.3.0.7**, **Windows**, **Meta Qu
 **Virtual Desktop**, and **SteamVR using OpenVR**. Other headsets and runtimes have
 not been verified. Game updates may require a matching backend update.
 
-**A matching custom UEVR runtime is required.** The profile alone cannot provide
-all these features. This repository contains the profile and scripts; backend
-binaries are not included, and a packaged runtime has not yet been published on
-this project's [Releases page](https://github.com/brifl/FarFarWestVR/releases).
-Obtain the matching beta runtime from the maintainer before installing.
-
 ## Installation
 
-1. **Extract the matching beta UEVR runtime** into its own folder. Keep its files
-   together, including `UEVRInjector.exe` and the supplied `UEVRBackend.dll`.
-2. **Launch Far Far West normally once, then close it.** This creates the game log
-   used by the menu helper.
-3. **Install the profile.** Download this repository with **Code → Download ZIP**,
-   extract it, and copy the contents of `FarFarWestVR-main` into:
+You need the game installed through Steam, a working PC VR connection, SteamVR,
+and the matching custom UEVR folder. The tested setup uses Quest 3 with Virtual
+Desktop connected to the PC; the headset must be able to run PC VR games first.
 
-   ```text
-   %APPDATA%\UnrealVRMod\FarFarWest-Win64-Shipping\
-   ```
+1. **Start Far Far West once normally, then close it.** This creates its game log.
+2. From the [beta release page](https://github.com/brifl/FarFarWestVR/releases/tag/v0.1.0-beta.1),
+   download **`FarFarWestVR-0.1.0-beta.1-Setup.zip`**. Use this asset, rather than
+   GitHub’s automatically generated “Source code” ZIP.
+3. Right-click the downloaded ZIP → **Properties → Unblock → Apply**, if Unblock
+   is shown. Then right-click → **Extract All**. See
+   [download warnings](docs/SETUP.md#download-and-windows-warnings) if the browser blocks it.
+4. Open the extracted folder and double-click **`Install-FarFarWestVR.cmd`**.
+   Select your matching custom UEVR folder. The installer finds the Steam game or
+   asks you to select it, checks the backend, and requests Windows administrator
+   approval for the game-log link and configuration.
 
-   Create that folder if needed. `config.txt` must be directly inside it, alongside
-   `scripts`, `plugins`, `assets`, and `data`. Copy the contents, not the outer
-   `FarFarWestVR-main` folder. The repository ZIP is not a ready-made UEVR profile
-   import archive.
-4. **Complete the [required one-time Windows setup](docs/SETUP.md).** It connects
-   the menu helper to the game log, enables controller aiming, and applies the
-   game configuration. This step is required on each new installation.
-5. **Play.** Connect through Virtual Desktop, start SteamVR and Far Far West, then
-   open the supplied `UEVRInjector.exe`. Select `FarFarWest-Win64-Shipping`, choose
-   **OpenVR**, and click **Inject**. Keep the game window focused for input. Press **Insert** to open or close the
-   UEVR settings panel.
+The installer places the profile in the correct AppData folder, enables the menu
+helper and controller aiming, and applies the heat-distortion workaround. It
+backs up an existing profile and game configuration, preserves `data/tuning.ini`,
+and creates a desktop shortcut to the selected UEVR injector. Other UEVR profile
+settings use this beta’s defaults. It does not download or replace UEVR.
 
-To enable the directional shortcuts below, turn on UEVR's **D-pad Shifting** and
-select **Gesture (Head) + Left Joystick**. It is off in the checked-in profile.
+## Launching in VR
 
-For updates, close the game first and keep a copy of your personal
-`data/tuning.ini` and UEVR settings. Replace the profile files, restore your tuning,
-then relaunch normally. Update the custom runtime too when a beta requires it.
-Existing Git checkouts can use `git pull`. Use a normal relaunch instead of
-**Reset scripts**, which can disrupt the current session.
+1. Connect your headset to PC VR and start **SteamVR**.
+2. Start **Far Far West** through Steam.
+3. Open the **Far Far West VR** desktop shortcut, or `UEVRInjector.exe` in your
+   matching custom runtime folder.
+4. In UEVR, select **`FarFarWest-Win64-Shipping`**, choose **OpenVR**, and click
+   **Inject**. Injection loads the VR mod into the running game.
+5. Put on the headset. Press **Insert** on the keyboard to close the UEVR settings
+   panel if it covers the game. Point with the right controller and click with
+   its trigger. Keep the game window focused on the desktop so controls reach it.
+
+For map and horse shortcuts, open UEVR with **Insert**, enable **D-pad Shifting**,
+and select **Gesture (Head) + Left Joystick**. Close the panel again. These
+shortcuts activate when you bring the left controller near your head and move
+its stick; normal left-stick movement continues outside the gesture.
+
+For updates, close the game and run the newer Setup package. Use a normal relaunch
+instead of **Reset scripts**, which can disrupt the running game. Development Git
+checkouts continue to use `git pull`; the installer protects them from replacement.
+
+[Detailed setup, manual profile installation, and troubleshooting](docs/SETUP.md)
 
 ## Quest controls
 
@@ -126,7 +149,7 @@ settings active.
 | `[graphics]` | `contrast_multiplier` | `1.15` | Contrast; `1.0` uses the original amount. |
 | `[graphics]` | `fog_density_multiplier` | `0.20` | Primary weather haze; `1.0` is the original density. |
 | `[cursor]` | `scale_multiplier` | `1.0` | Menu cursor size. |
-| `[audit]` | `auto_start` | `1` | Set to `0` to disable automatic UI capture on future launches. |
+| `[audit]` | `auto_start` | `0` in release ZIPs | Set to `1` to collect UI diagnostics locally on future launches when requested for troubleshooting. |
 
 For height offsets, **positive moves down**, **negative moves up**, and `0` uses
 the original position. For example, `-0.10` raises a panel by 10% of screen height.
@@ -145,12 +168,14 @@ aspect-correction settings unless you are troubleshooting proportions.
   change some damage/status effects. The train camera and some scene transitions
   still have rough edges.
 
-Report problems through [GitHub Issues](https://github.com/brifl/FarFarWestVR/issues),
-including the game version, beta/profile version, headset/runtime, what happened,
+For download/installation trouble or fixable gameplay issues,
+[open an issue](https://github.com/brifl/FarFarWestVR/issues/new/choose). Include
+the game version, beta/profile version, headset/runtime, what happened,
 and steps to reproduce it. A screenshot or short video helps with UI issues.
 
-UI capture is enabled by default for beta testing and saves observations locally
-under the profile's `data` folder. See [UI diagnostics](docs/UI-AUDIT.md) for
+Optional UI capture saves observations locally under the profile’s `data` folder;
+it uploads nothing automatically. It is off in release packages and on in our
+development checkout. See [UI diagnostics](docs/UI-AUDIT.md) for
 collection instructions and the [cumulative findings](docs/UI-FINDINGS.md) for
 current coverage. Progress and planned improvements are in the [backlog](BACKLOG.md).
 

@@ -1,0 +1,23 @@
+name: Gameplay or UI bug
+description: A fixable problem with aiming, controls, menus, or overlays
+title: '[Bug] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened, and what did you expect?
+      description: Include steps to reproduce. For an overlay, describe where/when it appears; a screenshot or approximate encounter time helps.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Versions and VR setup
+      description: Beta/profile version, game version, headset, PC VR connection, runtime, and relevant tuning changes.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Optional screenshots or relevant logs
+      description: Attach relevant excerpts rather than a full raw capture. Remove player names, chat, and private paths.

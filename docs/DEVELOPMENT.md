@@ -3,6 +3,9 @@
 Commands below run from the repository root. The documented deployment paths
 refer to the existing WSL installation on robot1-x.
 
+Public profile/installer packaging and tagged beta publication are documented in
+[RELEASING.md](RELEASING.md). They do not replace the Git/WSL workflow below.
+
 See the [README](../README.md) for completed features and controls,
 [BACKLOG.md](../BACKLOG.md) for open work, and the
 [loose-hands design](LOOSE-HANDS.md) for the planned experiment.
