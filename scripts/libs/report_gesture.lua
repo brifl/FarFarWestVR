@@ -2,6 +2,18 @@
 local M={}
 local function finite(n) return type(n)=='number' and n==n and math.abs(n)<10000 end
 local function vector(p) return p and finite(p.x) and finite(p.y) and finite(p.z) end
+-- Match VR::update_dpad_gestures: 20 cm, 120-degree cone, physical side.
+function M.head_feedback_range(head,hand,q,side)
+    if not vector(head) or not vector(hand) or not q then return false end
+    local x,y,z,w=q.x,q.y,q.z,q.w
+    if not finite(x) or not finite(y) or not finite(z) or not finite(w) then return false end
+    local norm=x*x+y*y+z*z+w*w;if norm<.5 or norm>1.5 then return false end
+    local bx,by,bz=2*(x*z+w*y)/norm,2*(y*z-w*x)/norm,1-2*(x*x+y*y)/norm
+    local dx,dy,dz=hand.x-head.x,hand.y-head.y,hand.z-head.z
+    local distance=math.sqrt(dx*dx+dy*dy+dz*dz)
+    return distance>.00001 and distance<=.2 and (dx*bx+dy*by+dz*bz)/distance>=-.5
+        and (dz*bx-dx*bz)*side<=0
+end
 function M.at_ears(head,left,right,rotation,radius,detailed)
     local function invalid(reason) return false,detailed~=false and {reason=reason} or nil end
     if not vector(head) or not vector(left) or not vector(right) or not rotation then return invalid('invalid_pose') end

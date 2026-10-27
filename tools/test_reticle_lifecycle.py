@@ -11,7 +11,7 @@ from lupa import LuaRuntime
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "scripts/reticle.lua"
 MOCK = r'''
-state={objects={},logs={},traces=0,active=true}
+state={objects={},logs={},traces=0,active=true,reads=0}
 farfarwest_gameplay_ready=true
 io.open=function() return nil end
 local sizes={SetRenderTranslation=16,SetRenderOpacity=4,GetCachedGeometry=80,
@@ -81,7 +81,7 @@ for _,name in ipairs({'on_early_calculate_stereo_view_offset','on_post_calculate
     'on_post_engine_tick','on_script_reset'}) do callbacks[name]=function(fn) state[name]=fn end end
 uevr={api={get_uobject_array=function() return {
     get_objects_offset=function() return 0 end,get_item_distance=function() return 24 end,
-    get_object_count=function() return 1000 end,get_object=function(_,i) return state.objects[i] end} end,
+    get_object_count=function() return state.object_count or 1000 end,get_object=function(_,i) state.reads=state.reads+1;return state.objects[i] end} end,
     find_uobject=function(_,path) return classes[path:match('%.([^%.]+)$')] end},
     params={functions={get_tag=function() return 'ffw-ue58-sdk-v1' end,
         is_drawing_ui=function() return false end,
@@ -154,4 +154,20 @@ state.active=true;for i=1,12 do frame() end;healthy()
 state.trace_error=true;frame();local traces=state.traces
 frame();assert(state.traces==traces)
 assert(state.logs[#state.logs]:find('Stopped safely during trace firing target using current pawn',1,true))
+""")
+run("modal return reuses the valid HUD even after the object array grows", """
+warmup();state.object_count=500000
+state.active=false;frame();local reads=state.reads;local traces=state.traces
+for i=1,30 do frame() end
+assert(state.reads==reads)
+state.active=true;frame();frame();frame();healthy()
+assert(state.traces>traces and state.reads-reads<50)
+""")
+run("HUD destroyed during a modal screen is validated before reuse", """
+warmup();state.active=false;frame()
+local image,owner=state.image,state.owner
+owner.dead=true;state.objects[owner.index]=nil;state.objects[image.index]=nil
+make_hud(910);state.active=true
+for i=1,30 do frame() end
+healthy();assert(state.traces>0 and state.image.opacity==.8)
 """)

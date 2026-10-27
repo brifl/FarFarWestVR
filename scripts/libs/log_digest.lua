@@ -1,5 +1,6 @@
 -- Tail only relevant messages; keep one dictionary entry/counter per message.
 local M={}
+local performance=require('libs/performance')
 function M.classify(line,source)
     if line:find('The shift value seems to be invalid ',1,true) then
         local value=line:match('shift value seems to be invalid (%-?%d+)') or '?'
@@ -34,7 +35,7 @@ function M.new(recorder)
     local function save()
         local file=io.open(output,'wb');if not file then return end
         file:write(json({version=1,utc=os.date('!%Y-%m-%dT%H:%M:%SZ'),messages=counts,
-            overflow=overflow,gesture=recorder.gesture_status(),uevr_log_available=streams[1].available or false,
+            overflow=overflow,gesture=recorder.gesture_status(),performance=performance.snapshot(),uevr_log_available=streams[1].available or false,
             skipped_uevr_bytes=streams[1].skipped_bytes or 0,skipped_game_bytes=streams[2].skipped_bytes or 0,
             note='Counts since this script load. Original engine/plugin log files are not modified.'})..'\n')
         file:close()

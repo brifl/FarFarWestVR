@@ -14,6 +14,15 @@ after pulling the update. Do not use Reset scripts.
    immediately before or after the marker. Aim for within ten seconds so the
    screenshot overlaps the recorded context.
 
+The right controller now gives the same proximity buzz as UEVR's left-head
+D-pad gesture: a 20 cm range and the same vibration parameters. The report
+recognizer retains its more forgiving configured radius. With the updated
+development backend, a successful report takes haptic priority for 0.65 seconds:
+quiet gap, pulse, gap, pulse, then proximity feedback resumes. This leaves
+D-pad input available and works without delayed-pulse support in OpenXR.
+Older backends use the earlier confirmation cue; `priority_haptics` in the digest
+records which support was available.
+
 The extension does **not** take screenshots, call screenshot APIs, record video,
 or upload files. This gesture observes the existing triggers: their normal game
 actions can still occur while they are held. It works in gameplay and game menus
@@ -82,6 +91,7 @@ In the installed `data/tuning.ini`:
 ```ini
 [diagnostics]
 gesture_enabled = 1
+capture_enabled = 1
 head_radius_m = 0.40
 hold_seconds = 0.60
 cooldown_seconds = 8
@@ -126,6 +136,30 @@ Changing Unreal frame counters are removed from message keys, and dictionary
 capacity is reserved for errors after warning noise. The report flags capacity
 omissions and also merges older captured frame-counter variants when reviewing
 previous sessions. A full dictionary never proves that later warnings were absent.
+
+## Investigating a slowdown
+
+The development backend supplies read-only process working-set/private-memory
+and available-RAM samples, OpenVR GPU/frame interval and cumulative dropped-frame
+counts, and native wall-time peaks for Lua pre-tick, post-tick, stereo, and input
+callbacks. Sampling occurs every five seconds. OpenXR memory/callback measurements
+still work; its compositor measurements are unavailable. Lua heap size, UObject
+slot count, engine delta, and the audit helper's cost are recorded as well.
+
+The digest retains 30-second summaries (512 maximum) and up to 64 engine delta
+spikes of 250 ms or more. Spike saves are limited to once per ten seconds.
+The offline index summarizes this history. Engine delta and an instantaneous GPU
+sample do not measure headset delivery by themselves; compositor counters and
+callback wall times help distinguish causes. Large level-loading intervals are
+recorded too, with the current map/gameplay context.
+
+For one controlled test during a slowdown, set `capture_enabled = 0` in
+`data/tuning.ini`, wait ten seconds, and compare the behavior. This pauses the UI
+census and tracking/shape observations; the visual fixes, controller input,
+gesture recognition, compact log counters, and performance samples continue.
+Set it back to `1` afterward. A recovery would implicate background capture;
+failure to recover would not clear all other mod code. Normal relaunch remains
+the way to load helper-code changes.
 
 Generated reports, digests, and screenshots stay local and are excluded from Git
 and release ZIPs. Review engine warning text and screenshots before posting them

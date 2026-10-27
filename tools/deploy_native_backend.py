@@ -22,8 +22,10 @@ FIRST_UPDATE_BUILD_SHA = '0a60a4fc4c7781794207f61a253e4a313f34f885ffb98004cf81a5
 FIRST_UPDATE_PDB_SHA = '75c7b1d88362cdd514fd6b3db89ea4e432c53cc029bbeeb1fbc52066611dfd81'
 PRE_HOTFIX_BUILD_SHA = 'db624486a6f2baf528c41acab28f8d03d1e9b9f4d0e57cc0cde5ff370cc0b9ef'
 PRE_HOTFIX_PDB_SHA = 'e1dfb86b5147eb29b6c6e174c9e532c34d6e8c9a1c44406fa6d55da2dfb28877'
-BUILD_SHA = 'a419a24829a0291fde5cb6e13c4e93a76a04bee243a0888a16f425f90727c82d'
-PDB_SHA = 'ff46aa1f0ee162cf3dfdab2dae2a51ec1d49624ac501d40883864dc776aa4d79'
+PRE_DIAGNOSTICS_BUILD_SHA = 'a419a24829a0291fde5cb6e13c4e93a76a04bee243a0888a16f425f90727c82d'
+PRE_DIAGNOSTICS_PDB_SHA = 'ff46aa1f0ee162cf3dfdab2dae2a51ec1d49624ac501d40883864dc776aa4d79'
+BUILD_SHA = '67308d7e1d341f86cd55a7333d5f9c5e31dd5f323eafa8414801549581cffc55'
+PDB_SHA = '920fd2f232b2c69cb9f49e660d13ddce5f15b37605ff1277f19a18ba75eb0045'
 POWERSHELL = '/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe'
 
 
@@ -70,15 +72,17 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
     update_pdb = runtime/'UEVRBackend.pdb.before-native-game-cursor.bak'
     hotfix_dll = runtime/'UEVRBackend.dll.before-0307-hotfix.bak'
     hotfix_pdb = runtime/'UEVRBackend.pdb.before-0307-hotfix.bak'
+    diagnostics_dll = runtime/'UEVRBackend.dll.before-diagnostics.bak'
+    diagnostics_pdb = runtime/'UEVRBackend.pdb.before-diagnostics.bak'
     current = digest(dll)
-    if current not in (BASELINE_SHA, PREVIOUS_BUILD_SHA, MENU_POINTER_BUILD_SHA, THEMED_CURSOR_BUILD_SHA, FIRST_UPDATE_BUILD_SHA, PRE_HOTFIX_BUILD_SHA, BUILD_SHA):
+    if current not in (BASELINE_SHA, PREVIOUS_BUILD_SHA, MENU_POINTER_BUILD_SHA, THEMED_CURSOR_BUILD_SHA, FIRST_UPDATE_BUILD_SHA, PRE_HOTFIX_BUILD_SHA, PRE_DIAGNOSTICS_BUILD_SHA, BUILD_SHA):
         raise SystemExit('Runtime differs from the verified baseline/build; nothing changed.')
     if old_dll.exists() and digest(old_dll) != BASELINE_SHA:
         raise SystemExit('Native backend backup differs from the baseline; nothing changed.')
     if restore:
         if not old_dll.is_file() or not old_pdb.is_file():
             raise SystemExit('Native backend backups are missing; nothing changed.')
-        if digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, FIRST_UPDATE_PDB_SHA, PRE_HOTFIX_PDB_SHA, PDB_SHA):
+        if digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, FIRST_UPDATE_PDB_SHA, PRE_HOTFIX_PDB_SHA, PRE_DIAGNOSTICS_PDB_SHA, PDB_SHA):
             raise SystemExit('Runtime symbols changed; nothing changed.')
         if current != BASELINE_SHA:
             atomic_copy(old_dll, dll)
@@ -98,10 +102,11 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
                         MENU_POINTER_BUILD_SHA: MENU_POINTER_PDB_SHA,
                         THEMED_CURSOR_BUILD_SHA: THEMED_CURSOR_PDB_SHA,
                         FIRST_UPDATE_BUILD_SHA: FIRST_UPDATE_PDB_SHA,
-                        PRE_HOTFIX_BUILD_SHA: PRE_HOTFIX_PDB_SHA, BUILD_SHA: PDB_SHA}
+                        PRE_HOTFIX_BUILD_SHA: PRE_HOTFIX_PDB_SHA,
+                        PRE_DIAGNOSTICS_BUILD_SHA: PRE_DIAGNOSTICS_PDB_SHA, BUILD_SHA: PDB_SHA}
     if current in expected_symbols and digest(pdb) != expected_symbols[current]:
         raise SystemExit('Runtime symbols do not match the installed build; nothing changed.')
-    if old_pdb.exists() and digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, FIRST_UPDATE_PDB_SHA, PRE_HOTFIX_PDB_SHA, PDB_SHA):
+    if old_pdb.exists() and digest(pdb) not in (digest(old_pdb), PREVIOUS_PDB_SHA, MENU_POINTER_PDB_SHA, THEMED_CURSOR_PDB_SHA, FIRST_UPDATE_PDB_SHA, PRE_HOTFIX_PDB_SHA, PRE_DIAGNOSTICS_PDB_SHA, PDB_SHA):
         raise SystemExit('Runtime symbols differ from the baseline/build; nothing changed.')
     if previous_dll.exists() and digest(previous_dll) != PREVIOUS_BUILD_SHA:
         raise SystemExit('Previous source-build backup changed; nothing changed.')
@@ -123,6 +128,10 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
         raise SystemExit('Pre-hotfix backend backup changed; nothing changed.')
     if hotfix_pdb.exists() and digest(hotfix_pdb) != PRE_HOTFIX_PDB_SHA:
         raise SystemExit('Pre-hotfix symbols backup changed; nothing changed.')
+    if diagnostics_dll.exists() and digest(diagnostics_dll) != PRE_DIAGNOSTICS_BUILD_SHA:
+        raise SystemExit('Pre-diagnostics backend backup changed; nothing changed.')
+    if diagnostics_pdb.exists() and digest(diagnostics_pdb) != PRE_DIAGNOSTICS_PDB_SHA:
+        raise SystemExit('Pre-diagnostics symbols backup changed; nothing changed.')
     if not old_dll.exists():
         shutil.copyfile(dll, old_dll)
     if not old_pdb.exists():
@@ -152,7 +161,11 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
             shutil.copyfile(dll, hotfix_dll)
         if not hotfix_pdb.exists():
             shutil.copyfile(pdb, hotfix_pdb)
-    rollback_pdb = (hotfix_pdb if current == PRE_HOTFIX_BUILD_SHA else
+    if current == PRE_DIAGNOSTICS_BUILD_SHA:
+        if not diagnostics_dll.exists(): shutil.copyfile(dll, diagnostics_dll)
+        if not diagnostics_pdb.exists(): shutil.copyfile(pdb, diagnostics_pdb)
+    rollback_pdb = (diagnostics_pdb if current == PRE_DIAGNOSTICS_BUILD_SHA else
+                    hotfix_pdb if current == PRE_HOTFIX_BUILD_SHA else
                     update_pdb if current == FIRST_UPDATE_BUILD_SHA else
                     themed_pdb if current == THEMED_CURSOR_BUILD_SHA else
                     pointer_pdb if current == MENU_POINTER_BUILD_SHA else
@@ -167,7 +180,7 @@ def deploy(restore=False, runtime=RUNTIME, build=BUILD):
             atomic_copy(rollback_pdb, pdb)
         raise
     assert digest(dll) == BUILD_SHA and digest(pdb) == PDB_SHA
-    print('UE5.8 SDK backend deployed with Far Far West 0.3.0.7 support; existing compatibility ports retained.')
+    print('UE5.8 SDK backend deployed with report haptic priority and read-only performance support; compatibility ports retained.')
     print('Backend SHA256:', BUILD_SHA)
 
 

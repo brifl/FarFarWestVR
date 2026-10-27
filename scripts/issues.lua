@@ -8,6 +8,8 @@ local recorder=require('libs/incident')
 local gesture=require('libs/report_gesture')
 local detector=gesture.new()
 local digest=require('libs/log_digest').new(recorder)
+local feedback=require('libs/report_feedback').new(vr)
+local performance=require('libs/performance')
 local points,rotations={},{}
 for i=1,3 do points[i]=UEVR_Vector3f.new();rotations[i]=UEVR_Quaternionf.new() end
 local action,stopped,digest_failed,poll,next_command=nil,false,false,0,0
@@ -16,6 +18,7 @@ local health={frames=0,ready_frames=0,left_trigger_frames=0,right_trigger_frames
     both_trigger_frames=0,at_ears_frames=0,attempts=0,marked=0,reasons={}}
 local both_was_down,announced=false,false
 local attempt_outcome,next_attempt_note=nil,0
+health.priority_haptics=feedback.priority()
 recorder.gesture_status(health)
 local function state(reason)
     health.state=reason
@@ -23,27 +26,28 @@ local function state(reason)
 end
 local function mark(reason)
     if not digest_failed then pcall(digest.flush) end
-    local saved,name=recorder.trigger(reason,{backend_tag=tag,tuning=tuning.snapshot()})
+    local saved,name=recorder.trigger(reason,{backend_tag=tag,tuning=tuning.snapshot(),performance=performance.context()})
     if not saved then
         if name then log.log_warn('[FarFarWest report] Could not save marker: '..tostring(name)) end
         return false
     end
     log.log_info('[FarFarWest report] Marked '..name..'; saving recent UI/tracking context.')
     health.marked=health.marked+1
-    for _,source in ipairs({vr.get_left_joystick_source(),vr.get_right_joystick_source()}) do
-        pcall(vr.trigger_haptic_vibration,0,.10,120,.6,source)
-        pcall(vr.trigger_haptic_vibration,.18,.10,120,.6,source)
-    end
+    feedback.confirm(recorder.now())
     return true
 end
 uevr.sdk.callbacks.on_pre_engine_tick(function(_,delta)
     if stopped then return end
     local success,err=pcall(function()
+        performance.set_capture_enabled(tuning.get('diagnostics.capture_enabled')==1)
+        performance.frame(delta)
         local clock=os.clock()
         delta=math.max(delta or 0,clock-last_clock);last_clock=clock
         health.frames=health.frames+1
         recorder.configure(tuning.get('diagnostics.gesture_enabled')==1)
-        if not recorder.enabled() then state('disabled');detector.reset();return end
+        recorder.set_capture_enabled(tuning.get('diagnostics.capture_enabled')==1)
+        health.capture_enabled=recorder.capture_enabled()
+        if not recorder.enabled() then state('disabled');feedback.tick(false,recorder.now());detector.reset();return end
         if not announced then
             announced=true
             log.log_info('[FarFarWest report] Gesture monitor active; recognition counters saved in the log digest.')
@@ -52,13 +56,14 @@ uevr.sdk.callbacks.on_pre_engine_tick(function(_,delta)
             or not vr.is_hmd_active() and 'headset_inactive'
             or not vr.is_using_controllers() and 'controllers_inactive'
             or log.is_drawing_ui() and 'uevr_panel_open' or nil
-        if blocked then state(blocked);both_was_down=false;detector.step(false,false,false,false,delta,.6,8);return end
+        if blocked then state(blocked);feedback.tick(false,recorder.now());both_was_down=false;detector.step(false,false,false,false,delta,.6,8);return end
         if not action then action=vr.get_action_handle('/actions/default/in/Trigger') end
         local indices={vr.get_hmd_index(),vr.get_left_controller_index(),vr.get_right_controller_index()}
         if indices[1]<0 or indices[1]>=64 or indices[2]<1 or indices[2]>=64 or indices[3]<1 or indices[3]>=64
             or indices[2]==indices[3] then state('invalid_device_indices');both_was_down=false;detector.reset();return end
         health.ready_frames=health.ready_frames+1
         for i=1,3 do vr.get_pose(indices[i],points[i],rotations[i]) end
+        feedback.tick(gesture.head_feedback_range(points[1],points[3],rotations[1],1),recorder.now())
         local left=vr.is_action_active(action,vr.get_left_joystick_source())
         local right=vr.is_action_active(action,vr.get_right_joystick_source())
         local near,metrics=gesture.at_ears(points[1],points[2],points[3],rotations[1],tuning.get('diagnostics.head_radius_m'),left and right)
@@ -107,6 +112,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_,delta)
             if not good then digest_failed=true;log.log_warn('[FarFarWest report] Log digest unavailable: '..tostring(reason)) end
         end
         recorder.tick(delta)
+        if performance.needs_flush() and not digest_failed then pcall(digest.flush) end
         poll=poll+math.min(math.max(delta or 0,0),.25)
         if poll>=next_command then
             next_command=poll+.5

@@ -20,6 +20,7 @@ class NativeDeploymentTests(unittest.TestCase):
         self.new_dll, self.new_pdb = b'new-ffw-ue58-sdk-v1-backend', b'new-symbols'
         self.update_dll, self.update_pdb = b'first-update-backend', b'first-update-symbols'
         self.pre_hotfix_dll, self.pre_hotfix_pdb = b'pre-hotfix-backend', b'pre-hotfix-symbols'
+        self.pre_diagnostics_dll,self.pre_diagnostics_pdb=b'pre-diagnostics-backend',b'pre-diagnostics-symbols'
         sha = lambda data: hashlib.sha256(data).hexdigest()
         patched = patch.multiple(deployment, require_closed=lambda: None,
                                  BASELINE_SHA=sha(b'baseline'),
@@ -29,6 +30,8 @@ class NativeDeploymentTests(unittest.TestCase):
                                  FIRST_UPDATE_PDB_SHA=sha(self.update_pdb),
                                  PRE_HOTFIX_BUILD_SHA=sha(self.pre_hotfix_dll),
                                  PRE_HOTFIX_PDB_SHA=sha(self.pre_hotfix_pdb),
+                                 PRE_DIAGNOSTICS_BUILD_SHA=sha(self.pre_diagnostics_dll),
+                                 PRE_DIAGNOSTICS_PDB_SHA=sha(self.pre_diagnostics_pdb),
                                  BUILD_SHA=sha(self.new_dll), PDB_SHA=sha(self.new_pdb))
         patched.start()
         self.addCleanup(patched.stop)
@@ -102,6 +105,19 @@ class NativeDeploymentTests(unittest.TestCase):
             self.deploy()
         self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(), self.pre_hotfix_dll)
         self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(), self.pre_hotfix_pdb)
+
+    def test_diagnostics_upgrade_preserves_matching_pair_and_rolls_back_failed_copy(self):
+        (self.runtime/'UEVRBackend.dll').write_bytes(self.pre_diagnostics_dll)
+        (self.runtime/'UEVRBackend.pdb').write_bytes(self.pre_diagnostics_pdb)
+        copy=deployment.atomic_copy
+        def fail_dll(source,target):
+            if target.name=='UEVRBackend.dll':raise OSError('simulated loaded backend')
+            copy(source,target)
+        with patch.object(deployment,'atomic_copy',fail_dll),self.assertRaises(OSError):self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(),self.pre_diagnostics_pdb)
+        self.deploy();self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.dll.before-diagnostics.bak').read_bytes(),self.pre_diagnostics_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.pdb.before-diagnostics.bak').read_bytes(),self.pre_diagnostics_pdb)
 
 
 if __name__ == '__main__':

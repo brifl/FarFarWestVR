@@ -7,6 +7,7 @@ local registry=require('libs/ui_audit_registry')
 local hint_layout=require('libs/hint_layout')
 local tuning=require('libs/tuning')
 local incident=require('libs/incident')
+local performance=require('libs/performance')
 local array,classes,library,slate,layout
 local prepared=false
 local active,file,output,elapsed,duration,store
@@ -400,6 +401,7 @@ local function sample(ref,viewport)
 end
 local function tick(engine,delta)
     if failed then return end
+    if tuning.get('diagnostics.capture_enabled')==0 then return end
     local begin=clock()
     local ok,err=pcall(function()
         local dt=math.min(math.max(delta or 0,0),.25)
@@ -472,6 +474,7 @@ local function tick(engine,delta)
         end
         max_tick_ms=math.max(max_tick_ms,(clock()-begin)*1000)
     end)
+    performance.audit((clock()-begin)*1000)
     if not ok then
         failed=true
         log.log_warn('[FarFarWest audit] Stopped safely: '..tostring(err))

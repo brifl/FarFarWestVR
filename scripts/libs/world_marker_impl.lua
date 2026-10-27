@@ -621,7 +621,7 @@ callbacks.tick = function(engine,delta)
                     else point=entry.component.object:K2_GetComponentLocation() end
                     local pixel=geometry.project({x=point.X,y=point.Y,z=point.Z},camera.position,
                         camera.rotation,camera.matrix,viewport.X,viewport.Y)
-                    if incident.enabled() and not entry.diagnostic_failed and elapsed>=(entry.next_diagnostic or 0) then
+                    if incident.capture_enabled() and not entry.diagnostic_failed and elapsed>=(entry.next_diagnostic or 0) then
                         entry.next_diagnostic=elapsed+.25
                         local diagnostic_ok,diagnostic_error=pcall(function()
                         local owner_origin

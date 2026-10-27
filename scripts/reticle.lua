@@ -22,6 +22,7 @@ local calibration, viewport_width, viewport_height, local_width, local_height
 local raw_camera, eye_camera, scan_index
 local elapsed, next_scan, next_mode = 0, 0, 0
 local enabled, written, stopped, reported = true, false, false, false
+local suspended=false
 local stage = "startup"
 
 local function finite(n) return type(n)=="number" and n==n and math.abs(n)<1e12 end
@@ -225,7 +226,15 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
             enabled = not mode:match("^probe")
             next_mode = elapsed+0.5
         end
-        if not active() then reset(); return end
+        if not active() then
+            -- Modal screens often leave this HUD alive. Retain its validated
+            -- identity so Resume does not start another whole-array search.
+            if not suspended then
+                restore();calibration=nil;raw_camera,eye_camera=nil,nil;suspended=true
+            end
+            return
+        end
+        suspended=false
         stage = "prepare widget API"
         if not array then prepare_api() end
         stage = "validate or discover crosshair"

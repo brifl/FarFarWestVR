@@ -99,6 +99,51 @@ for i=1,10 do assert(not g.step(true,true,true,true,.1,.6,3)) end
 g.step(true,true,false,false,.1,.6,3)
 for i=1,10 do assert(not g.step(true,false,true,true,.1,.6,3)) end
 ''')
+run('right-ear feedback matches the native head range and protects native confirmation',r'''
+local g=require('libs/report_gesture')
+local head={x=0,y=1.6,z=0};local q={x=0,y=0,z=0,w=1}
+assert(g.head_feedback_range(head,{x=.15,y=1.6,z=0},q,1))
+assert(not g.head_feedback_range(head,{x=-.15,y=1.6,z=0},q,1))
+assert(not g.head_feedback_range(head,{x=.21,y=1.6,z=0},q,1))
+assert(not g.head_feedback_range(head,{x=.01,y=1.6,z=-.15},q,1))
+local vr={get_mod_value=function() return '1' end,set_mod_value=function(_,key,value)
+ assert(key=='FFW_ReportHaptics' and value=='1');state.command=true end,
+ get_right_joystick_source=function() return 2 end,
+ trigger_haptic_vibration=function(delay,duration,frequency,amplitude,source)
+ state.haptics[#state.haptics+1]={delay,duration,frequency,amplitude,source} end}
+local f=require('libs/report_feedback').new(vr)
+f.tick(true,0);assert(#state.haptics==1)
+local h=state.haptics[1];assert(h[1]==0 and h[2]==.1 and h[3]==1 and h[4]==5 and h[5]==2)
+f.tick(true,.01);assert(#state.haptics==1)
+f.confirm(.1);assert(state.command and f.priority())
+f.tick(true,.2);f.tick(false,.3);assert(#state.haptics==1)
+f.tick(true,.8);assert(#state.haptics==2)
+''')
+run('performance history polls sparsely, records hitches and remains bounded',r'''
+local p=require('libs/performance');state.wall=1000;state.native_calls=0
+os.time=function() return state.wall end
+uevr={api={get_uobject_array=function() return {get_object_count=function() return 150000 end} end},params={
+ vr={get_mod_value=function(_,key) assert(key=='FFW_DiagnosticStats');state.native_calls=state.native_calls+1
+ return 'v=1;ws=4000;commit=5000;free=30000;gpu=12.0;interval=11.1;drop=3;lp=.2;lq=.5;ls=.1;li=.1' end},
+ functions={log_info=function(s) state.logs[#state.logs+1]=s end}}}
+for i=1,600 do state.wall=1000+i*.1;p.frame(.1) end
+assert(state.native_calls<=13 and p.snapshot().frames==600)
+state.wall=1061;p.frame(.75);assert(p.needs_flush());assert(not p.needs_flush())
+assert(p.context().peak.engine_delta_ms==750)
+assert(p.context().latest.object_slots==150000 and p.context().latest.commit==5000)
+for i=1,520 do state.wall=1061+i*31;p.frame(.01) end
+assert(#p.snapshot().windows==512 and p.snapshot().discarded_history>0)
+assert(p.parse('v=1;ws=4000;commit=5000')==nil)
+''')
+run('capture isolation pauses observations while leaving gesture and log recording enabled',r'''
+recorder.set_capture_enabled(false);observe('must-not-capture')
+recorder.count('important','failure','game','error',1,'now')
+assert(recorder.enabled() and not recorder.capture_enabled())
+local saved,name=recorder.trigger('capture-paused');assert(saved);advance(6)
+assert(not state.files[name]:find('must%-not%-capture'))
+assert(state.files[name]:find('important',1,true))
+recorder.set_capture_enabled(true);assert(recorder.capture_enabled())
+''')
 
 def check_window(lua):
     data=rows(lua);header=data[0];samples=[x for x in data if x['type']=='sample']
@@ -202,7 +247,7 @@ local original=state.files['UEVR.log'];d.flush();d.flush();assert(state.files['U
 
 FEATURE=r'''
 local settings={['diagnostics.gesture_enabled']=1,['diagnostics.head_radius_m']=.4,
- ['diagnostics.hold_seconds']=.6,['diagnostics.cooldown_seconds']=8}
+ ['diagnostics.hold_seconds']=.6,['diagnostics.cooldown_seconds']=8,['diagnostics.capture_enabled']=1}
 package.loaded['libs/tuning']={get=function(k) return assert(settings[k]) end,snapshot=function() return settings end}
 local function log(s) state.logs[#state.logs+1]=s end
 UEVR_Vector3f={new=function() return {} end};UEVR_Quaternionf={new=function() return {} end}
@@ -226,7 +271,7 @@ function frame(n) for i=1,n do state.pre(nil,.1);state.post(nil,.1) end end
 '''
 run('the deployed script marks the full physical chord and gives confirmation without screenshot or input APIs',FEATURE+r'''
 frame(1);observe('visible-widget');state.left=true;state.right=true;frame(6)
-assert(#state.haptics==4)
+assert(#state.haptics>=4)
 local status=state.files['issue_capture_status.json'];assert(status and status:find('ears%-and%-both%-triggers'))
 frame(60)
 for _,line in ipairs(state.logs) do assert(not line:find('stopped safely',1,true),line) end
@@ -237,7 +282,7 @@ local native_pose=uevr.params.vr.get_pose
 uevr.params.vr.get_pose=function(index,p,q) native_pose(index,p,q);if index>0 then p.z=-.28 end end
 frame(1);state.left=true;state.right=true;frame(10)
 local status=recorder.gesture_status()
-assert(#state.haptics==0 and status.marked==0 and status.attempts==1)
+assert(status.marked==0 and status.attempts==1)
 assert(status.last_attempt.reason=='left_too_far_forward_back')
 assert(status.last_attempt.pose.left.distance_m<.4 and status.last_attempt.pose.left.depth_m>.22)
 assert(status.closest_attempt.attempt.reason=='left_too_far_forward_back')

@@ -99,11 +99,12 @@ def write_report(directory, tolerance=30):
             lines += [f'| `{markdown(key)}` | {count} |' for key, count in issue['logs'].most_common(30)]
         note = directory/(Path(issue['file']).stem + '.notes.md')
         if note.exists(): lines += ['', f'[Your notes]({note.name})']
-    totals = Counter(); messages = {}; gesture_sessions=[]; overflow=0
+    totals = Counter(); messages = {}; gesture_sessions=[]; performance_sessions=[]; overflow=0
     for path in sorted(directory.glob('log-digest-*.json')):
         digest = json.loads(path.read_text())
         overflow+=digest.get('overflow',0)
         if digest.get('gesture'): gesture_sessions.append((path.name,digest['gesture']))
+        if digest.get('performance'): performance_sessions.append((path.name,digest['performance']))
         for key, value in digest.get('messages', {}).items():
             # Older captures included Unreal's changing frame prefix in the key.
             # Merge those existing counters without altering the archived evidence.
@@ -123,6 +124,18 @@ def write_report(directory, tolerance=30):
             lines.append(f"| [{name}]({name}) | {g.get('ready_frames',0)} / {g.get('frames',0)} | "
                          f"{g.get('left_trigger_frames',0)} / {g.get('right_trigger_frames',0)} | "
                          f"{g.get('attempts',0)} | {g.get('marked',0)} | {markdown(last)} / {markdown(closest)} |")
+    if performance_sessions:
+        performance_notes=[]
+        lines += ['', '## Performance history', '',
+                  'Engine delta and Lua callback wall times are separate from headset delivery. Native samples are read every five seconds; GPU timing is an instantaneous OpenVR sample. Cumulative dropped/reprojected counts and bounded 30-second history remain in each digest.', '',
+                  '| Session | Worst engine delta ms | Worst Lua callback ms | Latest working set / private MiB | OpenVR dropped / reprojected |',
+                  '| --- | ---: | ---: | ---: | ---: |']
+        for name,p in performance_sessions:
+            peak=p.get('peak',{});latest=p.get('latest',{})
+            lines.append(f"| [{name}]({name}) | {peak.get('engine_delta_ms','?')} | {peak.get('lua_callback_ms','?')} | "
+                         f"{latest.get('ws','?')} / {latest.get('commit','?')} | {latest.get('drop','?')} / {latest.get('reproj','?')} |")
+            if p.get('discarded_history',0): performance_notes.append(f"{name}: {p['discarded_history']} oldest history records expired at the bounded retention limit.")
+        for note in performance_notes: lines += ['',note]
     lines += ['', '## Repeated messages across collected sessions', '',
               'One dictionary entry and counter per message. Counts cover the tailed intervals; raw UEVR/plugin logs are unchanged.', '',
               '| Message | Count | Documented |', '| --- | ---: | --- |']

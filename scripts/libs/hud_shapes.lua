@@ -121,7 +121,7 @@ local function tick(engine,delta)
      entry.reported=true;log.log_info('[FarFarWest HUD shape] Corrected '..entry.ref.name..' while preserving native placement.')
     end
    end
-   if valid and incident.enabled() and not entry.diagnostic_failed and elapsed>=(entry.next_diagnostic or 0) then
+   if valid and incident.capture_enabled() and not entry.diagnostic_failed and elapsed>=(entry.next_diagnostic or 0) then
     entry.next_diagnostic=elapsed+.25
     local diagnostic_ok,diagnostic_error=pcall(function()
     local o=entry.ref.object

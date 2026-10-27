@@ -116,6 +116,7 @@ uevr={api={get_uobject_array=function() return array end,find_uobject=function(_
 package.loaded['libs/tuning']={get=function(key)
     if key=='audit.auto_start' then return state.auto_start or 0 end
     if key=='audit.auto_seconds' then return state.auto_seconds or 3600 end
+    if key=='diagnostics.capture_enabled' then return state.capture_enabled or 1 end
     if state.margins and state.margins[key] then return state.margins[key] end
     if key=='hud.left_margin' or key=='hud.right_margin' then return .1 end
     assert(key=='hud.top_margin' or key=='hud.bottom_margin');return .15
@@ -148,6 +149,12 @@ def capture(lua):
 run('idle helper performs no native discovery or gameplay writes', '''
 tick(100);healthy();assert(state.reads==0 and state.query_count==0)
 assert(state.files['ui_audit_status.json']==nil)
+''')
+run('capture-only isolation suspends native census work and resumes without touching visuals', '''
+start();local queries,reads=state.query_count,state.reads
+state.capture_enabled=0;tick(200);assert(state.query_count==queries and state.reads==reads)
+assert(state.hud.props.Visibility==0 and state.health.bounds[2]==.94)
+state.capture_enabled=1;tick(100);healthy();assert(state.query_count>queries)
 ''')
 
 

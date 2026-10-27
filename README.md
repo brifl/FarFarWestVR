@@ -188,6 +188,9 @@ controllers to your ears and hold both triggers for about 0.6 seconds; two short
 vibrations confirm it. Take screenshots yourself with Virtual Desktop or SteamVR
 and use the [offline issue-capture workflow](docs/ISSUE-CAPTURE.md) to match them
 by time. This feature is not in the 0.1.0-beta.1 release ZIPs yet.
+Current development builds also add matching right-ear proximity feedback,
+distinct report confirmation, and performance history for investigating long-session
+slowdowns. See the same workflow for a capture-only isolation switch.
 
 ## Credits
 

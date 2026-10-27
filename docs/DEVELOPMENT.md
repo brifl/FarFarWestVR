@@ -16,6 +16,8 @@ See the [README](../README.md) for completed features and controls,
 
 - Profile on robot1-x: `/mnt/c/Users/brian/AppData/Roaming/UnrealVRMod/FarFarWest-Win64-Shipping`.
 - Isolated UEVR runtime: `/mnt/c/Manual Installs/uevr_far_west/`.
+- Additional upstream reference checkout: `/mnt/c/src/UEVR` in the development
+  workspace. The retained checkout below remains the source of the isolated build.
 - Retained source/build checkout: `/mnt/c/src/uevr_far_west_build`.
   Build artifacts are in `build/bin/uevr`; focused probes are in `ffw-tests/`.
 - Last recorded source bases: UEVR `4ee5c6b`, private UESDK `14478df`.
@@ -40,6 +42,18 @@ Use `git -c core.autocrlf=true` for this checkout. Give Windows executables
 Preserve user/runtime changes to `config.txt`, `imgui.ini`, and personal tuning.
 
 ## Native access constraints
+
+The diagnostics update adds optional `FFW_ReportHaptics` and `FFW_DiagnosticStats`
+API keys while retaining the verified SDK tag and game allowlist. Haptic priority
+suppresses competing vibration for a short two-pulse cue; D-pad input is unchanged.
+Performance reads collect process memory, OpenVR compositor counters, and optional
+native wall-time peaks around Lua callbacks. They do not change rendering settings.
+`tools/prepare_diagnostics_backend.py` applies guarded insertions to the retained
+source, preserves originals under `ffw-tests/diagnostics-20261026/source-before`,
+and copies the original, engine-independent `native/FFWDiagnostics.hpp` header.
+The focused core tests and incremental Windows build pass; haptic feel and native
+samples require validation on the next normal game launch. Previous DLL/PDB pairing
+is preserved as `before-diagnostics.bak`. Runtime redistribution remains pending.
 
 The backend tag is `ffw-ue58-sdk-v1`; observed games 0.2.0.20, 0.3.0.0, and 0.3.0.7 use
 UE5.8.1 CanyonEngine. Guard reflected layouts and function parameter metadata

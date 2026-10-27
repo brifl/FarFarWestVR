@@ -8,6 +8,7 @@ local pending,writer,next_id=nil,nil,0
 local max_bucket,max_definitions,max_file=256,2048,2097152
 local skipped,definition_count,epoch=0,0,0
 local gesture_status
+local capture=true
 local function bucket()
     local generation=math.floor(now*2)
     local slot=generation%21+1
@@ -24,6 +25,8 @@ local function bucket()
     return b
 end
 function M.enabled() return enabled end
+function M.capture_enabled() return enabled and capture end
+function M.set_capture_enabled(value) capture=value==true end
 function M.gesture_status(value)
     if value~=nil then gesture_status=value end
     return gesture_status
@@ -43,7 +46,7 @@ local static={'class','root_class','path','parent','fields','owner_fields','comp
 local dynamic={'visible','context','action','mode','flag','coverage','x0','y0','x1','y1',
     'relative_x','relative_y','relative_z','attachment','component_is_actor_root','transform','target','owner_instance','component_instance','tracking','references'}
 function M.observe(id,sample,instance)
-    if not enabled or not sample.visible then return end
+    if not M.capture_enabled() or not sample.visible then return end
     local b=bucket()
     local definition=id..'|'..(sample.owner_class or '')
     local key=definition..'|'..tostring(instance or 0)..'|'..epoch
