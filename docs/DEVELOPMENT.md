@@ -78,6 +78,7 @@ Do not loosen Lua layout assertions to bypass this gate.
 | 0.2.0.20 | 907750432 | 203960320 | 0xad3d980 | 0xac9b900 |
 | 0.3.0.0 | 1404130593 | 207814656 | 0xb08f680 | 0xafed600 |
 | 0.3.0.7 | 715567327 | 207765504 | 0xb08f680 | 0xafed600 |
+| October 30 patch; version unrecorded | 1820620141 | 207396864 | 0xb031500 | 0xaf8f480 |
 
 The October 24 launch failed the executable allowlist after the game updated to
 0.3.0.7. Lua loaded but SDK-dependent helpers stopped at their object-access
@@ -125,7 +126,15 @@ other port and keeps the old source under
 tests pass, including moved tables, malformed identities, ambiguity, changed
 field/function layouts, and failed deployment rollback. The read-only
 `tools/probe_compatibility.cpp` uses the exact detector against a running game
-before injection. Current-client live validation is pending.
+before injection. The updated DLL/PDB pair is installed on robot1-x. The October
+30 launch passed discovery with 100,317 objects and started controller aiming,
+reticle tracing, marker projection/aspect correction, HUD margins/shapes, fog,
+and grading without helper failures. A separate read-only probe passed against
+117,468 slots in 67 ms. The tables actually moved relative to 0.3.0.7, so this
+validates relocation rather than merely accepting a new fingerprint. Visual
+confirmation in the headset remains pending. Private probe/deployment records
+are under `ffw-tests/compatibility-20261030/`; the previous DLL/PDB pair is
+preserved as `before-compatibility.bak`.
 
 `tools/probe_game_layout.ps1` finds these tables read-only within the executable's
 bounded .data section, checking unique candidates and UObject/name identities.
