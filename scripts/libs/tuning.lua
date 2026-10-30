@@ -24,6 +24,7 @@ local rules={
     ['hud.aspect_correction']={1,0,1},
     ['aim.stabilization']={.35,0,1},
     ['aim.halo_reticle']={1,0,1},
+    ['aim.halo_reticle_scale']={.25,.05,2},
     ['cursor.scale_multiplier']={1,.25,1.5},
     ['cursor.aspect_correction']={0,0,1},
     ['horse.steering_exponent']={2,1,4},

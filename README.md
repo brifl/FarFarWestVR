@@ -143,6 +143,7 @@ settings active.
 | --- | --- | --- | --- |
 | `[aim]` | `stabilization` | `0.35` | `0` disables smoothing; `1` is strongest. More smoothing can add aim lag. |
 | `[aim]` | `halo_reticle` | `1` in development builds | `1` uses the black-halo aim graphic; `0` restores the game's graphic. Reloads while playing. |
+| `[aim]` | `halo_reticle_scale` | `0.25` | Halo width/height multiplier; smaller values shrink it. Applies only to the halo graphic. Reloads while playing. |
 | `[horse]` | `steering_exponent` | `2.0` | `1` is the original response; higher values soften small left-stick turns. Full steering is preserved. |
 | `[hud]` | `scale_multiplier` | `0.85` | Overall fixed-HUD size; smaller values shrink it. |
 | `[hud]` | `left_margin`, `right_margin` | `0.20` each | Minimum left/right inset as a fraction of screen width. |

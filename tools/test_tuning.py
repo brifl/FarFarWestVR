@@ -310,11 +310,16 @@ end
 ''')
 run('halo reticle defaults on, reloads live and rejects fractional or invalid switches', r'''
 near(tuning.get('aim.halo_reticle'),1)
+near(tuning.get('aim.halo_reticle_scale'),.25)
 reload('[aim]\nhalo_reticle=0');near(tuning.get('aim.halo_reticle'),0)
 for _,source in ipairs({'[aim]\nhalo_reticle=.5','[aim]\nhalo_reticle=2','[aim]\nhalo_reticle=-1'}) do
  reload(source);near(tuning.get('aim.halo_reticle'),0)
 end
 reload('[aim]\nhalo_reticle=1');near(tuning.get('aim.halo_reticle'),1)
+reload('[aim]\nhalo_reticle_scale=.15');near(tuning.get('aim.halo_reticle_scale'),.15)
+for _,value in ipairs({'0','-1','.01','2.1'}) do
+ reload('[aim]\nhalo_reticle_scale='..value);near(tuning.get('aim.halo_reticle_scale'),.15)
+end
 ''')
 run('horse steering exponent reloads live and rejects unsupported values', r'''
 near(tuning.get('horse.steering_exponent'),2)

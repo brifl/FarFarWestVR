@@ -302,7 +302,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
         image:SetRenderTranslation(translation)
         image:SetRenderOpacity(original.opacity)
         stage='normalize crosshair shape'
-        ui_shape.apply(shape,ui_shape.height_factor(eye_camera.matrix,viewport_width,viewport_height))
+        ui_shape.apply(shape,ui_shape.height_factor(eye_camera.matrix,viewport_width,viewport_height),style.scale_multiplier())
         if not reported then
             info("Original crosshair now follows the traced firing-camera target in each eye.")
             reported = true

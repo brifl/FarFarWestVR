@@ -72,7 +72,7 @@ local function apply(image,context)
         binding={image=track(image),original=original,applied=texture.address}
         image:SetBrushResourceObject(texture.object)
         if not reported then
-            reported=true;log.log_info('[FarFarWest reticle style] Black-halo reticle active; original size/tint retained.')
+            reported=true;log.log_info('[FarFarWest reticle style] Black-halo reticle active; native brush dimensions/tint retained.')
         end
     end)
     if not ok then
@@ -80,7 +80,10 @@ local function apply(image,context)
         log.log_warn('[FarFarWest reticle style] Halo unavailable; aim tracking continues: '..tostring(err))
     end
 end
-return {apply=apply,restore=function()
+return {apply=apply,scale_multiplier=function()
+    return binding and not failed and tuning.get('aim.halo_reticle')==1
+        and tuning.get('aim.halo_reticle_scale') or 1
+end,restore=function()
     local ok,err=pcall(restore)
     if not ok and not failed then
         failed=true

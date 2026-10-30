@@ -11,8 +11,10 @@ from lupa import LuaRuntime
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "scripts/reticle.lua"
 MOCK = r'''
-state={objects={},logs={},traces=0,active=true,reads=0,halo=1,imports=0,brush_writes=0}
-package.preload['libs/tuning']=function() return {get=function(key) assert(key=='aim.halo_reticle');return state.halo end} end
+state={objects={},logs={},traces=0,active=true,reads=0,halo=1,halo_scale=.25,imports=0,brush_writes=0}
+package.preload['libs/tuning']=function() return {get=function(key)
+    if key=='aim.halo_reticle_scale' then return state.halo_scale end
+    assert(key=='aim.halo_reticle');return state.halo end} end
 farfarwest_gameplay_ready=true
 io.open=function() return nil end
 local sizes={SetRenderTranslation=16,SetRenderOpacity=4,GetCachedGeometry=80,
@@ -87,11 +89,12 @@ local slate={GetLocalSize=function() return {X=10,Y=10} end,
         assert(not owner.dead);pixel.result={X=500+(local_point.X-5)*state.image.scale.X,
             Y=250+(local_point.Y-5)*state.image.scale.Y}
     end}
-local system={LineTraceSingle=function(_,pawn,from,to,channel,complex,ignored)
+local system={LineTraceSingle=function(_,pawn,from,to,channel,complex,ignored,draw,hit)
     assert(pawn==state.pawn and not pawn.dead,'Traced with a stale pawn')
     assert(ignored[1]==state.pawn,'Ignored a stale pawn')
     state.traces=state.traces+1;state.last_pawn=pawn
     if state.trace_error then error('simulated native trace failure') end
+    if state.impact then hit.result={ImpactPoint=state.impact};return true end
     return false
 end}
 local classes={Image=image_class,UserWidget=widget_class,
@@ -173,7 +176,7 @@ for i=1,100 do frame() end
 healthy();assert(state.last_pawn==state.pawn and state.image.opacity==.8)
 """)
 run("menus restore crosshair; genuine trace failure still stops safely", """
-warmup();assert(state.image.scale.Y==.5 and state.image.translation.X==3 and state.image.translation.Y==4)
+warmup();assert(state.image.scale.X==.25 and state.image.scale.Y==.125 and state.image.translation.X==3 and state.image.translation.Y==4)
 state.active=false;frame();assert(state.image.opacity==.8 and state.image.scale.Y==1)
 state.active=true;for i=1,12 do frame() end;healthy()
 state.trace_error=true;frame();local traces=state.traces
@@ -197,19 +200,32 @@ for i=1,30 do frame() end
 healthy();assert(state.traces>0 and state.image.opacity==.8)
 """)
 
-run("halo loads once and retains crosshair dimensions, tint, opacity and projection", """
+run("scaled halo loads once and retains brush dimensions, tint, opacity and projection", """
 warmup();local halo=state.image.brush.ResourceObject
 assert(halo~=state.native_resource and state.imports==1 and state.brush_writes==1)
 for i=1,120 do frame() end
 healthy();assert(state.imports==1 and state.brush_writes==1)
 assert(state.image.brush.ImageSize.X==10 and state.image.brush.ImageSize.Y==10)
-assert(state.image.brush.TintColor=='native tint' and state.image.opacity==.8 and state.image.scale.Y==.5)
+assert(state.image.brush.TintColor=='native tint' and state.image.opacity==.8 and state.image.scale.X==.25 and state.image.scale.Y==.125)
 """)
 run("live halo toggle restores native texture and reuses cached import", """
 warmup();local halo=state.image.brush.ResourceObject
 state.halo=0;frame();healthy();assert(state.image.brush.ResourceObject==state.native_resource)
+assert(state.image.scale.X==1 and state.image.scale.Y==.5)
 state.halo=1;frame();healthy();assert(state.image.brush.ResourceObject==halo)
+assert(state.image.scale.X==.25 and state.image.scale.Y==.125)
 assert(state.imports==1 and state.brush_writes==3)
+""")
+run("live halo scaling preserves off-center hit alignment without drift or reimports", """
+state.impact={X=1000,Y=200,Z=100};warmup()
+for _,size in ipairs({.10,.50,1,.25}) do
+ state.halo_scale=size
+ for i=1,40 do frame() end;healthy()
+ assert(math.abs(state.image.scale.X-size)<1e-6 and math.abs(state.image.scale.Y-size*.5)<1e-6)
+ assert(math.abs(state.image.translation.X-103)<1e-6 and math.abs(state.image.translation.Y+21)<1e-6)
+end
+assert(state.imports==1 and state.brush_writes==1)
+state.on_script_reset();assert(state.image.scale.X==1 and state.image.scale.Y==1)
 """)
 run("weapon-driven brush changes become the new restoration baseline", """
 warmup();local replacement=make_pawn(970,'another weapon reticle')
