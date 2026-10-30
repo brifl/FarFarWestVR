@@ -131,8 +131,8 @@ before injection. The updated DLL/PDB pair is installed on robot1-x. The October
 reticle tracing, marker projection/aspect correction, HUD margins/shapes, fog,
 and grading without helper failures. A separate read-only probe passed against
 117,468 slots in 67 ms. The tables actually moved relative to 0.3.0.7, so this
-validates relocation rather than merely accepting a new fingerprint. Visual
-confirmation in the headset remains pending. Private probe/deployment records
+validates relocation rather than merely accepting a new fingerprint. The user
+confirmed normal headset visuals after deployment. Private probe/deployment records
 are under `ffw-tests/compatibility-20261030/`; the previous DLL/PDB pair is
 preserved as `before-compatibility.bak`.
 
