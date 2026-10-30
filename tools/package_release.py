@@ -16,7 +16,7 @@ TOP_LEVEL = {
     'bindings_knuckles.json', 'bindings_oculus_touch.json', 'bindings_vive_controller.json',
 }
 PLUGINS = {'joytokey.dll', 'joytokey.txt', 'remapcontrols.dll', 'remapcontrols.txt'}
-ASSETS = {'assets/menu_cursor.png', 'assets/control_hints/left_grip.png',
+ASSETS = {'assets/menu_cursor.png', 'assets/aiming_reticle.png', 'assets/control_hints/left_grip.png',
           'assets/control_hints/right_grip.png', 'assets/control_hints/both_grips.png'}
 
 
@@ -66,6 +66,8 @@ def build(root, output, revision='HEAD'):
     if release.get('runtime_included') is not False:
         raise ValueError('This packager publishes profile/installer only; no UEVR runtime redistribution.')
     files = {p: read(p) for p in paths if selected(p)}
+    if 'scripts/libs/reticle_style.lua' in files and 'assets/aiming_reticle.png' not in files:
+        raise ValueError('Halo reticle asset is missing from this commit')
     for path,content in files.items():
         if not path.endswith('.lua'): continue
         for dependency in re.findall(rb'\brequire\s*(?:\(\s*|,\s*)?[\'"](libs/[^\'"]+)[\'"]',content):

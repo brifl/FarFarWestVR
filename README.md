@@ -27,7 +27,8 @@ some rough edges, especially after game updates.
 
 - **Stereo VR and controller aiming:** aim with the right controller while looking around
   independently. The reticle follows the firing target. Adjustable stabilization
-  reduces small hand movements.
+  reduces small hand movements. Development builds include an optional black-halo
+  dot reticle for visibility against bright backgrounds, enabled by default.
 - **Point-and-click menus:** use the right controller and trigger, with readable
   menus, a visible cursor, and B to pause or resume. Train mission previews have
   a readable presentation too.
@@ -141,6 +142,7 @@ settings active.
 | Section | Setting | Included value | Adjustment |
 | --- | --- | --- | --- |
 | `[aim]` | `stabilization` | `0.35` | `0` disables smoothing; `1` is strongest. More smoothing can add aim lag. |
+| `[aim]` | `halo_reticle` | `1` in development builds | `1` uses the black-halo aim graphic; `0` restores the game's graphic. Reloads while playing. |
 | `[horse]` | `steering_exponent` | `2.0` | `1` is the original response; higher values soften small left-stick turns. Full steering is preserved. |
 | `[hud]` | `scale_multiplier` | `0.85` | Overall fixed-HUD size; smaller values shrink it. |
 | `[hud]` | `left_margin`, `right_margin` | `0.20` each | Minimum left/right inset as a fraction of screen width. |

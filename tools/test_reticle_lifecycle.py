@@ -11,19 +11,25 @@ from lupa import LuaRuntime
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "scripts/reticle.lua"
 MOCK = r'''
-state={objects={},logs={},traces=0,active=true,reads=0}
+state={objects={},logs={},traces=0,active=true,reads=0,halo=1,imports=0,brush_writes=0}
+package.preload['libs/tuning']=function() return {get=function(key) assert(key=='aim.halo_reticle');return state.halo end} end
 farfarwest_gameplay_ready=true
 io.open=function() return nil end
 local sizes={SetRenderTranslation=16,SetRenderOpacity=4,GetCachedGeometry=80,
     SetRenderScale=16,SetRenderTransformPivot=16,GetDesiredSize=16,
     GetOwningPlayerPawn=8,GetLocalSize=96,LocalToViewport=128,
-    GetViewportSize=24,LineTraceSingle=512}
+    GetViewportSize=24,LineTraceSingle=512,SetBrushResourceObject=8,ImportFileAsTexture2D=32}
 local function class(default)
     return {find_property=function(_,name)
-        return {get_offset=function() return ({RenderTransform=0x90,RenderOpacity=0xe0,Slot=0x30})[name] end}
+        return {get_offset=function() return ({RenderTransform=0x90,RenderOpacity=0xe0,Slot=0x30,
+            ResourceObject=0,WorldContextObject=0,Filename=8,ReturnValue=24})[name] end}
     end,find_function=function(_,name)
-        return {get_properties_size=function() return sizes[name] end,
-            get_child_properties=function() return nil end}
+        return {get_properties_size=function()
+            if state.bad_style_metadata and name=='SetBrushResourceObject' then return 16 end
+            return sizes[name] end,
+            get_child_properties=function() return nil end,
+            find_property=function(_,field) return {get_offset=function()
+                return ({ResourceObject=0,WorldContextObject=0,Filename=8,ReturnValue=24})[field] end} end}
     end,get_class_default_object=function() return default end}
 end
 local image_class,widget_class=class(),class()
@@ -35,6 +41,13 @@ local function object(index,name)
     state.objects[index]=o;return o
 end
 function make_pawn(index,name) return object(index,name) end
+state.native_resource=object(950,'native reticle texture')
+function make_texture()
+    state.imports=state.imports+1
+    local texture=object(960+state.imports,'halo texture '..state.imports)
+    function texture:get_class() return {get_short_name=function() return 'Texture2D' end} end
+    return texture
+end
 function make_hud(first)
     local owner=object(first+1,'UI_Player_C_'..first)
     function owner:is_a(c) return c==widget_class end
@@ -44,9 +57,11 @@ function make_hud(first)
     local image=object(first,'Crosshair_Top')
     image.opacity=.8;image.translation={X=3,Y=4}
     image.scale={X=1,Y=1};image.pivot={X=.5,Y=.5}
+    image.brush={ResourceObject=state.native_resource,ImageSize={X=10,Y=10},TintColor='native tint'}
     function image:is_a(c) return c==image_class end
     function image:get_outer() return {get_outer=function() return owner end} end
     function image:get_property(name)
+        if name=='Brush' then assert(not self.dead);return self.brush end
         if name=='RenderTransformPivot' then return self.pivot end
         assert(name=='RenderTransform')
         return {Angle=0,Shear={X=0,Y=0},Translation=self.translation,Scale=self.scale}
@@ -58,6 +73,11 @@ function make_hud(first)
     function image:GetDesiredSize() return {X=10,Y=10,typed=true} end
     function image:SetRenderScale(v) assert(v.typed);self.scale={X=v.X,Y=v.Y} end
     function image:SetRenderTransformPivot(v) assert(v.typed);self.pivot={X=v.X,Y=v.Y} end
+    function image:SetBrushResourceObject(resource)
+        assert(not self.dead and not (resource and resource.dead),'Accessed a collected reticle resource')
+        if state.brush_error then error('simulated brush setter failure') end
+        self.brush.ResourceObject=resource;state.brush_writes=state.brush_writes+1
+    end
     state.image,state.owner=image,owner
 end
 state.pawn=make_pawn(902,'original player');make_hud(900)
@@ -75,7 +95,12 @@ local system={LineTraceSingle=function(_,pawn,from,to,channel,complex,ignored)
     return false
 end}
 local classes={Image=image_class,UserWidget=widget_class,
-    WidgetLayoutLibrary=class(layout),SlateBlueprintLibrary=class(slate),KismetSystemLibrary=class(system)}
+    WidgetLayoutLibrary=class(layout),SlateBlueprintLibrary=class(slate),KismetSystemLibrary=class(system),
+    KismetRenderingLibrary=class({ImportFileAsTexture2D=function(_,context,path)
+        assert(context==state.owner and path:find('/assets/aiming_reticle.png',1,true))
+        if state.missing_asset then return nil end
+        return make_texture()
+    end})}
 local callbacks={}
 for _,name in ipairs({'on_early_calculate_stereo_view_offset','on_post_calculate_stereo_view_offset',
     'on_post_engine_tick','on_script_reset'}) do callbacks[name]=function(fn) state[name]=fn end end
@@ -170,4 +195,63 @@ owner.dead=true;state.objects[owner.index]=nil;state.objects[image.index]=nil
 make_hud(910);state.active=true
 for i=1,30 do frame() end
 healthy();assert(state.traces>0 and state.image.opacity==.8)
+""")
+
+run("halo loads once and retains crosshair dimensions, tint, opacity and projection", """
+warmup();local halo=state.image.brush.ResourceObject
+assert(halo~=state.native_resource and state.imports==1 and state.brush_writes==1)
+for i=1,120 do frame() end
+healthy();assert(state.imports==1 and state.brush_writes==1)
+assert(state.image.brush.ImageSize.X==10 and state.image.brush.ImageSize.Y==10)
+assert(state.image.brush.TintColor=='native tint' and state.image.opacity==.8 and state.image.scale.Y==.5)
+""")
+run("live halo toggle restores native texture and reuses cached import", """
+warmup();local halo=state.image.brush.ResourceObject
+state.halo=0;frame();healthy();assert(state.image.brush.ResourceObject==state.native_resource)
+state.halo=1;frame();healthy();assert(state.image.brush.ResourceObject==halo)
+assert(state.imports==1 and state.brush_writes==3)
+""")
+run("weapon-driven brush changes become the new restoration baseline", """
+warmup();local replacement=make_pawn(970,'another weapon reticle')
+state.image.brush.ResourceObject=replacement;frame();healthy()
+assert(state.image.brush.ResourceObject~=replacement)
+state.halo=0;frame();healthy();assert(state.image.brush.ResourceObject==replacement)
+""")
+run("menus restore native graphic; collected cached texture is imported safely on return", """
+warmup();local halo=state.image.brush.ResourceObject
+state.active=false;frame();assert(state.image.brush.ResourceObject==state.native_resource)
+halo.dead=true;state.objects[halo.index]=nil
+state.active=true;for i=1,12 do frame() end;healthy()
+assert(state.imports==2 and state.image.brush.ResourceObject~=halo)
+state.on_script_reset();assert(state.image.brush.ResourceObject==state.native_resource)
+""")
+run("missing asset or changed style metadata leaves aiming and original graphic working", """
+state.missing_asset=true;warmup();local traces=state.traces
+for i=1,120 do frame() end;healthy()
+assert(state.image.brush.ResourceObject==state.native_resource and state.traces>traces)
+local failures=0;for _,line in ipairs(state.logs) do
+ if line:find('Halo unavailable',1,true) then failures=failures+1 end
+end
+assert(failures==1)
+""")
+run("changed style function layout only disables the cosmetic override", """
+state.bad_style_metadata=true;warmup();local traces=state.traces
+for i=1,20 do frame() end;healthy()
+assert(state.imports==0 and state.image.brush.ResourceObject==state.native_resource and state.traces>traces)
+""")
+run("brush setter failures do not stop tracking", """
+state.brush_error=true;warmup();healthy()
+assert(state.image.brush.ResourceObject==state.native_resource)
+""")
+run("restoration failure is isolated from reticle positioning", """
+warmup();state.brush_error=true;state.active=false;frame()
+state.brush_error=false;state.active=true;local traces=state.traces
+for i=1,12 do frame() end;healthy();assert(state.traces>traces)
+""")
+run("nil or collected original resource never becomes a stale native argument", """
+state.image.brush.ResourceObject=nil;warmup();state.halo=0;frame();healthy()
+assert(state.image.brush.ResourceObject==nil)
+state.image.brush.ResourceObject=state.native_resource;state.halo=1;frame()
+state.native_resource.dead=true;state.objects[state.native_resource.index]=nil
+state.halo=0;frame();healthy();assert(state.traces>0)
 """)

@@ -56,6 +56,8 @@ class ReleaseTests(unittest.TestCase):
         self.assertIn('scripts/controller_aim.lua', names)
         self.assertIn('plugins/joytokey.dll', names)
         self.assertIn('uobjecthook/1402486413757807057_mc_state.json', names)
+        self.assertIn('scripts/libs/reticle_style.lua', names)
+        self.assertEqual(self.profile.read('assets/aiming_reticle.png'), (self.root/'assets/aiming_reticle.png').read_bytes())
 
     def test_allowlist_scrubs_tracked_and_untracked_development_files(self):
         names = self.profile.namelist()
@@ -70,6 +72,7 @@ class ReleaseTests(unittest.TestCase):
     def test_public_capture_default_and_exact_aim_marker(self):
         tuning = self.profile.read('data/tuning.ini').decode()
         self.assertIn('auto_start = 0', tuning)
+        self.assertIn('halo_reticle = 1', tuning)
         self.assertNotIn('robot1-x', tuning)
         self.assertIn('auto_start = 1', (self.root/'data/tuning.ini').read_text())
         self.assertEqual(self.profile.read('data/controller_aim_backend.txt'), b'ue5-camera-aim-pose-v1\n')
@@ -114,6 +117,17 @@ class ReleaseTests(unittest.TestCase):
                             'commit','-qm','missing runtime dependency'],check=True)
             with self.assertRaisesRegex(ValueError,'missing packaged module'):
                 build(self.root,Path(self.temp.name)/'broken')
+        finally:
+            subprocess.run(['git','-C',str(self.root),'reset','--mixed','--quiet',original],check=True)
+
+    def test_missing_halo_asset_stops_packaging(self):
+        original=self.manifest['source_commit']
+        try:
+            subprocess.run(['git','-C',str(self.root),'rm','--cached','-q','assets/aiming_reticle.png'],check=True)
+            subprocess.run(['git','-C',str(self.root),'-c','user.name=Release Test','-c','user.email=test@example.invalid',
+                            'commit','-qm','missing halo asset'],check=True)
+            with self.assertRaisesRegex(ValueError,'Halo reticle asset is missing'):
+                build(self.root,Path(self.temp.name)/'broken-halo')
         finally:
             subprocess.run(['git','-C',str(self.root),'reset','--mixed','--quiet',original],check=True)
 

@@ -308,6 +308,14 @@ for _,source in ipairs({'[aim]\nstabilization=1.1','[cursor]\naspect_correction=
  reload(source);near(tuning.get('aim.stabilization'),.6);near(tuning.get('cursor.scale_multiplier'),.5)
 end
 ''')
+run('halo reticle defaults on, reloads live and rejects fractional or invalid switches', r'''
+near(tuning.get('aim.halo_reticle'),1)
+reload('[aim]\nhalo_reticle=0');near(tuning.get('aim.halo_reticle'),0)
+for _,source in ipairs({'[aim]\nhalo_reticle=.5','[aim]\nhalo_reticle=2','[aim]\nhalo_reticle=-1'}) do
+ reload(source);near(tuning.get('aim.halo_reticle'),0)
+end
+reload('[aim]\nhalo_reticle=1');near(tuning.get('aim.halo_reticle'),1)
+''')
 run('horse steering exponent reloads live and rejects unsupported values', r'''
 near(tuning.get('horse.steering_exponent'),2)
 reload('[horse]\nsteering_exponent=1.5');near(tuning.get('horse.steering_exponent'),1.5)

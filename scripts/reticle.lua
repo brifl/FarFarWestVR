@@ -18,6 +18,7 @@ local projection = UEVR_Matrix4x4f.new()
 local array, image_class, user_widget_class, slate, layout, system
 local image, image_index, image_address, owner, owner_ref, original
 local shape
+local style=require('libs/reticle_style')()
 local calibration, viewport_width, viewport_height, local_width, local_height
 local raw_camera, eye_camera, scan_index
 local elapsed, next_scan, next_mode = 0, 0, 0
@@ -59,6 +60,7 @@ local function valid_image()
 end
 
 local function restore()
+    style.restore()
     if shape and valid_image() then ui_shape.restore(shape) end
     if written and valid_image() then
         image:SetRenderTranslation({X=original.x, Y=original.y})
@@ -268,6 +270,7 @@ uevr.sdk.callbacks.on_post_engine_tick(function(_, delta)
         end
         if not calibration then calibrate(cached,size); return end
         if not enabled then restore(); reported=false; return end
+        style.apply(image,owner)
         if not raw_camera or not eye_camera or elapsed-raw_camera.time>0.2 or elapsed-eye_camera.time>0.2 then
             image:SetRenderOpacity(0)
             written = true

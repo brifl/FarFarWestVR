@@ -23,6 +23,7 @@ local rules={
     ['hud.scale_multiplier']={.80,.25,1.5},
     ['hud.aspect_correction']={1,0,1},
     ['aim.stabilization']={.35,0,1},
+    ['aim.halo_reticle']={1,0,1},
     ['cursor.scale_multiplier']={1,.25,1.5},
     ['cursor.aspect_correction']={0,0,1},
     ['horse.steering_exponent']={2,1,4},
@@ -64,7 +65,7 @@ local function parse(source)
                     assert(rule,'Unknown setting: '..key)
                     assert(n and n==n and n>=rule[2] and n<=rule[3],
                         key..' must be between '..tostring(rule[2])..' and '..tostring(rule[3]))
-                    assert((key~='audit.auto_start' and key~='diagnostics.gesture_enabled' and key~='diagnostics.capture_enabled' and not key:match('%.aspect_correction$')) or n==0 or n==1,
+                    assert((key~='audit.auto_start' and key~='diagnostics.gesture_enabled' and key~='diagnostics.capture_enabled' and key~='aim.halo_reticle' and not key:match('%.aspect_correction$')) or n==0 or n==1,
                         key..' must be 0 or 1')
                     if targets[1]>=(priorities[key] or 0) then
                         candidate[key]=n;priorities[key]=targets[1]

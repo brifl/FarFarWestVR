@@ -491,6 +491,20 @@ the firing-camera trace target. It restores the crosshair in menus and leaves
 quest markers alone. For a read-only geometry probe, put `probe` in the
 profile's `data/reticle_mode.txt`; remove the file to enable movement again.
 
+`scripts/libs/reticle_style.lua` optionally replaces Crosshair_Top's brush resource
+with the transparent `assets/aiming_reticle.png`. `[aim] halo_reticle=1` is the
+development default; `0` restores the latest native resource while playing.
+The resource setter preserves the widget's dimensions, tint, opacity and existing
+projection/aspect correction. It restores only its own resource change in menus,
+probe mode and cleanup, and follows native brush changes on weapon/spell switches.
+The texture cache validates UObject identity before reuse or restoration; imports
+occur only when the cached texture is absent/collected. Style failures are isolated
+from aiming and projection. The native functions and parameter offsets are checked
+before use; this uses the reflected
+[UImage resource setter](https://dev.epicgames.com/documentation/unreal-engine/API/Runtime/UMG/UImage).
+The packager includes the PNG and rejects a missing asset. Lifecycle, ownership,
+tuning and packaging tests pass; headset appearance awaits normal-relaunch testing.
+
 The repeating upward-moving distortion is absent on the repeat test with the
 startup override `r.PostProcessing.DisableMaterials=1`, confirmed in the live
 game log. This suppresses all custom post-process materials; the exact offending
