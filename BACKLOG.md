@@ -1,6 +1,6 @@
 # Far Far West VR backlog
 
-Updated October 26, 2026. Completed features and current controls are summarized
+Updated October 30, 2026. Completed features and current controls are summarized
 in the [README](README.md). Technical constraints and deployment details live in
 [DEVELOPMENT.md](docs/DEVELOPMENT.md); earlier troubleshooting remains in Git history.
 
@@ -22,6 +22,7 @@ Use those offline reports first and reserve live debugging for remaining gaps.
 | Priority | Open work | Acceptance condition |
 | --- | --- | --- |
 | Awaiting permission | Public custom-runtime download | Beta 0.1.0-beta.1 publishes scrubbed profile/installer ZIPs only. Ask praydog for modified-runtime redistribution permission before adding any UEVR backend/runtime binary. The installer validates an existing matching runtime; stock UEVR is insufficient. Once permission is obtained, provide a versioned runtime download and update beginner installation instructions. |
+| Validate next launch | Minor-update compatibility | October 30's regression was the backend's exact executable allowlist. A bounded startup detector now validates relocated object/name tables and core reflection metadata, preserving individual helper guards. Native build and negative tests pass; verify current-client startup and normal aiming/HUD after deployment. Future true layout changes still require focused fixes. |
 | High; needs marked example | Boss-bar size and position varies by boss | The user still sees some boss bars centered and enlarged, despite the independent 0.85 scale/top-anchor correction. Capture the failing instance’s actual scale, pivot, translation, adapter disabled/baseline/applied state, and tuning snapshot. Identify a shared content/animation ownership fix; apply height/size once without compounding root transforms or margins. Do not mark all boss variants fixed from one successful bar. |
 | High; needs marked examples | Dynamically accepted side-mission markers | User reports bad markers during the granny mission and pipe repairs in a giant-laser mission; dynamically picked-up missions seem more affected. Identify their widget, owner, and referenced actor/attachment families in gesture reports and screenshots. Extend shared target selection/projection from the actual relationships; do not assume every mission uses the same Location or target lifetime. |
 | Next banner batch | Disallowed-action warnings and modifier banners | Warnings such as trying spells in town are elongated; size may already be acceptable. Capture their actual IDs before assigning them to ShortMessage, DisturbanceIncrease, or StartModifier. Captures 31–32 confirmed 18 DisturbanceIncrease corrections rejected at a rotated/sheared Border_Color, and newly observed StartModifier text/icons in the leftmost 20% of the viewport. Preserve animation and correct the appropriate content transform; do not simply remove the rotation guard. |

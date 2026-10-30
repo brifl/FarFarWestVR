@@ -3,7 +3,7 @@
   "name": "Far Far West VR",
   "game_versions": ["0.3.0.7"],
   "backend_tag": "ffw-ue58-sdk-v1",
-  "backend_sha256": "67308d7e1d341f86cd55a7333d5f9c5e31dd5f323eafa8414801549581cffc55",
+  "backend_sha256": "302f99259d7f458fd13ca92f3213d5669f378d049a4e055813e90ebd1e8eab9e",
   "runtime_included": false,
   "repository": "https://github.com/brifl/FarFarWestVR",
   "issues": "https://github.com/brifl/FarFarWestVR/issues/new/choose"

@@ -44,7 +44,7 @@ Preserve user/runtime changes to `config.txt`, `imgui.ini`, and personal tuning.
 ## Native access constraints
 
 The diagnostics update adds optional `FFW_ReportHaptics` and `FFW_DiagnosticStats`
-API keys while retaining the verified SDK tag and game allowlist. Haptic priority
+API keys while retaining the verified SDK tag and layout guards. Haptic priority
 suppresses competing vibration for a short two-pulse cue; D-pad input is unchanged.
 Performance reads collect process memory, OpenVR compositor counters, and optional
 native wall-time peaks around Lua callbacks. They do not change rendering settings.
@@ -62,8 +62,8 @@ this source build.
 
 The Fear Fear West release on October 22 initially disabled all SDK-dependent
 helpers because the backend deliberately rejected an unvalidated executable.
-The retained SDK source now selects an explicit compact-array address per build;
-unknown executables still fail closed. Read-only process inspection verified
+The first repaired backend selected an explicit compact-array address per build;
+unknown executables failed closed. Read-only process inspection verified
 object identities, names, chunk-boundary indices, UI_Player.MovingCanvas at 960,
 and CanvasPanelSlot.LayoutData at 56 in 0.3.0.0. First-backend startup confirmed
 object access, reticle tracing, marker aspect correction, and fixed HUD placement
@@ -83,14 +83,49 @@ The October 24 launch failed the executable allowlist after the game updated to
 0.3.0.7. Lua loaded but SDK-dependent helpers stopped at their object-access
 checks. Read-only inspection confirmed the same array/name locations, object
 identities across the chunk boundary, and unchanged field/function metadata in
-31 shared HUD classes. The retained backend adds only this verified executable
-to the allowlist; unknown builds still fail closed. The incremental build passed.
+31 shared HUD classes. That backend added only this verified executable
+to the allowlist; unknown builds still failed closed. The incremental build passed.
 Its DLL/PDB pair is recorded in `tools/deploy_native_backend.py`, which preserves
 the preceding pair before installation. The pair is installed; the user reports
 normal gameplay and the launch log confirms native access, reticle/marker layouts,
 grading, fog, and capture startup without helper errors. `git pull` alone updates
 only the profile and deployment tool. Private probe results and source backup are under
 `ffw-tests/hotfix-0307/` in the retained build checkout.
+
+### Minor-update compatibility
+
+The October 30 executable (timestamp `1820620141`, image size `207396864`)
+triggered the same exact-build gate. `native/FFWCompatibility.hpp` replaces the
+timestamp/address list with a one-time, read-only startup detector. This is a
+development-backend change after the published beta.1; a profile pull alone
+cannot replace the runtime DLL.
+
+- Require the Far Far West executable and a valid x64 PE. Scan only its writable
+  `.data` section, capped at 16 MiB. Require exactly one compact object array and
+  one name pool; ambiguity disables SDK access.
+- Validate object indices, 24-byte items, 65,536-slot chunks, the first 1,024 live
+  identities and every live chunk boundary, plus the CoreUObject/Object/Class
+  name and outer relationships. Vacant slots are allowed.
+- Read reflection metadata without invoking engine functions. Check Engine's
+  GameViewport, Widget transforms, CanvasPanelSlot layout, and key widget/player
+  function parameter sizes before allowing the existing SDK to initialize.
+- All reads use ReadProcessMemory with a 64 MiB / 250,000-call / two-second
+  budget. Discovery runs once per process, with no periodic scan or memory writes.
+  The log records `[FFW compatibility] Validated ...` with the discovered RVAs,
+  or a single reason for rejection.
+- Keep each Lua helper's field and function guards. A patch that only moves
+  executable tables can now work automatically; changed engine metadata or
+  widget/action layouts can still need a focused repair. Do not infer full game
+  compatibility from the executable version number or table discovery alone.
+
+`tools/prepare_compatibility_backend.py` changes only the old array-gate block in
+the retained SDK and copies the original detector header. It preserves every
+other port and keeps the old source under
+`ffw-tests/compatibility-20261030/source-before`. The Windows build and synthetic
+tests pass, including moved tables, malformed identities, ambiguity, changed
+field/function layouts, and failed deployment rollback. The read-only
+`tools/probe_compatibility.cpp` uses the exact detector against a running game
+before injection. Current-client live validation is pending.
 
 `tools/probe_game_layout.ps1` finds these tables read-only within the executable's
 bounded .data section, checking unique candidates and UObject/name identities.

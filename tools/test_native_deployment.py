@@ -21,6 +21,7 @@ class NativeDeploymentTests(unittest.TestCase):
         self.update_dll, self.update_pdb = b'first-update-backend', b'first-update-symbols'
         self.pre_hotfix_dll, self.pre_hotfix_pdb = b'pre-hotfix-backend', b'pre-hotfix-symbols'
         self.pre_diagnostics_dll,self.pre_diagnostics_pdb=b'pre-diagnostics-backend',b'pre-diagnostics-symbols'
+        self.pre_compatibility_dll,self.pre_compatibility_pdb=b'pre-compatibility-backend',b'pre-compatibility-symbols'
         sha = lambda data: hashlib.sha256(data).hexdigest()
         patched = patch.multiple(deployment, require_closed=lambda: None,
                                  BASELINE_SHA=sha(b'baseline'),
@@ -32,6 +33,8 @@ class NativeDeploymentTests(unittest.TestCase):
                                  PRE_HOTFIX_PDB_SHA=sha(self.pre_hotfix_pdb),
                                  PRE_DIAGNOSTICS_BUILD_SHA=sha(self.pre_diagnostics_dll),
                                  PRE_DIAGNOSTICS_PDB_SHA=sha(self.pre_diagnostics_pdb),
+                                 PRE_COMPATIBILITY_BUILD_SHA=sha(self.pre_compatibility_dll),
+                                 PRE_COMPATIBILITY_PDB_SHA=sha(self.pre_compatibility_pdb),
                                  BUILD_SHA=sha(self.new_dll), PDB_SHA=sha(self.new_pdb))
         patched.start()
         self.addCleanup(patched.stop)
@@ -118,6 +121,25 @@ class NativeDeploymentTests(unittest.TestCase):
         self.deploy();self.deploy()
         self.assertEqual((self.runtime/'UEVRBackend.dll.before-diagnostics.bak').read_bytes(),self.pre_diagnostics_dll)
         self.assertEqual((self.runtime/'UEVRBackend.pdb.before-diagnostics.bak').read_bytes(),self.pre_diagnostics_pdb)
+
+    def test_compatibility_upgrade_preserves_pair_and_failed_copy_restores_symbols(self):
+        (self.runtime/'UEVRBackend.dll').write_bytes(self.pre_compatibility_dll)
+        (self.runtime/'UEVRBackend.pdb').write_bytes(self.pre_compatibility_pdb)
+        copy=deployment.atomic_copy
+        def fail_dll(source,target):
+            if target.name=='UEVRBackend.dll':raise OSError('simulated loaded backend')
+            copy(source,target)
+        with patch.object(deployment,'atomic_copy',fail_dll),self.assertRaises(OSError):self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(),self.pre_compatibility_pdb)
+        self.deploy();self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.dll.before-compatibility.bak').read_bytes(),self.pre_compatibility_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.pdb.before-compatibility.bak').read_bytes(),self.pre_compatibility_pdb)
+
+    def test_compatibility_backup_mismatch_prevents_deployment(self):
+        (self.runtime/'UEVRBackend.dll.before-compatibility.bak').write_bytes(b'unrelated backend')
+        with self.assertRaises(SystemExit):self.deploy()
+        self.assertEqual((self.runtime/'UEVRBackend.dll').read_bytes(),self.old_dll)
+        self.assertEqual((self.runtime/'UEVRBackend.pdb').read_bytes(),self.old_pdb)
 
 
 if __name__ == '__main__':

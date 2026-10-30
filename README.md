@@ -51,6 +51,11 @@ The current beta is tested with **Far Far West 0.3.0.7**, **Windows**, **Meta Qu
 **Virtual Desktop**, and **SteamVR using OpenVR**. Other headsets and runtimes have
 not been verified. Game updates may require a matching backend update.
 
+**In development:** the newer backend detects and validates the game's object
+tables at startup, so minor patches can work without adding each executable to
+a version list. Updates that change engine or UI layouts can still need fixes.
+This improvement is newer than the published beta.1 downloads.
+
 ## Installation
 
 You need the game installed through Steam, a working PC VR connection, SteamVR,
